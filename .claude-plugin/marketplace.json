@@ -6,7 +6,7 @@
     {
       "name": "aspen",
       "source": "./plugins/aspen",
-      "description": "Developer workflow skills for the Aspen Platform (onboarding, and more to come)."
+      "description": "Developer workflow skills for customizing an Aspen instance with the aspen CLI."
     }
   ]
 }
