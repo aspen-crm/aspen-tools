@@ -78,16 +78,37 @@ platform internals.
 
 `--dry-run` at any point prints the files and the notes and uploads nothing.
 
-### What the script refuses to do
+### Most versions never become public
 
+Builder is released privately as often as it needs to be. Publishing is the
+exception, and the script is built around that asymmetry: every guard below
+exists to make a public release something you can only do on purpose.
+
+**It refuses to:**
+
+- publish a version that is not a release in `aspen-builder`. A local build, a
+  typo'd version or an abandoned tag cannot reach the public repo, because the
+  public set is only ever a subset of the private one;
+- re-stage a release that is already public. `gh release edit --draft` on a
+  live release HIDES it, so re-running phase 1 would have taken a published
+  release down and put it back with a gap in between;
 - publish a version whose installers are not on disk -- it names the build
   command instead of creating an empty release, which is what happened by hand
   on v0.11.0;
 - publish notes that are still the template, or empty;
-- go live without a staged draft, or without the version typed back.
+- go live without a staged draft, or without the version typed back;
+- move `builder-latest` BACKWARDS. Re-publishing an older version is a normal
+  thing to want; silently making it what everyone downloads is not, and
+  nothing about the download link would look wrong afterwards. The versioned
+  release still publishes; only the pointer is left alone.
 
-It warns, without blocking, when the notes run past ~1200 characters -- long
-usually means private detail has leaked in.
+**It tells you, without blocking:**
+
+- which versions were released privately since the last public one and are
+  therefore staying private. That list is the whole point: it makes "not
+  publishing" a thing you see rather than a thing you forget;
+- when the notes run past ~1200 characters, where private detail has usually
+  leaked in.
 
 ### `builder-latest`
 

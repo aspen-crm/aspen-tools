@@ -19,6 +19,7 @@ set -euo pipefail
 VERSION="${1:-}"
 MODE="${2:-}"
 REPO="aspen-crm/aspen-tools"
+PRIVATE_REPO="aspen-crm/aspen-builder"
 SRC="${BUILDER_RELEASE_DIR:-../aspen-builder/release}"
 NOTES_DIR="release-notes"
 
@@ -33,6 +34,46 @@ MAC_SRC="$SRC/Aspen Builder-$VERSION-arm64.dmg"
 WIN_SRC="$SRC/Aspen Builder-$VERSION-Setup-x64.exe"
 MAC_PUB="Aspen-Builder-arm64.dmg"
 WIN_PUB="Aspen-Builder-Setup-x64.exe"
+
+# ------------------------------------------------------------ preflight ----
+# Most versions are released PRIVATELY and stay that way. Publishing is the
+# exception, so everything below is about making the exception deliberate.
+
+# 1. It must be a real private release. This stops a local build, a version
+#    typo, or an abandoned tag from ever reaching the public repo.
+if ! gh release view "v$VERSION" --repo "$PRIVATE_REPO" >/dev/null 2>&1; then
+  echo "v$VERSION is not a release in $PRIVATE_REPO." >&2
+  echo "Publish it privately first. Public releases are only ever a subset." >&2
+  exit 1
+fi
+
+# 2. Never silently unpublish. `gh release edit --draft` on a LIVE release
+#    hides it, so re-running phase 1 on something already public would take it
+#    down and put it back, with a gap in between.
+PUBLIC_STATE="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft 2>/dev/null || echo "absent")"
+if [[ "$PUBLIC_STATE" == "false" && "$MODE" != "--go-live" && "$MODE" != "--dry-run" ]]; then
+  echo "$TAG is already published at $REPO." >&2
+  echo "Re-staging it would unpublish it. Edit it on GitHub instead." >&2
+  exit 1
+fi
+
+# 3. Show what is being skipped. Everything privately released and newer than
+#    what is public is, by this act, being deliberately left private.
+LAST_PUBLIC="$(gh release list --repo "$REPO" --limit 100 --json tagName --jq '.[].tagName' 2>/dev/null \
+  | grep '^builder-v' | sed 's/^builder-v//' | sort -V | tail -1 || true)"
+if [[ -n "$LAST_PUBLIC" ]]; then
+  SKIPPED="$(gh release list --repo "$PRIVATE_REPO" --limit 100 --json tagName --jq '.[].tagName' 2>/dev/null \
+    | sed 's/^v//' | sort -V \
+    | awk -v lo="$LAST_PUBLIC" -v hi="$VERSION" '$0 != lo && $0 != hi' \
+    | while read -r v; do
+        [[ "$(printf '%s\n%s\n' "$LAST_PUBLIC" "$v" | sort -V | tail -1)" == "$v" ]] || continue
+        [[ "$(printf '%s\n%s\n' "$v" "$hi" | sort -V | tail -1)" == "$hi" ]] || continue
+        echo "$v"
+      done | tr '\n' ' ')"
+  if [[ -n "${SKIPPED// /}" ]]; then
+    echo "note: released privately since $LAST_PUBLIC and staying private: $SKIPPED"
+  fi
+fi
 
 for f in "$MAC_SRC" "$WIN_SRC"; do
   if [[ ! -f "$f" ]]; then
@@ -147,6 +188,22 @@ gh release edit "$TAG" --repo "$REPO" --notes "$BODY" --draft=false >/dev/null
 # `builder-latest` is a fixed tag, never GitHub's own "Latest": that resolves
 # across the whole repository, so a plugin- release would silently repoint every
 # Builder download link at a release holding no installers.
+#
+# Refuse to move it BACKWARDS. Re-publishing an older version is a normal thing
+# to want (a fix on an old line, a re-upload); silently making it what everyone
+# downloads is not, and nothing about the download link would look wrong.
+CURRENT_LATEST="$(gh release view builder-latest --repo "$REPO" --json body --jq .body 2>/dev/null \
+  | grep -oE 'Currently [0-9]+\.[0-9]+\.[0-9]+' | awk '{print $2}' || true)"
+if [[ -n "$CURRENT_LATEST" && "$CURRENT_LATEST" != "$VERSION" ]]; then
+  NEWER="$(printf '%s\n%s\n' "$CURRENT_LATEST" "$VERSION" | sort -V | tail -1)"
+  if [[ "$NEWER" != "$VERSION" ]]; then
+    echo
+    echo "builder-latest currently points at $CURRENT_LATEST, which is NEWER than $VERSION." >&2
+    echo "The $TAG release is published; builder-latest was left alone." >&2
+    echo "To move it back deliberately, update it on GitHub." >&2
+    exit 0
+  fi
+fi
 if gh release view builder-latest --repo "$REPO" >/dev/null 2>&1; then
   gh release edit builder-latest --repo "$REPO" \
     --notes "Always the current Aspen Builder. Currently $VERSION." >/dev/null
