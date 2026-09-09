@@ -42,6 +42,9 @@ Invoke the `using-aspen` skill and follow where it routes you. It discovers the 
 `aspen --help` (nothing hardcoded), reads the instance's model with `read-metadata` before you
 author, and drives the extend-`_p` / author-`_c` loop.
 
+Once you have downloaded the metadata, the plugin indexes it into `.aspen/model/` and keeps that
+index current on every session start and every download, so the model is a grep away.
+
 ## Safety
 
 - Installing Builder and signing in are the human's steps — hand them the link and wait.

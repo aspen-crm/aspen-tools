@@ -35,6 +35,9 @@ deliberately names almost none, because a hardcoded verb list goes stale the mom
 | Authoring, compiling, or deploying a change | discover the commands with `aspen --help` and run the loop |
 
 Always read the model with `read-metadata` before you extend a `_p` component or author a `_c` one.
+The plugin keeps a Markdown digest of the instance's metadata at `.aspen/model/`, refreshed on
+session start and after every download — start there, and check its freshness stamp before you
+trust it.
 
 ## Non-negotiables
 

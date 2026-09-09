@@ -1,7 +1,7 @@
 {
     "name": "aspen",
     "displayName": "Aspen",
-    "description": "Developer workflow skills for customizing the Aspen Platform with the aspen CLI. Ships using-aspen (discover the CLI and drive the build loop) and read-metadata (read the instance's _p/_c model as the source of truth); more to come.",
+    "description": "Developer workflow skills for customizing the Aspen Platform with the aspen CLI. Ships using-aspen (discover the CLI and drive the build loop) and read-metadata (read the instance's _p/_c model as the source of truth), plus a hook that keeps a Markdown digest of the instance's metadata current; more to come.",
     "version": "1.0.0",
     "author": {
         "name": "Aspen CRM"
