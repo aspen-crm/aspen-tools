@@ -32,6 +32,7 @@ deliberately names almost none, because a hardcoded verb list goes stale the mom
 | Moment | Go to |
 |--------|-------|
 | You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata` |
+| You need to understand the model, not just list it — conventions, relationships, extension points | `map-model` |
 | Authoring, compiling, or deploying a change | discover the commands with `aspen --help` and run the loop |
 
 Always read the model with `read-metadata` before you extend a `_p` component or author a `_c` one.

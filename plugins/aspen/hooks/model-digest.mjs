@@ -10,6 +10,7 @@
 //   post-tool      react to an `aspen` command that just ran (rebuild, or mark stale)
 //   build          rebuild unconditionally (run it by hand)
 
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
 
@@ -40,13 +41,21 @@ function looksLikeInstance (dir) {
   return hits.length >= 2 ? hits : null
 }
 
-function findMetadataRoot (cwd, depth = MAX_DEPTH) {
+// Here, just below here, or we are inside it. Ancestors are checked but their other
+// children are not -- a project that merely sits next door to an instance is not that
+// instance, and scanning siblings up to the home directory is both slow and surprising.
+function findMetadataRoot (cwd) {
   if (looksLikeInstance(cwd)) return cwd
   for (const child of subdirs(cwd)) {
     if (looksLikeInstance(child)) return child
   }
-  const parent = dirname(cwd)
-  if (depth > 0 && parent !== cwd) return findMetadataRoot(parent, depth - 1)
+  let dir = cwd
+  for (let up = 0; up < MAX_DEPTH; up += 1) {
+    const parent = dirname(dir)
+    if (parent === dir) break
+    if (looksLikeInstance(parent)) return parent
+    dir = parent
+  }
   return null
 }
 
@@ -157,9 +166,20 @@ function parseComponent (path) {
 
 // -------------------------------------------------------------------- the build
 
+// A download groups component types into directories (objects/, layouts/, ...), so
+// the directory is the grouping key. The component's own declared type is kept as a
+// column, but it varies per component -- a field's type is its data type -- so it is
+// only the fallback when a component sits loose at the tier root.
+function groupingType (withinTier, declaredType) {
+  const segments = withinTier.split(sep)
+  const key = segments.length > 1 ? segments[0] : (declaredType || 'other')
+  return key.toLowerCase().replace(/[^\w.-]+/g, '_')
+}
+
 function collect (metadataRoot, maxComponents) {
   const tiers = []
   let truncated = false
+  let newest = 0
   for (const tier of TIERS) {
     const tierRoot = join(metadataRoot, tier)
     if (!isDir(tierRoot)) continue
@@ -169,19 +189,49 @@ function collect (metadataRoot, maxComponents) {
       if (components.length >= maxComponents) { truncated = true; break }
       const parsed = parseComponent(path)
       const withinTier = relative(tierRoot, path)
+      let stat = { mtimeMs: 0, size: 0 }
+      try { stat = statSync(path) } catch { /* keep zeroes */ }
+      newest = Math.max(newest, stat.mtimeMs)
       components.push({
         name: parsed.name ?? basename(path, extname(path)),
         label: parsed.label ?? '',
         type: parsed.type ?? '',
+        group: groupingType(withinTier, parsed.type),
         children: parsed.children,
         parsed: parsed.parsed,
         source: relative(metadataRoot, path),
-        slug: uniqueSlug(withinTier, slugs)
+        slug: uniqueSlug(withinTier, slugs),
+        stamp: `${withinTier}:${stat.size}:${Math.round(stat.mtimeMs)}`
       })
     }
     tiers.push({ tier, root: tierRoot, components })
   }
-  return { tiers, truncated }
+  return { tiers, truncated, sourceMtime: newest }
+}
+
+// One entry per (tier, component type): the unit of work a mapper subagent takes.
+// The signature changes only when that type's files change, so a re-map can skip the
+// types nothing touched.
+function groupTypes (tiers) {
+  const groups = []
+  for (const { tier, components } of tiers) {
+    const byType = new Map()
+    for (const component of components) {
+      if (!byType.has(component.group)) byType.set(component.group, [])
+      byType.get(component.group).push(component)
+    }
+    for (const [type, members] of [...byType].sort((a, b) => b[1].length - a[1].length)) {
+      groups.push({
+        tier,
+        type,
+        count: members.length,
+        signature: createHash('sha1').update(members.map((member) => member.stamp).join('\n')).digest('hex').slice(0, 12),
+        inventory: `.aspen/model/types/${tier}__${type}.md`,
+        members
+      })
+    }
+  }
+  return groups
 }
 
 // Detail filenames are the tier-relative path, flattened. Two components can flatten
@@ -231,14 +281,30 @@ function renderTier (tier, components, truncated) {
     '| --- | --- | --- | --- | --- |'
   ]
   for (const component of components) {
-    lines.push(`| \`${escapeCell(component.name)}\` | ${escapeCell(component.type)} | ${escapeCell(component.label)} | ${component.children.length || ''} | \`${tier}/${component.slug}.md\` |`)
+    lines.push(`| \`${escapeCell(component.name)}\` | ${escapeCell(component.group)} | ${escapeCell(component.label)} | ${component.children.length || ''} | \`${tier}/${component.slug}.md\` |`)
   }
   if (truncated) lines.push('', '**Truncated** — raise `maxComponents` in `.aspen/model.config.json`.')
   lines.push('')
   return lines.join('\n')
 }
 
-function renderIndex ({ metadataRoot, tiers, generatedAt, sourceMtime, truncated }) {
+function renderTypeInventory (group) {
+  const lines = [
+    `# ${group.tier} / ${group.type} — ${group.count} component${group.count === 1 ? '' : 's'}`,
+    '',
+    `Signature \`${group.signature}\`. One mapper's slice of the model.`,
+    '',
+    '| Component | Declared type | Label | Attrs | Detail | Source |',
+    '| --- | --- | --- | --- | --- | --- |'
+  ]
+  for (const member of group.members) {
+    lines.push(`| \`${escapeCell(member.name)}\` | ${escapeCell(member.type)} | ${escapeCell(member.label)} | ${member.children.length || ''} | \`${group.tier}/${member.slug}.md\` | \`${escapeCell(member.source)}\` |`)
+  }
+  lines.push('')
+  return lines.join('\n')
+}
+
+function renderIndex ({ metadataRoot, tiers, groups, outDir, generatedAt, sourceMtime, truncated }) {
   const total = tiers.reduce((sum, entry) => sum + entry.components.length, 0)
   const lines = [
     '# Aspen model digest',
@@ -262,6 +328,13 @@ function renderIndex ({ metadataRoot, tiers, generatedAt, sourceMtime, truncated
   for (const { tier, components } of tiers) {
     lines.push(`| ${tier} | ${components.length} | \`.aspen/model/${tier}.md\` |`)
   }
+  lines.push('', '## Component types', '', '| Tier | Type | Components | Inventory | Map |', '| --- | --- | --- | --- | --- |')
+  for (const group of groups) {
+    const path = `\`.aspen/model/maps/${group.tier}__${group.type}.md\``
+    const map = !group.mapExists ? '—' : group.mapped ? path : `${path} **(stale)**`
+    lines.push(`| ${group.tier} | ${group.type} | ${group.count} | \`${group.inventory}\` | ${map} |`)
+  }
+  lines.push('', 'A type with no map has never been read by a mapper; a stale map was built from files that', 'have since changed. Invoke `map-model` to fill in both — it only redoes what moved.')
   lines.push(
     '',
     '## Finding a component',
@@ -280,12 +353,16 @@ function build (config) {
   const metadataRoot = config.metadataRoot ?? findMetadataRoot(process.cwd())
   if (!metadataRoot || !looksLikeInstance(metadataRoot)) return { status: 'no-metadata' }
 
-  const { tiers, truncated } = collect(metadataRoot, config.maxComponents)
-  const sourceMtime = newestMtime(tiers.flatMap((entry) => walkFiles(entry.root)))
+  const { tiers, truncated, sourceMtime } = collect(metadataRoot, config.maxComponents)
+  const groups = groupTypes(tiers)
   const generatedAt = new Date().toISOString()
 
+  // Mapper output is expensive to produce and is not derived from the tree, so it
+  // survives a rebuild. Everything else is regenerated from scratch.
+  const maps = readMaps(config.outDir)
   rmSync(config.outDir, { recursive: true, force: true })
   mkdirSync(config.outDir, { recursive: true })
+  writeMaps(config.outDir, maps)
   writeFileSync(join(config.outDir, '.gitignore'), '*\n') // generated; keep it out of the user's repo
 
   for (const { tier, components } of tiers) {
@@ -297,10 +374,60 @@ function build (config) {
     }
   }
 
-  writeFileSync(join(config.outDir, 'index.md'), renderIndex({ metadataRoot, tiers, generatedAt, sourceMtime, truncated }))
+  for (const group of groups) {
+    const map = maps[`${group.tier}__${group.type}.md`]
+    group.mapExists = Boolean(map)
+    group.mapped = map?.signature === group.signature
+  }
+
+  mkdirSync(join(config.outDir, 'types'), { recursive: true })
+  for (const group of groups) {
+    writeFileSync(join(config.outDir, 'types', `${group.tier}__${group.type}.md`), renderTypeInventory(group))
+  }
+
+  writeFileSync(join(config.outDir, 'index.md'), renderIndex({ metadataRoot, tiers, groups, outDir: config.outDir, generatedAt, sourceMtime, truncated }))
+  writeFileSync(join(config.outDir, 'manifest.json'), JSON.stringify({
+    generatedAt,
+    metadataRoot,
+    types: groups.map(({ tier, type, count, signature, inventory, mapped, mapExists }) => ({
+      tier,
+      type,
+      count,
+      signature,
+      inventory,
+      map: `.aspen/model/maps/${tier}__${type}.md`,
+      mapped: Boolean(mapped),
+      mapStale: Boolean(mapExists && !mapped)
+    }))
+  }, null, 2))
   const state = { metadataRoot, sourceMtime, generatedAt, stale: false, counts: Object.fromEntries(tiers.map((entry) => [entry.tier, entry.components.length])) }
   writeFileSync(join(config.outDir, STATE_FILE), JSON.stringify(state, null, 2))
   return { status: 'built', state }
+}
+
+// Maps are written by mapper subagents, not by this script. Carry them through a
+// rebuild, and read back the signature each one recorded so a re-map can tell which
+// are still current.
+function readMaps (outDir) {
+  const dir = join(outDir, 'maps')
+  const maps = {}
+  if (!isDir(dir)) return maps
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith('.md')) continue
+    try {
+      const body = readFileSync(join(dir, name), 'utf8')
+      maps[name] = { body, signature: body.match(/<!--\s*signature:\s*([0-9a-f]+)\s*-->/)?.[1] ?? null }
+    } catch { /* skip unreadable */ }
+  }
+  return maps
+}
+
+function writeMaps (outDir, maps) {
+  const names = Object.keys(maps)
+  if (!names.length) return
+  const dir = join(outDir, 'maps')
+  mkdirSync(dir, { recursive: true })
+  for (const name of names) writeFileSync(join(dir, name), maps[name].body)
 }
 
 // --------------------------------------------------------------------- state io

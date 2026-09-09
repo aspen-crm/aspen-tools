@@ -18,6 +18,11 @@ start and after every download. Three levels, smallest first:
    a real platform tier runs to thousands of rows.
 3. `.aspen/model/<tier>/<component>.md` — one component's attributes, and the path to its source file.
 
+Where a mapper has been through a component type, `.aspen/model/maps/<tier>__<type>.md` says what
+that type *means* — conventions, relationships, extension points. `index.md` marks which maps exist
+and which have gone stale. Missing or stale, and the question needs understanding rather than a
+name? Invoke `map-model`.
+
 ```
 grep -i "account" .aspen/model/platform.md    # find it, get its detail path
 cat .aspen/model/platform/<detail>.md         # attributes + source path
@@ -65,4 +70,5 @@ the instance's current state and not a stale local copy.
 
 - When you extend a `_p` component or author a `_c` one, copy the shape of a real component you
   just read rather than inventing it.
-- The digest tells you what exists and where it lives. The source file tells you what it looks like.
+- The digest tells you what exists and where it lives. A map tells you how the type behaves. The
+  source file tells you what it looks like — and it is the only one of the three you author against.
