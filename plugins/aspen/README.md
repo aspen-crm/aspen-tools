@@ -51,6 +51,10 @@ Each map records the signature of the files it was built from. A rebuild recompu
 `index.md` and `manifest.json` show which maps are current, which are stale, and which types have
 never been read. Re-mapping only redoes what moved.
 
+A rebuild stages into `.aspen/model.building` and swaps at the end, so a build that dies partway
+leaves the previous digest — and its maps — untouched. In a hook, a failure prints one line and
+exits 0; run by hand, it exits non-zero.
+
 Build it by hand any time with:
 
 ```

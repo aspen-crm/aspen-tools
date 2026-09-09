@@ -11,7 +11,7 @@
 //   build          rebuild unconditionally (run it by hand)
 
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
 
 const TIERS = ['platform', 'app', 'custom']
@@ -304,7 +304,7 @@ function renderTypeInventory (group) {
   return lines.join('\n')
 }
 
-function renderIndex ({ metadataRoot, tiers, groups, outDir, generatedAt, sourceMtime, truncated }) {
+function renderIndex ({ metadataRoot, tiers, groups, generatedAt, sourceMtime, truncated }) {
   const total = tiers.reduce((sum, entry) => sum + entry.components.length, 0)
   const lines = [
     '# Aspen model digest',
@@ -359,18 +359,23 @@ function build (config) {
 
   // Mapper output is expensive to produce and is not derived from the tree, so it
   // survives a rebuild. Everything else is regenerated from scratch.
+  //
+  // Build into a staging directory and swap at the end. Writing in place would leave
+  // a window where the maps are deleted and not yet restored -- crash there and the
+  // one thing that cannot be regenerated is the thing that is gone.
   const maps = readMaps(config.outDir)
-  rmSync(config.outDir, { recursive: true, force: true })
-  mkdirSync(config.outDir, { recursive: true })
-  writeMaps(config.outDir, maps)
-  writeFileSync(join(config.outDir, '.gitignore'), '*\n') // generated; keep it out of the user's repo
+  const staging = `${config.outDir}.building`
+  rmSync(staging, { recursive: true, force: true })
+  mkdirSync(staging, { recursive: true })
+  writeMaps(staging, maps)
+  writeFileSync(join(staging, '.gitignore'), '*\n') // generated; keep it out of the user's repo
 
   for (const { tier, components } of tiers) {
-    writeFileSync(join(config.outDir, `${tier}.md`), renderTier(tier, components, truncated))
+    writeFileSync(join(staging, `${tier}.md`), renderTier(tier, components, truncated))
     if (!components.length) continue
-    mkdirSync(join(config.outDir, tier), { recursive: true })
+    mkdirSync(join(staging, tier), { recursive: true })
     for (const component of components) {
-      writeFileSync(join(config.outDir, tier, `${component.slug}.md`), renderDetail(component, tier))
+      writeFileSync(join(staging, tier, `${component.slug}.md`), renderDetail(component, tier))
     }
   }
 
@@ -380,13 +385,13 @@ function build (config) {
     group.mapped = map?.signature === group.signature
   }
 
-  mkdirSync(join(config.outDir, 'types'), { recursive: true })
+  mkdirSync(join(staging, 'types'), { recursive: true })
   for (const group of groups) {
-    writeFileSync(join(config.outDir, 'types', `${group.tier}__${group.type}.md`), renderTypeInventory(group))
+    writeFileSync(join(staging, 'types', `${group.tier}__${group.type}.md`), renderTypeInventory(group))
   }
 
-  writeFileSync(join(config.outDir, 'index.md'), renderIndex({ metadataRoot, tiers, groups, outDir: config.outDir, generatedAt, sourceMtime, truncated }))
-  writeFileSync(join(config.outDir, 'manifest.json'), JSON.stringify({
+  writeFileSync(join(staging, 'index.md'), renderIndex({ metadataRoot, tiers, groups, generatedAt, sourceMtime, truncated }))
+  writeFileSync(join(staging, 'manifest.json'), JSON.stringify({
     generatedAt,
     metadataRoot,
     types: groups.map(({ tier, type, count, signature, inventory, mapped, mapExists }) => ({
@@ -401,7 +406,12 @@ function build (config) {
     }))
   }, null, 2))
   const state = { metadataRoot, sourceMtime, generatedAt, stale: false, counts: Object.fromEntries(tiers.map((entry) => [entry.tier, entry.components.length])) }
-  writeFileSync(join(config.outDir, STATE_FILE), JSON.stringify(state, null, 2))
+  writeFileSync(join(staging, STATE_FILE), JSON.stringify(state, null, 2))
+
+  // The only destructive moment, with no I/O between the two calls that could fail
+  // in the gap. Anything that goes wrong before here leaves the old digest untouched.
+  rmSync(config.outDir, { recursive: true, force: true })
+  renameSync(staging, config.outDir)
   return { status: 'built', state }
 }
 
@@ -478,17 +488,35 @@ async function readStdin () {
 
 // ------------------------------------------------------------------------- main
 
+// A crash must not be louder than the value this adds. In a hook, report one line to
+// stderr and exit 0: the swap above means the previous digest is still in place, and
+// its own freshness stamp stays honest, so the agent is not handed a broken model.
+// Run by hand, a failure exits non-zero -- that is a person who wants to know.
+function guard (mode, run) {
+  try { return run() } catch (error) {
+    process.stderr.write(`aspen model digest: ${error?.message ?? error}\n`)
+    process.exit(mode === 'build' ? 1 : 0)
+  }
+}
+
 const mode = process.argv[2] ?? 'build'
 const config = loadConfig(process.cwd())
 
 if (mode === 'build') {
-  const result = build(config)
-  console.log(result.status === 'built' ? describe(result.state) : 'No Aspen metadata found. Run `aspen move download-active-set` first.')
+  guard(mode, () => {
+    const result = build(config)
+    console.log(result.status === 'built' ? describe(result.state) : 'No Aspen metadata found. Run `aspen move download-active-set` first.')
+  })
   process.exit(0)
 }
 
 if (mode === 'session-start') {
   process.env.ASPEN_HOOK_EVENT = 'SessionStart'
+  guard(mode, () => sessionStart())
+  process.exit(0)
+}
+
+function sessionStart () {
   const state = readState(config)
   const metadataRoot = config.metadataRoot ?? state?.metadataRoot ?? findMetadataRoot(process.cwd())
   if (!metadataRoot || !looksLikeInstance(metadataRoot)) {
@@ -505,6 +533,11 @@ if (mode === 'session-start') {
 if (mode === 'post-tool') {
   process.env.ASPEN_HOOK_EVENT = 'PostToolUse'
   const payload = await readStdin()
+  guard(mode, () => postTool(payload))
+  process.exit(0)
+}
+
+function postTool (payload) {
   const command = String(payload?.tool_input?.command ?? '')
   if (!/\baspen\b/.test(command)) process.exit(0)
 
@@ -518,7 +551,6 @@ if (mode === 'post-tool') {
     markStale(config, 'the instance changed after this digest was built.')
     emit('The Aspen model digest is now stale — you changed the instance. Re-pull with `aspen move download-active-set` before you read the model again.')
   }
-  process.exit(0)
 }
 
 console.error(`Unknown mode: ${mode}. Use session-start, post-tool, or build.`)
