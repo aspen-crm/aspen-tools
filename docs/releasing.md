@@ -25,65 +25,45 @@ Source lives in the private `aspen-crm/aspen-builder`. The installers are
 built there and published HERE, so a download link can be handed to someone
 who has no access to the source.
 
+**Two files are published: macOS on Apple silicon, and Windows on x64.** That
+covers everyone we hand a link to. `npm run package:mac` and
+`npm run package:win` also produce an Intel mac build, an Arm Windows build and
+a universal Windows installer; those stay in `aspen-builder/release/` and are
+available on request. They are not published because every extra file on a
+download page is one more chance to pick the wrong one.
+
 1. Cut the release in `aspen-builder` as usual (version bump, `vX.Y.Z` tag).
-2. Build both platforms: `npm run package:mac` and `npm run package:win`.
-   Artifacts land in that repo's `release/`.
-3. Publish here under `builder-vX.Y.Z`, attaching the installers.
-
-Attach the `.dmg` and `.exe` files. The `.blockmap` files serve
-electron-updater's delta downloads and are only worth attaching if something
-here is actually auto-updating from these releases.
-
-Note the mac builds are unsigned unless a signing identity is configured, so
-a first open needs right-click then Open. That is worth saying on any page
-that hands the link to someone outside the team.
-
-### Then update `builder-latest`
-
-`builder-latest` is a release that exists so the download links never change.
-Its assets are the SAME installers under version-less names, replaced on every
-Builder release, so these URLs are permanent:
-
-```
-https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-arm64.dmg
-https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder.dmg
-https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-arm64.exe
-https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-x64.exe
-https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup.exe
-```
-
-Rename a copy of each installer to drop the version, then overwrite in place:
+2. Build both platforms there: `npm run package:mac` and `npm run package:win`.
+3. From this repository:
 
 ```bash
-V=0.11.0
-SRC=../aspen-builder/release
-for pair in \
-  "Aspen Builder-$V-arm64.dmg:Aspen-Builder-arm64.dmg" \
-  "Aspen Builder-$V.dmg:Aspen-Builder.dmg" \
-  "Aspen Builder-$V-Setup-arm64.exe:Aspen-Builder-Setup-arm64.exe" \
-  "Aspen Builder-$V-Setup-x64.exe:Aspen-Builder-Setup-x64.exe" \
-  "Aspen Builder-$V-Setup.exe:Aspen-Builder-Setup.exe"; do
-  cp "$SRC/${pair%%:*}" "/tmp/${pair##*:}"
-done
-gh release upload builder-latest /tmp/Aspen-Builder-*.dmg /tmp/Aspen-Builder-*.exe --clobber
+./scripts/publish-builder.sh 0.11.0 --dry-run   # names the files it will send
+./scripts/publish-builder.sh 0.11.0
 ```
 
-`--clobber` is what makes it an update rather than a failure: without it the
-upload is rejected because the asset name already exists.
+The script does both halves of a publish and is the only thing that needs
+running:
 
-Say which version `builder-latest` currently holds in its release notes. It is
-the only thing distinguishing it, since the filenames deliberately do not.
+- creates `builder-vX.Y.Z` carrying the two installers under their real,
+  versioned names, so a downloaded file is self-describing once it is sitting
+  in someone's Downloads folder;
+- overwrites `builder-latest` with the same two files under version-less
+  names, which is what keeps the README's download links permanent.
 
-**Do not use GitHub's own `/releases/latest/download/...`.** That resolves to
-whatever release is most recent ACROSS THIS WHOLE REPOSITORY, so publishing a
-`plugin-` release would silently repoint every Builder download link at a
-release that has no installers in it. The links would 404 with nothing to say
-why. `builder-latest` is a fixed tag and cannot be moved by another tool's
-release.
+It refuses to publish a version whose installers are not on disk, rather than
+creating an empty release -- which is exactly what happened by hand once.
 
-The version-less names are also why the versioned `builder-vX.Y.Z` release
-still matters: it is the archive, and the only place to get a specific older
-build.
+`--clobber` on the `builder-latest` upload is what makes it an update: without
+it the upload is rejected because an asset of that name already exists.
+
+**`builder-latest` is a fixed tag, and deliberately not GitHub's own
+`/releases/latest/`.** That resolves to the most recent release ACROSS THIS
+WHOLE REPOSITORY, so publishing a `plugin-` release would silently repoint
+every Builder download link at a release holding no installers. The links would
+404 with nothing to say why.
+
+The macOS build is unsigned unless a signing identity is configured, so a first
+open needs right-click then Open. Worth saying wherever the link is handed out.
 
 ## The Claude plugin
 

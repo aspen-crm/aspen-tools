@@ -18,18 +18,19 @@ These links always give you the current version:
 | Platform | Download |
 | --- | --- |
 | macOS (Apple silicon) | [Aspen-Builder-arm64.dmg](https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-arm64.dmg) |
-| macOS (Intel) | [Aspen-Builder.dmg](https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder.dmg) |
-| Windows (Arm) | [Aspen-Builder-Setup-arm64.exe](https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-arm64.exe) |
 | Windows (x64) | [Aspen-Builder-Setup-x64.exe](https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-x64.exe) |
-| Windows (either) | [Aspen-Builder-Setup.exe](https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup.exe) |
+
+Two builds are published, which covers everyone we hand a link to. If you need
+an Intel mac, an Arm Windows machine, or the universal Windows installer, ask
+-- they are built, just not published here.
+
+The macOS build is not code-signed, so the first open needs right-click then
+**Open** rather than a double-click.
 
 The `builder-latest` release says which version it currently holds. For a
 specific version, or an older one, use the
 [`builder-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=builder&expanded=true)
 directly.
-
-The macOS builds are not code-signed, so the first open needs right-click then
-**Open** rather than a double-click.
 
 ## Aspen — Claude Code plugin
 
