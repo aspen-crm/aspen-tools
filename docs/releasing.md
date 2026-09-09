@@ -32,35 +32,76 @@ a universal Windows installer; those stay in `aspen-builder/release/` and are
 available on request. They are not published because every extra file on a
 download page is one more chance to pick the wrong one.
 
+### The notes are public, and are written by hand
+
+This page is read by people who do not have the source, do not know our ticket
+numbers, and have no interest in which file changed. Keep it to a few lines,
+in their words. The private release in `aspen-builder` is where the detail
+belongs, and the two are not the same text.
+
+Say what someone will notice:
+
+> Sign-in works again on current instances.
+
+Not what we did:
+
+> Fixed `resolveInstanceUrl` to probe `/` and read the redirect (VX-4090).
+
+Leave out file paths, function names, ticket numbers, internal repo names and
+platform internals.
+
+### Publishing
+
 1. Cut the release in `aspen-builder` as usual (version bump, `vX.Y.Z` tag).
 2. Build both platforms there: `npm run package:mac` and `npm run package:win`.
-3. From this repository:
+3. From this repository, stage a draft:
 
 ```bash
-./scripts/publish-builder.sh 0.11.0 --dry-run   # names the files it will send
 ./scripts/publish-builder.sh 0.11.0
 ```
 
-The script does both halves of a publish and is the only thing that needs
-running:
+   The first run writes `release-notes/builder-v0.11.0.md` from a template and
+   stops. Edit it into real notes, then run the same command again: it uploads
+   the installers to a **draft** release, so nothing is downloadable and
+   nothing is listed.
 
-- creates `builder-vX.Y.Z` carrying the two installers under their real,
-  versioned names, so a downloaded file is self-describing once it is sitting
-  in someone's Downloads folder;
-- overwrites `builder-latest` with the same two files under version-less
-  names, which is what keeps the README's download links permanent.
+4. Read the draft on GitHub. The script prints its URL.
+5. Publish:
 
-It refuses to publish a version whose installers are not on disk, rather than
-creating an empty release -- which is exactly what happened by hand once.
+```bash
+./scripts/publish-builder.sh 0.11.0 --go-live
+```
 
-`--clobber` on the `builder-latest` upload is what makes it an update: without
-it the upload is rejected because an asset of that name already exists.
+   It shows the notes once more and asks you to type the version to confirm.
+   Only this step makes anything public, and it is also what updates
+   `builder-latest`.
 
-**`builder-latest` is a fixed tag, and deliberately not GitHub's own
-`/releases/latest/`.** That resolves to the most recent release ACROSS THIS
-WHOLE REPOSITORY, so publishing a `plugin-` release would silently repoint
-every Builder download link at a release holding no installers. The links would
-404 with nothing to say why.
+`--dry-run` at any point prints the files and the notes and uploads nothing.
+
+### What the script refuses to do
+
+- publish a version whose installers are not on disk -- it names the build
+  command instead of creating an empty release, which is what happened by hand
+  on v0.11.0;
+- publish notes that are still the template, or empty;
+- go live without a staged draft, or without the version typed back.
+
+It warns, without blocking, when the notes run past ~1200 characters -- long
+usually means private detail has leaked in.
+
+### `builder-latest`
+
+`builder-latest` is a fixed tag whose assets are the same two installers under
+version-less names, overwritten on each publish. That is what keeps the
+README's download links permanent.
+
+It is deliberately **not** GitHub's own `/releases/latest/`, which resolves to
+the most recent release ACROSS THIS WHOLE REPOSITORY -- so publishing a
+`plugin-` release would silently repoint every Builder download link at a
+release holding no installers, 404ing with nothing to say why.
+
+The versioned `builder-vX.Y.Z` release remains the archive, and the only way to
+get a specific older build.
 
 The macOS build is unsigned unless a signing identity is configured, so a first
 open needs right-click then Open. Worth saying wherever the link is handed out.
