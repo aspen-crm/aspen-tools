@@ -1,0 +1,16 @@
+{
+    "name": "aspen",
+    "displayName": "Aspen",
+    "description": "Developer workflow skills for building applications on the Aspen Platform. Ships the init onboarding skill (rebrand + configure + install toolchain); more skills and agents to come.",
+    "version": "1.0.0",
+    "author": {
+        "name": "Aspen CRM"
+    },
+    "repository": "https://github.com/aspen-crm/aspen-tools",
+    "keywords": [
+        "aspen",
+        "veeva",
+        "onboarding",
+        "crm"
+    ]
+}

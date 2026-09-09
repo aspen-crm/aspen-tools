@@ -1,0 +1,12 @@
+{
+  "name": "aspen",
+  "description": "Tools for building on the Aspen Platform.",
+  "owner": { "name": "Aspen CRM" },
+  "plugins": [
+    {
+      "name": "aspen",
+      "source": "./plugins/aspen",
+      "description": "Developer workflow skills for the Aspen Platform (onboarding, and more to come)."
+    }
+  ]
+}
