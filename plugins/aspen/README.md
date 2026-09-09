@@ -5,9 +5,11 @@ Pair it with the [`aspen-template`](https://github.com/aspen-crm/aspen-template)
 
 ## Skills
 
-| Skill        | Invoke        | What it does                                                                 |
-| ------------ | ------------- | ---------------------------------------------------------------------------- |
-| `init`       | `/aspen:init` | One-time onboarding for a fresh template clone: derives the org from the folder name, prompts for the instance URL + API key, rebrands the `company` placeholder, writes `.env`, and installs the toolchain (`x-cli`, `x-sdk`, `mover`). |
+| Skill           | Invoke              | What it does                                                              |
+| --------------- | ------------------- | ------------------------------------------------------------------------ |
+| `init`          | `/aspen:init`       | One-time onboarding for a fresh template clone: derives the org from the folder name, prompts for the instance URL + API key, rebrands the `company` placeholder, writes `.env`, and installs the toolchain (`x-cli`, `x-sdk`, `mover`). |
+| `using-aspen`   | routes on any task  | The entry point for customizing an instance with the `aspen` CLI: discover the CLI from `aspen --help` (nothing hardcoded), extend `_p` / author `_c`, and the safety rails. |
+| `read-metadata` | routes on any task  | Read the instance's metadata (platform `_p`, app, custom `_c` tiers) with the CLI as the source of truth, before authoring or changing anything. |
 
 More skills (and agents) will be added here over time.
 
@@ -40,5 +42,7 @@ claude --plugin-dir /path/to/aspen-tools/plugins/aspen
   plugin.json         # plugin manifest (name: aspen)
   marketplace.json    # self-referential catalog so the repo is installable as a marketplace
 skills/
-  init/SKILL.md       # the /aspen:init onboarding skill
+  init/SKILL.md            # the /aspen:init onboarding skill
+  using-aspen/SKILL.md     # entry point for customizing with the aspen CLI
+  read-metadata/SKILL.md   # read the instance's model as the source of truth
 ```

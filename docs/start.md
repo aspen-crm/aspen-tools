@@ -1,14 +1,15 @@
 # Set up Claude Code to build on Aspen
 
-You are setting up this machine to build a CRM customization on **Aspen** in the `_c` customer
-namespace, driven by the `aspen` CLI. This document is agent-executable: do the steps in order,
-run the verify step in each, and stop for the human only where it says to.
+You are setting up this machine to customize an **Aspen** CRM — extending platform (`_p`) components
+and authoring custom (`_c`) components — driven by the `aspen` CLI. This document is
+agent-executable: do the steps in order, run the verify step in each, and stop for the human only
+where it says to.
 
 You need one value: `<instance>` — the Aspen instance URL you are building against, which your
 console provides. Use it exactly as given; it is used only for `aspen login`.
 
-Everything you download comes from the public `aspen-crm/aspen-tools` GitHub releases, so no account
-or token is needed to download.
+Everything comes from the public `aspen-crm/aspen-tools` repo — the CLI from its releases, the
+plugin from its Claude Code marketplace — so no account or token is needed.
 
 ## Step 1 — Install the aspen CLI (if it is not already installed)
 
@@ -24,7 +25,7 @@ human's consent before downloading:
 2. Download it onto your `PATH`:
 
    ```
-   curl -fsSL "https://github.com/aspen-crm/aspen-tools/releases/latest/download/aspen-<target>" -o ~/.local/bin/aspen
+   curl -fsSL "https://github.com/aspen-crm/aspen-tools/releases/download/cli-latest/aspen-<target>" -o ~/.local/bin/aspen
    chmod +x ~/.local/bin/aspen
    ```
 
@@ -37,24 +38,16 @@ they say it is done, verify `aspen --version`.
 
 ## Step 2 — Install the Aspen plugin
 
-The plugin teaches you Aspen's author -> validate -> deploy -> verify loop.
+The plugin teaches you the loop and how to read the instance. It installs from this repo's Claude
+Code marketplace — there is nothing to download. You cannot run a slash command yourself, so hand
+these two to the human and wait for them to run both in Claude Code:
 
-1. Download and unpack it (ask the human's consent for the download, then run):
+```
+/plugin marketplace add aspen-crm/aspen-tools
+/plugin install aspen@aspen
+```
 
-   ```
-   mkdir -p ~/.aspen/plugin/current
-   curl -fsSL "https://github.com/aspen-crm/aspen-tools/releases/latest/download/aspen-plugin.tar.gz" | tar -xzf - -C ~/.aspen/plugin/current
-   ```
-
-2. You cannot run a slash command yourself, so hand these two to the human and wait for them to run
-   both in Claude Code:
-
-   ```
-   /plugin marketplace add ~/.aspen/plugin/current
-   /plugin install aspen@aspen
-   ```
-
-When the plugin is installed, the `using-aspen` and `getting-started` skills become available.
+When the plugin is installed, the `using-aspen` and `read-metadata` skills become available.
 
 ## Step 3 — Log in
 
@@ -69,12 +62,11 @@ instance. **You never see, type, ask for, or print a token.** When they confirm,
 `aspen whoami`. On a headless or SSH machine, `aspen login --base-url <instance> --device` prints a
 code to approve elsewhere instead.
 
-## Step 4 — Onboard
+## Step 4 — Build
 
-Invoke the `using-aspen` skill and follow where it routes you. With the CLI installed and logged in,
-`getting-started` scaffolds a project with `aspen init` (it takes no name — it binds to the instance
-you logged in to) and orients you against the instance's real schema with `aspen describe` before
-you author anything.
+Invoke the `using-aspen` skill and follow where it routes you. It discovers the CLI's commands from
+`aspen --help` (nothing hardcoded), reads the instance's model with `read-metadata` before you
+author, and drives the extend-`_p` / author-`_c` loop.
 
 ## Safety
 

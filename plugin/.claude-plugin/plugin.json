@@ -1,7 +1,0 @@
-{
-  "name": "aspen",
-  "version": "0.1.0",
-  "description": "Customize an Aspen CRM through the aspen CLI. Discovers the CLI from its own --help and reads the instance's metadata as the source of truth, rather than hardcoding either.",
-  "author": { "name": "Aspen" },
-  "keywords": ["aspen", "crm", "_p", "_c", "metadata"]
-}

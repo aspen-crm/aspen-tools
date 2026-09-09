@@ -1,7 +1,7 @@
 {
     "name": "aspen",
     "displayName": "Aspen",
-    "description": "Developer workflow skills for building applications on the Aspen Platform. Ships the init onboarding skill (rebrand + configure + install toolchain); more skills and agents to come.",
+    "description": "Developer workflow skills for building applications on the Aspen Platform. Ships init onboarding, plus using-aspen (discover the aspen CLI and drive the build loop) and read-metadata (read the instance's _p/_c model as the source of truth); more to come.",
     "version": "1.0.0",
     "author": {
         "name": "Aspen CRM"
