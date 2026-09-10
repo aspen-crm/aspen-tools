@@ -2,7 +2,7 @@
     "name": "aspen-cowork",
     "displayName": "Aspen Cowork",
     "description": "Work an Aspen CRM from any host that loads the Aspen runtime MCP (.mcpb) — skills and a read-only explorer subagent for the Data + Describe tool surface: view, search, report on, create, and update records. No CLI. Paired with the aspen-runtime-mcp server.",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "author": {
         "name": "Aspen CRM"
     },

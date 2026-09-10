@@ -1,5 +1,5 @@
 ---
-name: using-aspen
+name: using-aspen-cowork
 description: Use when starting any task that reads or writes a customer's Aspen CRM through the runtime MCP (the .mcpb) — viewing, searching, listing, reporting on, creating, or updating records — routes each moment to the right skill before acting. This is the Data + Describe runtime lane; there is no CLI and no metadata authoring here.
 ---
 

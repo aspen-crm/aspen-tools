@@ -32,14 +32,19 @@ as `mcp__aspen-runtime-mcp__aspen_*`.
 
 ## What's inside
 
-**Skills** (procedures, routed by `using-aspen`):
+**Skills** (procedures, routed by `using-aspen-cowork`):
 
 | Skill | What it does |
 | --- | --- |
-| `using-aspen` | The router: maps each moment of the runtime loop to a skill; carries the namespace grammar and the non-negotiables. |
+| `using-aspen-cowork` | The router: maps each moment of the runtime loop to a skill; carries the namespace grammar and the non-negotiables. |
 | `explore` | `aspen_describe` (object catalog + tab collections → per-object fields plus the object's list views/tabs/layouts) and `aspen_get_picklist`; the "never guess a name" read path. |
 | `records` | Reads (`list`/`get`/`search`/`related`) and confirm-gated writes (`create`/`update`) with the read-back evidence loop, the record/list `app_url` handoff, and error-code routing. No delete. |
 | `query-report` | `aspen_query` (natural-language → plan, server-side) and `aspen_report` (group-by count/sum), under the read caps. |
+
+The router is `using-aspen-cowork`, not `using-aspen`, because the sibling
+[aspen-code](../code) plugin ships a router by that name for the CLI lane. The two route to
+opposite answers -- one to `aspen` CLI verbs, one to `aspen_*` MCP tools -- so with both
+plugins installed, one name for both would be a coin flip on which lane you land in.
 
 **Subagent** (fan-out / read-only):
 
@@ -84,12 +89,12 @@ it, never the other way round.
 ## Layout
 
 ```
-.claude-plugin/plugin.json     # plugin manifest (name: aspen-cowork)
-skills/using-aspen/SKILL.md    # the router: namespace grammar, non-negotiables, routes
-skills/explore/SKILL.md        # describe the model; never guess a name
-skills/records/SKILL.md        # reads + confirm-gated writes + the evidence loop
-skills/query-report/SKILL.md   # natural-language query and group-by report
-agents/schema-explorer.md      # read-only sweep -> a compact map
+.claude-plugin/plugin.json           # plugin manifest (name: aspen-cowork)
+skills/using-aspen-cowork/SKILL.md   # the router: namespace grammar, non-negotiables, routes
+skills/explore/SKILL.md              # describe the model; never guess a name
+skills/records/SKILL.md              # reads + confirm-gated writes + the evidence loop
+skills/query-report/SKILL.md         # natural-language query and group-by report
+agents/schema-explorer.md            # read-only sweep -> a compact map
 ```
 
 No `hooks/` directory, on purpose — see above.

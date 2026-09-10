@@ -11,7 +11,7 @@ A release tag names the tool, then its version:
 builder-v0.11.0
 stdio-mcp-v0.1.14
 aspen-code--v1.4.0
-aspen-cowork--v0.1.7
+aspen-cowork--v0.1.8
 ```
 
 The prefix is what keeps the tools independent: GitHub keys a release to a
