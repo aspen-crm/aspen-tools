@@ -1,0 +1,4 @@
+# Matches the toolchain the platform's `aspen-crm` crate is built with.
+[toolchain]
+channel = "1.98.0"
+targets = ["wasm32-wasip2"]

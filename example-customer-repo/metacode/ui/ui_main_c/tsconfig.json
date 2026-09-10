@@ -1,0 +1,3 @@
+{
+    "extends": "@veeva/x-cli/lib/tsconfig"
+}

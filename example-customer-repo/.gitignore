@@ -1,0 +1,10 @@
+target/
+dist/
+node_modules/
+logs/
+
+# Generated metadata tiers: downloaded or derived, never authored.
+metacode/platform/
+metacode/compiled/
+metacode/active/
+.aspen/

@@ -1,0 +1,15 @@
+{
+    "name": "example-ui",
+    "version": "1.0.0",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "x-cli build code"
+    },
+    "dependencies": {
+        "@aspen-crm/sdk": "https://static-assets.veevaxdev.com/npm/platform/sdk/26.3.3/26.3.3.9/aspen-crm-sdk-26.3.3.tgz"
+    },
+    "devDependencies": {
+        "@veeva/x-cli": "https://static-assets.veevaxdev.com/npm/platform/x-cli/26.3.3/26.3.3.9/veeva-x-cli-26.3.3.tgz"
+    }
+}

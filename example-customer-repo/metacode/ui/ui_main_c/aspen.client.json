@@ -1,0 +1,13 @@
+{
+    "routing": {
+        "base-url-path-part": "example",
+        "routes": [
+            {
+                "name": "hello_page_c",
+                "path": "/",
+                "module": "src/pages/hello.ts",
+                "export": "helloPage"
+            }
+        ]
+    }
+}

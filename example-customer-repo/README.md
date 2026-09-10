@@ -1,0 +1,75 @@
+# Example customer repository
+
+The smallest repository that exercises every part of an Aspen customer project: one metadata
+component, one server codefile, one UI codefile. Nothing here changes how the instance behaves —
+the page is a hello world, the trigger only logs, and the picklist is not referenced by any field.
+
+## Layout
+
+This is the layout Aspen Builder creates and reads, and the one `aspen move` and `ac validate`
+both accept.
+
+```
+metacode/
+  metadata/<ctype>/<name>.json   authored, committed
+  platform/                      downloaded, gitignored
+  compiled/                      derived, gitignored
+  active/                        deployed mirror, gitignored
+  server/server_main_c/          Rust, compiled to wasm32-wasip2
+  ui/ui_main_c/                  TypeScript, built by x-cli
+```
+
+The three generated tiers are **siblings of `metadata/`, never inside it**. Every subdirectory of
+a metadata root has to name a component type, so a tier directory inside `metadata/` makes
+`ac validate` reject the whole root. For the same reason `metadata/` holds component-type
+directories directly, with no `custom/` layer.
+
+`aspen-crm` resolves from a local `x-platform` checkout, by absolute or relative path. The server
+workspace sets `publish = false`, so the crate is published nowhere — not crates.io, not the
+internal CodeArtifact registry, which is a pull-through mirror rather than a publish target — and a
+path dependency is the only way to reach it.
+
+**That path is machine-local and the committed value is a guess.** It assumes a checkout beside
+this repository, while an instance directory normally lives at `~/Aspen/<instanceName>`, nowhere
+near one. Point it at your own checkout before the first Rust build; `AGENTS.md` tells an agent how
+to find it, `HOST_PROJECT_PATH` being the first place to look.
+
+`@aspen-crm/sdk` and `@veeva/x-cli` are pinned to internal tarballs, so the UI half needs no
+checkout:
+
+```
+https://static-assets.veevaxdev.com/npm/platform/sdk/26.3.3/26.3.3.9/aspen-crm-sdk-26.3.3.tgz
+https://static-assets.veevaxdev.com/npm/platform/x-cli/26.3.3/26.3.3.9/veeva-x-cli-26.3.3.tgz
+```
+
+The URL carries both the release and its build (`26.3.3` / `26.3.3.9`), and the path exposes no
+`latest` alias, so moving to a new release means finding the build number for it. Both packages
+ship from one pipeline and shared build `9` at this release. Neither name exists on public npm.
+
+## What is in it
+
+| Piece | Where | Does |
+| --- | --- | --- |
+| Global picklist | `metadata/picklist_p/lead_source_c.json` | Three items. Global, so it is not named for an object and no field references it. |
+| Record trigger | `server/server_main_c/` | `contact_logger_c` logs one line per contact on `after_insert`. |
+| Page | `ui/ui_main_c/` | `helloPage` renders one paragraph at `/ui/a/example/`. |
+
+The trigger reads `name_p` and logs it, and does nothing else — no writes, no rejections, so a
+contact insert behaves exactly as it would without it.
+
+## Working in it
+
+`AGENTS.md` holds the build, validate, and deploy commands, and the rules that go with them:
+which directories are authored, which are generated, and what has to be true before any of it
+runs. `CLAUDE.md` points at the same file, so a coding agent reads one copy.
+
+The short version:
+
+```sh
+aspen compile --rust ./metacode              # never bare `aspen compile`
+cd metacode/ui/ui_main_c && npm install && npm run build
+```
+
+`aspen login -i <instance-url>` connects a machine to an instance, once, in a browser. Every other
+command runs against whatever is connected, and says `No instance is logged in` when there is
+nothing.

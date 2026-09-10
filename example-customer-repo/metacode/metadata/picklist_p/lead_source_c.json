@@ -1,0 +1,12 @@
+{
+    "ctype": "picklist_p",
+    "name": "lead_source_c",
+    "label": "Lead Source",
+    "description": "Where a lead came from. Global: not bound to one object.",
+    "sort-order": "stated",
+    "items": [
+        { "name": "referral_c", "label": "Referral" },
+        { "name": "conference_c", "label": "Conference" },
+        { "name": "inbound_c", "label": "Inbound" }
+    ]
+}

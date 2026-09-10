@@ -1,0 +1,27 @@
+# Guest crate for the `server_main_c` codefile, compiled to a wasm32-wasip2 component.
+# The crate name must match the codefile directory name: `aspen move save-package`
+# looks for `target/wasm32-wasip2/release/server_main_c.wasm`.
+#
+# Detached from the parent workspace (empty `[workspace]` table).
+[package]
+name = "server_main_c"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# `aspen-crm` sets `publish = false`, so it is published nowhere and a path is the only way to
+# reach it. THIS PATH IS MACHINE-LOCAL. The value below assumes an x-platform checkout beside this
+# repository, which is only a default: this repository normally lives at ~/Aspen/<instanceName>.
+# Point it at your own checkout's app/server/packages/crust/aspen-crm and do not commit the change.
+# See "point the SDK dependency at a checkout" in AGENTS.md.
+aspen-crm = { path = "../../../../x-platform/app/server/packages/crust/aspen-crm" }
+
+# Emit DWARF line tables so a guest trap's WASM backtrace carries source `file:line`.
+[profile.release]
+debug = "line-tables-only"
