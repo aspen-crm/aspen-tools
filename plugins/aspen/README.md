@@ -12,6 +12,7 @@ with the `aspen` CLI.
 | `map-model`     | after a download   | Fans out one subagent per component type to write what each type *means* — conventions, relationships, extension points. |
 | `verify-change` | after a checkin    | Proves the change actually works — read the model back, then round-trip a record. Any write is permanent and human-approved first. |
 | `diagnose`      | on a failure       | Reproduce, then localize to a checkin phase before changing anything. No fix without a reproduction. |
+| `complete-object-ui` | after an object | Checks whether the object has a layout, list view and tab; offers to author the missing ones and guides the shape. |
 
 ## Safety rails
 
@@ -35,6 +36,32 @@ hook cannot wedge a recovery path.
 **The prompt is a backstop, not the approval.** A human clicking through a permission
 dialog has not seen the field values; `verify-change` owns getting real approval in the
 conversation first.
+
+## UI coverage
+
+A new object exists only to an API caller until something surfaces it. Three components
+do that, and they are not independent: `layout_p` renders one record, `list_view_p` is
+the rows, `tab_p` is where the list view is reached from — and a tab is invisible until a
+`tab_collection_p` lists it.
+
+`hooks/ui-coverage.mjs` answers which objects have which, grouping on each component's
+`object` attribute rather than its name, because the platform ships names like
+`currency_view_p` that say nothing about their object. It reads the tree on every call
+and stores nothing, so it cannot go stale.
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/hooks/ui-coverage.mjs" report [object]
+```
+
+A `PostToolUse` hook runs the same check when an object file is authored and surfaces
+only that object's gap. Two things it reports are worth telling apart:
+
+- **A list view or tab with no layout** is a defect: someone reaches a row, clicks it,
+  and there is no layout to open the record with. It appears nowhere in platform
+  metadata — only a customer can create it.
+- **A tab no collection lists** is an observation, not a defect. The platform itself
+  ships tabs it never places (3 of 10 on a real instance), so the report names the
+  collections it searched and leaves the judgement to you.
 
 ## The model digest
 
@@ -116,13 +143,16 @@ metadata.
 ```
 .claude-plugin/plugin.json          # plugin manifest (name: aspen)
 agents/aspen-component-mapper.md    # one type's mapper; no Bash, no network
+agents/aspen-ui-proposer.md         # proposes layout sections and list view columns
 hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
 hooks/model-digest.mjs              # the digest: detect, build, verify, hooks
 hooks/guard-destructive.mjs         # PreToolUse: ask before shared-state and record writes
+hooks/ui-coverage.mjs               # object -> layout / list view / tab coverage
 skills/using-aspen/SKILL.md         # entry point and router
 skills/read-metadata/SKILL.md       # read the model as the source of truth
 skills/map-model/SKILL.md           # the fan-out
 skills/verify-change/SKILL.md       # prove it worked; the approval gate on writes
 skills/diagnose/SKILL.md            # reproduce and localize before fixing
+skills/complete-object-ui/SKILL.md  # give a new object a layout, list view and tab
 test/                               # node:test suite + synthesized fixture
 ```

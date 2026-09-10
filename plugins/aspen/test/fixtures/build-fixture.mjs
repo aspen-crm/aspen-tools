@@ -16,6 +16,18 @@
 //   alpha_p       authored score_p + score_chk_p    } the same name pattern on exactly
 //   beta_p        authored score_p + score_chk_p    } 2 objects -> must be dropped
 //   widget_p      baseline only, no compiled file -> the unresolved case
+//
+// UI coverage cases (layouts, list views, tabs, tab collections):
+//
+//   contact_p     layout + list view + tab, tab placed in a collection -> complete
+//   deal_p/note_p layout only -> partial
+//   task_p        list view + tab but NO layout, and its tab is in no collection
+//                 -> both warnings at once: a row you can click that cannot open,
+//                    and a tab nobody can reach
+//   email_p       a list view named `special_view_p` -> grouping must read the
+//                 `object` attribute, because the real platform ships names like
+//                 `currency_view_p` that say nothing about their object
+//   alpha_p, beta_p, widget_p   no UI at all
 
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
@@ -67,6 +79,24 @@ const OBJECTS = {
 
 const OVERLAY = { contact_p: [f('nickname_c')] }
 
+export const LIST_VIEWS = [
+  { name: 'contact_p.list_view_p', object: 'contact_p', tab: 'contact_p.tab_p', columns: ['contact_attr_1_p', 'contact_attr_2_p'] },
+  { name: 'task_p.list_view_p', object: 'task_p', tab: 'task_p.tab_p', columns: ['subject_p'], 'query-filter': 'owner_p is not null' },
+  // The name says nothing about its object, exactly like the platform's own
+  // `currency_view_p`. Anything grouping by filename gets this one wrong.
+  { name: 'special_view_p', object: 'email_p', tab: null, columns: ['subject_p'] }
+]
+
+export const TABS = [
+  { name: 'contact_p.tab_p', object: 'contact_p', 'default-list-view': 'contact_p.list_view_p' },
+  // Deliberately in no collection: the tab exists and nobody can reach it.
+  { name: 'task_p.tab_p', object: 'task_p', 'default-list-view': 'task_p.list_view_p' }
+]
+
+export const TAB_COLLECTIONS = [
+  { name: 'main_tabs_p', tabs: ['contact_p.tab_p'] }
+]
+
 export function buildFixture (root) {
   rmSync(root, { recursive: true, force: true })
   const write = (rel, body) => {
@@ -103,15 +133,58 @@ export function buildFixture (root) {
   // the object standard fields -- a real instance mixes ctypes, and a rule computed
   // across all of them at once intersects to nothing.
   for (const name of ['contact_p.layout_p', 'deal_p.layout_p', 'note_p.layout_p']) {
-    const sections = [{ name: 'main_p', label: 'Main', 'section-type': 'detail' }]
-    write(`platform/layout_p/${name}.json`, { ctype: 'layout_p', name, label: name, sections })
+    const sections = [{ name: 'main_p', label: 'Main', 'section-type': 'detail', columns: 2 }]
+    // A real layout names the object it renders, and `object-type` is null unless the
+    // layout is specific to one type. Coverage groups on that attribute.
+    const doc = { ctype: 'layout_p', name, label: name, object: name.replace(/\.layout_p$/, ''), 'object-type': null, sections }
+    write(`platform/layout_p/${name}.json`, doc)
     write(`compiled/layout_p/${name}.json`, {
       _derived: { attribution: 'none', from: 'metadata', scalars: 'resolved' },
-      ctype: 'layout_p',
-      name,
-      label: name,
-      sections
+      ...doc
     })
+  }
+
+  // List views, tabs and collections. A list view and its tab reference each other,
+  // which is why the real ones are always authored as a pair.
+  const col = (field) => ({ active: true, 'column-type': 'field', field, name: field })
+
+  for (const lv of LIST_VIEWS) {
+    const doc = {
+      ctype: 'list_view_p',
+      name: lv.name,
+      label: lv.name,
+      object: lv.object,
+      columns: lv.columns.map(col),
+      sort: [{ active: true, column: lv.columns[0], direction: 'asc', name: 'sort_p' }],
+      'query-filter': lv['query-filter'] ?? null,
+      tab: lv.tab ?? null
+    }
+    write(`platform/list_view_p/${lv.name}.json`, doc)
+    write(`compiled/list_view_p/${lv.name}.json`, doc)
+  }
+
+  for (const tab of TABS) {
+    const doc = {
+      ctype: 'tab_p',
+      name: tab.name,
+      label: tab.name,
+      object: tab.object,
+      'default-list-view': tab['default-list-view'],
+      'tab-type': 'object_type'
+    }
+    write(`platform/tab_p/${tab.name}.json`, doc)
+    write(`compiled/tab_p/${tab.name}.json`, doc)
+  }
+
+  for (const tc of TAB_COLLECTIONS) {
+    const doc = {
+      ctype: 'tab_collection_p',
+      name: tc.name,
+      label: tc.name,
+      tabs: tc.tabs.map((t) => ({ active: true, name: t.replace(/\.tab_p$/, ''), tab: t }))
+    }
+    write(`platform/tab_collection_p/${tc.name}.json`, doc)
+    write(`compiled/tab_collection_p/${tc.name}.json`, doc)
   }
 
   // Authored custom source: present as a directory, empty, exactly like a fresh checkout.

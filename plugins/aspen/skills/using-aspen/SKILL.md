@@ -34,6 +34,7 @@ deliberately names almost none, because a hardcoded verb list goes stale the mom
 | You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata` |
 | You need to understand the model, not just list it — conventions, relationships, extension points | `map-model` |
 | Authoring, compiling, or deploying a change | discover the commands with `aspen --help` and run the loop |
+| You created or extended an object, or it cannot be seen in the UI | `complete-object-ui` |
 | A checkin or deploy succeeded and you need to prove the change actually works | `verify-change` |
 | A compile, checkin, or deploy failed, or the instance is behaving unexpectedly | `diagnose` |
 
@@ -66,4 +67,5 @@ trust it.
 | "I'll add the companion field too" | Derived members are added by the instance. Authoring one is a checkin error. |
 | "The overlay file shows one field, so that's the object" | A component spans layers. Read the resolved view, not one file. |
 | "The checkin was green, so the change works" | Green means it compiled. Prove it with `verify-change`. |
+| "The object is created, so the model is done" | An object with no layout has records nobody can open. Run `complete-object-ui`. |
 | "I'll change this and re-run to see if it sticks" | That is probing on a shared instance. Reproduce and localize with `diagnose`. |
