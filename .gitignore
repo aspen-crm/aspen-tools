@@ -3,3 +3,7 @@ release-notes/
 # Superpowers working files (brainstorming specs, plans). Local scratch, not
 # repo content -- the design that matters ends up in the code and its comments.
 docs/superpowers/
+
+# Packaged plugin zips from scripts/package-plugin.sh. Build artifacts: they are
+# uploaded to a release, never committed.
+dist/

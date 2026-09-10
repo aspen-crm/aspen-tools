@@ -8,7 +8,7 @@ There are **two pieces**, and you need both:
 | Piece | What it is | Where it goes |
 |---|---|---|
 | **Runtime MCP** — `aspen-runtime-mcp-<os>.mcpb` | The tools. A small program that talks to your instance's API. **This is the piece that holds your API key.** | Claude Desktop → Extensions |
-| **Cowork plugin** — `aspen-cowork` | The know-how. Skills that teach Claude how to explore your model and make changes safely. | Cowork → Customize → Plugins |
+| **Cowork plugin** — `aspen-cowork-plugin.zip` | The know-how. Skills that teach Claude how to explore your model and make changes safely. | Cowork → Customize → Plugins |
 
 Installing the tools without the plugin works, but Claude guesses more. Install both.
 
@@ -107,27 +107,30 @@ every conversation from now on.
 
 ## Step 3 — Install the Cowork plugin
 
-The plugin is **not a download**. It comes from this repository's plugin marketplace, which
-is public, so you point Cowork at the repo and it fetches the current version.
+Download the plugin bundle and upload it in Cowork.
 
-1. In Cowork, open **Customize → Plugins**.
-2. Choose **Add marketplace** and enter:
+1. Download it:
 
-   ```
-   aspen-crm/aspen-tools
+   ```bash
+   curl -fsSLO https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip
    ```
 
-3. From that marketplace, install **`aspen-cowork`**.
+   Or click
+   [`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip).
+   That link always gives you the current version.
+
+2. In Cowork, open **Customize → Plugins**.
+3. Click **Add → Upload plugin**.
+4. Select the `aspen-cowork-plugin.zip` you just downloaded. **Don't unzip it** — upload the
+   zip as-is.
 
 It installs at user scope: available in every session, no per-conversation setup.
 
-> Do this in the **Plugins UI**. `/plugin marketplace add` is the Claude Code CLI's way in
-> and Cowork has no such command — the **Add marketplace** button is the same thing. The
-> marketplace is named `aspen`, which is what you'll see the plugin listed under.
-
-> The same marketplace also offers **`aspen-code`**. That's the other lane — authoring
-> metadata with the `aspen` CLI — and it is not part of this setup. Install it only if you
-> also write `_c` components.
+> **Using Claude Code as well?** There the plugin comes from this repository's marketplace
+> instead — `/plugin marketplace add aspen-crm/aspen-tools`, then
+> `/plugin install aspen-cowork@aspen`. Same plugin, same version; only the delivery
+> differs. The marketplace also carries `aspen-code`, the CLI-authoring lane, which is not
+> part of this setup.
 
 ### Cowork on the web (claude.ai/cowork)
 
@@ -196,17 +199,20 @@ that isn't there.
    **first**, then install the freshly downloaded `.mcpb`. Installing over the top can
    silently keep the old binary. You'll re-enter your instance URL and API key — the
    existing key still works, no need to create a new one.
-2. **Plugin** — in **Cowork → Customize → Plugins**, update the `aspen` marketplace. That
-   pulls whatever is on the repository's default branch, so you never wait for a release to
-   get a fix.
+2. **Plugin** — the download URL never changes either. Re-download the zip, then in
+   **Cowork → Customize → Plugins** remove the existing `aspen-cowork` **first** and upload
+   the new one. Removing first is what frees the name; uploading over an installed plugin of
+   the same name is what leaves you on the old version.
 
-To check which runtime MCP version a bundle holds before installing it:
+To check what either download holds before installing it:
 
 ```bash
 unzip -p aspen-runtime-mcp-macos.mcpb manifest.json | grep -o '"version":"[^"]*"'
+unzip -p aspen-cowork-plugin.zip .claude-plugin/plugin.json | grep -o '"version": "[^"]*"'
 ```
 
-The plugin's version is shown beside it in Cowork's plugin list.
+Both versions are also shown beside the entries in Claude Desktop's Extensions list and
+Cowork's plugin list.
 
 ---
 
@@ -214,8 +220,9 @@ The plugin's version is shown beside it in Cowork's plugin list.
 
 - **Where the pieces come from** — the `.mcpb` bundle is a release asset on
   [aspen-crm/aspen-tools](https://github.com/aspen-crm/aspen-tools/releases?q=stdio-mcp),
-  and the `stdio-mcp-latest` link always gives you the current build. The plugin is served
-  from the same public repository, as marketplace `aspen`.
+  and the `stdio-mcp-latest` link always gives you the current build. The plugin zip is a
+  release asset on the same repository, built from `plugins/aspen/cowork/` at tag time, and
+  `aspen-cowork-latest` likewise always points at the current one.
 - **Linux** — `.mcpb` bundles exist for Linux on request, but Claude Desktop runs on macOS
   and Windows only, so they aren't part of this guide. They're for other hosts that launch
   a local MCP server.
