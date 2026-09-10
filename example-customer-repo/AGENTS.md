@@ -15,18 +15,6 @@ aspen login -i <instance-url>
 Never run `aspen login` yourself — it needs a browser and refuses when an agent drives the shell.
 Nothing names the connected instance, so when it matters, ask.
 
-## SDK path, before any Rust build
-
-`metacode/server/server_main_c/Cargo.toml` reaches `aspen-crm` by path, and the committed value
-assumes a sibling `x-platform` checkout that usually is not there. Point it at the local one:
-
-1. `HOST_PROJECT_PATH`, if set — the checkout is its parent.
-2. Search the user's code directories for `app/server/packages/crust/aspen-crm/Cargo.toml`;
-   confirm it declares `name = "aspen-crm"`.
-3. Otherwise ask. Never guess a path.
-
-The edit is machine-local. Do not commit it.
-
 ## Metadata
 
 Author only in `metacode/metadata/<ctype>/<name>.json`; each file declares its own `ctype` and
@@ -46,8 +34,9 @@ cd metacode/ui/ui_main_c && npm install && npm run build
 
 Never bare `aspen compile`: it also selects a TypeScript target this layout does not have.
 
-`--rust` builds with `--locked`, so a fresh clone runs `cargo generate-lockfile` once, and
-`cargo update -p aspen-crm` after a platform release bump.
+`aspen-crm` comes from crates.io and `Cargo.lock` is committed, so a fresh clone builds as is.
+`--rust` builds with `--locked`: after changing the `aspen-crm` version, run
+`cargo update -p aspen-crm` to refresh the lockfile, and commit it.
 
 ## Validate
 

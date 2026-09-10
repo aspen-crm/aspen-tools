@@ -24,18 +24,11 @@ a metadata root has to name a component type, so a tier directory inside `metada
 `ac validate` reject the whole root. For the same reason `metadata/` holds component-type
 directories directly, with no `custom/` layer.
 
-`aspen-crm` resolves from a local `x-platform` checkout, by absolute or relative path. The server
-workspace sets `publish = false`, so the crate is published nowhere — not crates.io, not the
-internal CodeArtifact registry, which is a pull-through mirror rather than a publish target — and a
-path dependency is the only way to reach it.
+The Rust half depends on [`aspen-crm`](https://crates.io/crates/aspen-crm) from crates.io, so it
+needs no checkout: `Cargo.lock` is committed and a fresh clone builds as is.
 
-**That path is machine-local and the committed value is a guess.** It assumes a checkout beside
-this repository, while an instance directory normally lives at `~/Aspen/<instanceName>`, nowhere
-near one. Point it at your own checkout before the first Rust build; `AGENTS.md` tells an agent how
-to find it, `HOST_PROJECT_PATH` being the first place to look.
-
-`@aspen-crm/sdk` and `@veeva/x-cli` are pinned to internal tarballs, so the UI half needs no
-checkout:
+The UI half's `@aspen-crm/sdk` and `@veeva/x-cli` are pinned to internal tarballs rather than a
+registry:
 
 ```
 https://static-assets.veevaxdev.com/npm/platform/sdk/26.3.3/26.3.3.9/aspen-crm-sdk-26.3.3.tgz

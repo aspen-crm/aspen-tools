@@ -119,10 +119,6 @@ it. `example-customer-repo/AGENTS.md` holds the build, validate and deploy
 commands and the rules that go with them, and its `CLAUDE.md` points at the
 same file so a coding agent reads one copy.
 
-Point the Rust crate's `aspen-crm` path dependency at your own `x-platform`
-checkout before the first Rust build -- the committed value assumes a sibling
-checkout and is a guess. `AGENTS.md` says where to look.
-
 ## Adding a tool
 
 `docs/releasing.md` covers the layout and the tag convention. In short: a

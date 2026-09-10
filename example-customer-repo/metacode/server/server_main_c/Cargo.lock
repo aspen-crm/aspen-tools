@@ -16,7 +16,9 @@ checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "aspen-crm"
-version = "26.3.3"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06b1f4f033006633074c87871937d56f76863bb4402dd09551c46f908a957056"
 dependencies = [
  "anyhow",
  "aspen-crm-macros",
@@ -32,7 +34,9 @@ dependencies = [
 
 [[package]]
 name = "aspen-crm-macros"
-version = "26.3.3"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21ca0b8bf106cbe5ca09cc9056cd6b57f4a60c33fcdaa5293d671a2b1f8305c1"
 dependencies = [
  "anyhow",
  "aspen-crm-server-manifest",
@@ -44,7 +48,9 @@ dependencies = [
 
 [[package]]
 name = "aspen-crm-server-manifest"
-version = "26.3.3"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1efe582e968d62de91f67bfacde985d06fcedc0896d9dc161fb77a7c957931fe"
 dependencies = [
  "http",
  "serde",
