@@ -22,6 +22,14 @@ and wait:
 - macOS (Apple Silicon): https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-arm64.dmg
 - Windows (x64): https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-x64.exe
 
+If macOS refuses to open Builder — it may call the app damaged, or say the developer cannot be
+verified — that is the quarantine flag macOS puts on every download, not a bad file. Clear it,
+then ask them to open Builder again:
+
+```
+xattr -dr com.apple.quarantine "/Applications/Aspen Builder.app"
+```
+
 When they say Builder is installed and they have signed in, verify `aspen --version`. If a later
 command reports `No instance is logged in.`, ask them to sign in in Builder — or, as a fallback,
 run `aspen login --instance <instance>` and let them approve it in the browser. You never see,
