@@ -10,6 +10,31 @@ with the `aspen` CLI.
 | `using-aspen`   | routes on any task | The entry point: discover the CLI from `aspen --help` (nothing hardcoded), extend delivered components, author custom ones, and the safety rails. |
 | `read-metadata` | routes on any task | Read the instance's model as the source of truth, starting from the digest, before authoring or changing anything. |
 | `map-model`     | after a download   | Fans out one subagent per component type to write what each type *means* — conventions, relationships, extension points. |
+| `verify-change` | after a checkin    | Proves the change actually works — read the model back, then round-trip a record. Any write is permanent and human-approved first. |
+| `diagnose`      | on a failure       | Reproduce, then localize to a checkin phase before changing anything. No fix without a reproduction. |
+
+## Safety rails
+
+`using-aspen` states two rules that cost other people when they are broken: the dev set is
+shared, and a record you write is permanent. A `PreToolUse` hook makes both a property of
+the system rather than of the model's diligence.
+
+`hooks/guard-destructive.mjs` asks — never blocks — on:
+
+- `aspen move checkin-clear` and `aspen move clear-package`, which reach the dev set every
+  builder on the instance shares;
+- `aspenx record create|update|delete --confirmed`, the forms that actually write. The
+  un-confirmed form sends nothing and is a useful dry run, so it gets no prompt.
+
+It matches on what a command *means*, not one spelling of it: quotes, tabs, line
+continuations, case and an absolute path to the binary all resolve to the same verb. It
+returns `permissionDecision: "ask"`, so a host that does not understand the field sees a
+plain exit 0 — an unrecognized field degrades to *allowed*, never to *blocked*, and the
+hook cannot wedge a recovery path.
+
+**The prompt is a backstop, not the approval.** A human clicking through a permission
+dialog has not seen the field values; `verify-change` owns getting real approval in the
+conversation first.
 
 ## The model digest
 
@@ -91,10 +116,13 @@ metadata.
 ```
 .claude-plugin/plugin.json          # plugin manifest (name: aspen)
 agents/aspen-component-mapper.md    # one type's mapper; no Bash, no network
-hooks/hooks.json                    # SessionStart + PostToolUse wiring
+hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
 hooks/model-digest.mjs              # the digest: detect, build, verify, hooks
+hooks/guard-destructive.mjs         # PreToolUse: ask before shared-state and record writes
 skills/using-aspen/SKILL.md         # entry point and router
 skills/read-metadata/SKILL.md       # read the model as the source of truth
 skills/map-model/SKILL.md           # the fan-out
+skills/verify-change/SKILL.md       # prove it worked; the approval gate on writes
+skills/diagnose/SKILL.md            # reproduce and localize before fixing
 test/                               # node:test suite + synthesized fixture
 ```

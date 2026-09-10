@@ -34,6 +34,8 @@ deliberately names almost none, because a hardcoded verb list goes stale the mom
 | You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata` |
 | You need to understand the model, not just list it — conventions, relationships, extension points | `map-model` |
 | Authoring, compiling, or deploying a change | discover the commands with `aspen --help` and run the loop |
+| A checkin or deploy succeeded and you need to prove the change actually works | `verify-change` |
+| A compile, checkin, or deploy failed, or the instance is behaving unexpectedly | `diagnose` |
 
 Always read the model with `read-metadata` before you extend a `_p` component or author a `_c` one.
 The plugin keeps a Markdown digest of the instance's metadata at `.aspen-model/`, refreshed on
@@ -46,7 +48,8 @@ trust it.
   start and the human completes. You never see, type, ask for, or print a token.
 - **The instance is shared.** Some `aspen move` operations clear the dev set or halt an in-flight
   checkin, which reaches other builders' work. Confirm with the human before anything that clears,
-  halts, or resets.
+  halts, or resets. The `guard-destructive` hook stops and asks on those commands too, but that is
+  a backstop — the approval happens in the conversation, before you run anything.
 - **Nothing is deleted on the platform.** Metadata and records cannot be deleted, so anything you
   create while testing is permanent — say so before the human starts.
 - **The instance validates, you do not.** Do not re-implement validation locally; deploy and route
@@ -62,3 +65,5 @@ trust it.
 | "I'll validate the change myself first" | The instance validates on checkin. Deploy and read its errors. |
 | "I'll add the companion field too" | Derived members are added by the instance. Authoring one is a checkin error. |
 | "The overlay file shows one field, so that's the object" | A component spans layers. Read the resolved view, not one file. |
+| "The checkin was green, so the change works" | Green means it compiled. Prove it with `verify-change`. |
+| "I'll change this and re-run to see if it sticks" | That is probing on a shared instance. Reproduce and localize with `diagnose`. |
