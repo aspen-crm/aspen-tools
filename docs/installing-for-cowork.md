@@ -3,6 +3,33 @@
 Work your Aspen CRM from Claude: view, search, report on, create, and update records in
 plain language.
 
+**The quickest way through this page:** paste its URL into a Cowork conversation and say
+"read this and help me install". Claude will work the steps with you, one at a time, and
+hand you each download link as you reach it. Or just follow the steps yourself — they're
+written for both.
+
+> **If you're Claude, reading this page for someone:** this document is agent-executable.
+> Work the steps in order with them, and follow these rules.
+>
+> - **Every download is theirs to click.** Do not fetch these files yourself. The human
+>   clicks the link in their own browser so the file lands in the real Downloads folder
+>   they can double-click from — a path inside your workspace is not somewhere they can
+>   reach.
+> - **Print the URL every single time you name a file.** "Click the link" with no link is
+>   a broken instruction. Copy the full URLs out of Step 1 verbatim into your own message.
+>   If you summarise this page, the links are the part that must survive.
+> - **Never ask for the API key, and refuse it if it's offered.** It goes into a config
+>   form in Claude Desktop and nowhere else. It must never appear in a conversation.
+> - **Stop at every step that is theirs.** Creating a key and installing a desktop
+>   extension are the human's to do. Wait for them to say it's done before moving on.
+> - **You cannot verify this install yourself.** A conversation's tools are fixed when it
+>   starts, so the extension you just helped install will not appear in *this* one. Step 5
+>   happens in a fresh conversation, and it's theirs to run.
+
+---
+
+## What you're installing
+
 There are **two pieces**, and you need both:
 
 | Piece | What it is | Where it goes |
@@ -20,114 +47,42 @@ create an API key in it.
 
 ---
 
-## Fastest way — let Claude do it
+## Step 1 — Download both files
 
-Open a Cowork conversation and paste the whole block below. Claude downloads both files for
-you, then walks you through the parts only you can do.
+Click the runtime MCP for your operating system, then the plugin. Two files in total.
 
-````
-You're helping me install Aspen for Claude. There are two pieces: a runtime MCP bundle
-(.mcpb) that goes into Claude Desktop, and a Cowork plugin (.zip) that goes into Cowork.
+| File | Download |
+|---|---|
+| Runtime MCP — macOS (Apple Silicon + Intel) | [`aspen-runtime-mcp-macos.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
+| Runtime MCP — Windows (x64) | [`aspen-runtime-mcp-windows.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
+| Cowork plugin — macOS and Windows alike | [`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip) |
 
-Work through this with me one step at a time. Stop and wait for me at every point where I
-have to do something myself — don't run ahead.
+If you'd rather not click through a table, the three URLs in full:
 
-STEP 1 — Download both files.
+```
+macOS runtime MCP
+https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb
 
-Work out whether I'm on macOS or Windows, then download the matching pair into my Downloads
-folder. If you can't write there, use your working folder and tell me exactly where that is.
+Windows runtime MCP
+https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb
 
-  macOS runtime MCP:
-  https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb
+Cowork plugin (both platforms)
+https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip
+```
 
-  Windows runtime MCP:
-  https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb
+These links always give you the current version. **Don't unzip either file.** The `.mcpb`
+and the `.zip` are both installed exactly as they downloaded; expanding either one breaks it.
 
-  Cowork plugin (same file for both platforms):
-  https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip
-
-Check that each file really arrived: non-zero size, and a valid archive rather than a saved
-HTML error page. Both .mcpb and .zip are zip archives, so an integrity test on each works.
-
-If you have no network access, don't improvise a workaround. Say so, print the two links I
-need, and ask me to click them and tell you when they've finished downloading.
-
-Either way, tell me the full path of each file before moving on.
-
-STEP 2 — My API key and instance URL.
-
-Walk me through this:
-  1. Log in to my Aspen instance in a browser.
-  2. Go to API Keys and create one — I'll name it "Claude Desktop".
-  3. Copy it as soon as it's shown. It looks like secret-token:aspen_xxxxxxxx and I need
-     the whole string including the secret-token: prefix.
-
-Then have me find my instance base URL — the full path: host, then domain, then instance
-name.
-
-  Right:  https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename
-  Wrong:  https://0000-00-0999-ip.aspen-crm.com          (host only)
-  Wrong:  https://.../instancename/ui/objects/account_p  (a page inside the CRM)
-
-Whatever the CRM appends to the URL as I click around is not part of the base URL.
-
-NEVER ask me to paste the API key into this chat, and don't accept it if I offer it. It
-goes into the extension's config form and nowhere else. Just wait for me to say I have it.
-
-STEP 3 — Install the runtime MCP.
-
-Tell me to double-click the .mcpb you downloaded, or use Claude Desktop → Settings →
-Extensions → Install Extension. A config form appears. Tell me to fill it in as:
-
-  Instance base URL       my full instance URL from Step 2 (a trailing slash is fine)
-  API token               the secret-token:aspen_... key, pasted whole
-  API base path           leave it exactly as it is: /api/v24.3
-
-On macOS the bundled program is ad-hoc signed, so macOS may warn the first time it runs.
-That's expected. Wait for me to confirm the extension is installed.
-
-STEP 4 — Install the Cowork plugin.
-
-Tell me to open Cowork → Customize → Plugins → Add → Upload plugin, and pick the
-aspen-cowork-plugin.zip you downloaded. It uploads as a zip — I must NOT unzip it first.
-Wait for me to confirm.
-
-STEP 5 — Check it worked.
-
-Try calling aspen_describe with no arguments.
-
-You probably don't have that tool: this conversation loaded its tools before the extension
-existed. If it's missing, say so plainly rather than guessing — then tell me to start a
-FRESH conversation and ask these two things:
-
-  "What objects are in my Aspen instance?"
-     Should list my objects, mostly _p names like account_p and contact_p.
-
-  "Show me my 5 most recent accounts."
-     Should return rows, plus a link that opens the same list in my CRM.
-
-If either one fails, point me at the Troubleshooting table in
-https://github.com/aspen-crm/aspen-tools/blob/main/docs/installing-for-cowork.md
-````
-
-Claude will pause and wait for you several times — that's the design, not a stall. It also
-can't confirm the install itself: a conversation's tools are fixed when it starts, so the
-extension you just installed won't appear until you open a new one.
-
----
-
-## Or install it by hand
-
-### Step 1 — Create your API key
+## Step 2 — Create your API key
 
 The runtime MCP signs in to your instance as **you**, using a personal API key. Create it
-first, so you have it ready to paste in Step 2.
+now, so you have it ready to paste in Step 3.
 
 1. Open a browser and **log in to your Aspen instance** — the same URL you use for the CRM
    day to day, e.g. `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`.
 2. Go to **API Keys**.
 3. **Create a new key.** Give it a name you'll recognise later, like `Claude Desktop`.
-4. **Copy the key as soon as it's shown** and keep it somewhere safe until Step 2 — you
+4. **Copy the key as soon as it's shown** and keep it somewhere safe until Step 3 — you
    will paste it into Claude Desktop's config form. It looks like:
 
    ```
@@ -136,45 +91,51 @@ first, so you have it ready to paste in Step 2.
 
    Copy the **whole** string including the `secret-token:` prefix.
 
-While you're here, note your **instance base URL** — you need that in Step 2 too. It's the **full path** to your instance: the host, then your domain, then the instance name.
+While you're here, note your **instance base URL** — you need that in Step 3 too. It's the
+**full path** to your instance: the host, then your domain, then the instance name.
 
 - ✅ `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`
 - ❌ `https://0000-00-0999-ip.aspen-crm.com`
 - ❌ `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename/ui/objects/account_p`
 
-Whatever the CRM appends after it as you click around — a tab, a record, a view — is not part of the base URL.
+Whatever the CRM appends after it as you click around — a tab, a record, a view — is not
+part of the base URL.
 
 **Never paste your API key into a chat.** It belongs in the extension's config form and
 nowhere else. If Claude ever asks you for it, something is wrong — the model is not
 supposed to see it.
 
-### Step 2 — Install the runtime MCP (`.mcpb`)
+## Step 3 — Install the runtime MCP (`.mcpb`)
 
-| OS | File |
-|---|---|
-| macOS (Intel + Apple Silicon) | [`aspen-runtime-mcp-macos.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
-| Windows (x64) | [`aspen-runtime-mcp-windows.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
-
-**Double-click the `.mcpb` file**, or open **Claude Desktop → Settings → Extensions →
-Install Extension** and pick it.
+**Double-click the `.mcpb` file** you downloaded in Step 1 — or open **Claude Desktop →
+Settings → Extensions → Install Extension** and pick it. A config form appears:
 
 | Field | What to enter |
 |---|---|
-| **Instance base URL** | The full instance URL from Step 1, e.g. `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`. A trailing slash is fine — it's ignored |
-| **API token** | The `secret-token:aspen_…` key you created in Step 1, pasted whole |
+| **Instance base URL** | The full instance URL from Step 2, e.g. `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`. A trailing slash is fine — it's ignored |
+| **API token** | The `secret-token:aspen_…` key you created in Step 2, pasted whole |
 | **API base path (advanced)** | **Leave as-is** — `/api/v24.3`. There is nothing to change here |
 
-Click through to finish.
+Click through to finish. On macOS the bundled program is ad-hoc signed, so macOS may warn
+the first time it runs. That's expected.
 
-### Step 3 — Install the Cowork plugin
+Need the file again? [`aspen-runtime-mcp-macos.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb)
+· [`aspen-runtime-mcp-windows.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb)
 
-1. Click
-   [`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip). **Don't unzip it**
+> **Cowork on the web (claude.ai/cowork) can't do this step.** Cowork web only accepts a
+> remote HTTPS MCP URL, and the runtime MCP runs locally on your machine. Use the
+> **desktop** app.
 
-2. In Cowork, open **Customize → Plugins**. Click **Add → Upload plugin**.
-3. Select the `aspen-cowork-plugin.zip` you just downloaded. Upload the zip as-is.
+## Step 4 — Install the Cowork plugin (`.zip`)
+
+1. In Cowork, open **Customize → Plugins**. Click **Add → Upload plugin**.
+2. Select the `aspen-cowork-plugin.zip` you downloaded in Step 1. **Upload the zip as-is —
+   don't unzip it first.**
 
 It installs at user scope: available in every session, no per-conversation setup.
+
+Need the file again?
+[`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip)
 
 > **Using Claude Code as well?** There the plugin comes from this repository's marketplace
 > instead — `/plugin marketplace add aspen-crm/aspen-tools`, then
@@ -182,14 +143,10 @@ It installs at user scope: available in every session, no per-conversation setup
 > differs. The marketplace also carries `aspen-code`, the CLI-authoring lane, which is not
 > part of this setup.
 
-#### Cowork on the web (claude.ai/cowork)
+## Step 5 — Check it worked
 
-Not supported for this install. Cowork web only accepts a remote HTTPS MCP URL, and the
-runtime MCP runs locally on your machine. Use the **desktop** app.
-
-### Step 4 — Verify it works
-
-Start a new conversation and ask:
+**Start a new conversation first.** A conversation loads its tools when it starts, so the
+extension you just installed won't exist in the one you've been using. Then ask:
 
 > **What objects are in my Aspen instance?**
 
@@ -224,12 +181,14 @@ all — anything it makes while you're experimenting stays.
 
 | What you see | What's wrong | Fix |
 |---|---|---|
-| `AUTH_REQUIRED` | The API key is missing, wrong, expired, or revoked | Create a fresh key (Step 1) and re-enter it in **Settings → Extensions → Aspen Runtime MCP → Configure** |
-| Every call redirects to a login page, or `NOT_FOUND` on everything | The instance URL is incomplete — usually the domain or instance name is missing, or a page path got left on the end | Re-enter it as the full `https://<host>/<domain>/<instance>` from Step 1, with nothing after the instance name |
+| `AUTH_REQUIRED` | The API key is missing, wrong, expired, or revoked | Create a fresh key (Step 2) and re-enter it in **Settings → Extensions → Aspen Runtime MCP → Configure** |
+| Every call redirects to a login page, or `NOT_FOUND` on everything | The instance URL is incomplete — usually the domain or instance name is missing, or a page path got left on the end | Re-enter it as the full `https://<host>/<domain>/<instance>` from Step 2, with nothing after the instance name |
 | `INSTANCE_UNREACHABLE` | Wrong host, or you're off the network/VPN that can reach it | Paste the instance URL into a browser — if the CRM doesn't load there, it won't load here |
 | `NOT_FOUND` on *everything*, and the URL is definitely right | The API base path was edited | Put **API base path** back to its default `/api/v24.3` |
 | No `aspen_*` tools at all | The extension isn't installed or isn't enabled | **Claude Desktop → Settings → Extensions** — confirm **Aspen Runtime MCP** is present and toggled on, then restart Desktop |
-| Tools work, but Claude guesses field names and gets them wrong | The plugin isn't installed | Redo Step 3 |
+| No `aspen_*` tools, and you installed the extension a minute ago | The conversation started before the extension existed | Start a new conversation — a conversation's tools are fixed when it opens |
+| Tools work, but Claude guesses field names and gets them wrong | The plugin isn't installed | Redo Step 4 |
 | Cowork sees no Aspen tools, but Claude Desktop does | Cowork's bridge to Desktop isn't up | Make sure Claude Desktop is running, then restart Cowork |
+| The plugin upload is rejected | The zip was unzipped, or re-zipped after editing | Download [`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip) again and upload it untouched |
 | `NOT_FOUND` on one object name only | A bare name was used where the namespaced one is needed | Not a setup problem — ask Claude to run `aspen_describe` and use the exact name it returns (`account_p`, not `account`) |
 | `CONFIRMATION_REQUIRED` | Claude tried to write without your explicit yes | Working as intended. Say yes to the change it showed you |
