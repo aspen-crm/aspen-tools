@@ -61,12 +61,22 @@ walking files:
 | A question about the model — what exists, what a component looks like, where its authored file goes | `aspen-model-reader`, one per question |
 | What a whole component type *means* — conventions, relationships, extension points | `aspen-component-mapper`, fanned out by `map-model` |
 | A layout and list view proposal for an object | `aspen-ui-proposer` |
-| Writing the files you designed, then compile → save → checkin | `aspen-executor`, one per step |
+| Turning a decided component into an authored file | `hooks/scaffold.mjs`, run it yourself |
+| Compiling, saving and checking in the files | `aspen-executor`, one per step |
 | Deciding, designing, confirming with the human, verifying, diagnosing | you |
 
 Spawn a reader rather than opening the digest yourself for anything beyond a single grep. Give
 an executor the exact files and the exact commands: it fills no gaps, stops at the first
 failure, and brings the error back to you — diagnosing it is yours.
+
+**Do not hand-write a component's JSON.** Its shape is on the instance already, so a script
+copies it: `node "${CLAUDE_PLUGIN_ROOT}/hooks/scaffold.mjs" new <ctype> <name>` writes an
+authored file from a real component of the type, with the identity replaced, the members
+cleared, and every reference it could not carry listed for you to fill. `extend <ctype> <name>`
+writes an `extends` overlay on a delivered component instead. You decide the name, the label and
+the members; it does the attribute set, the entry shapes, and the path. Run it yourself — it is
+instant and its output tells you what to decide next — then hand the finished files to an executor
+to compile and check in.
 
 ## Router
 

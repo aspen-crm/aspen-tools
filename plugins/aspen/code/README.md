@@ -160,6 +160,7 @@ agents/aspen-ui-proposer.md         # proposes layout sections and list view col
 agents/aspen-executor.md            # writes decided files, runs decided commands; sonnet
 hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
 hooks/model-digest.mjs              # the digest: detect, build, verify, hooks
+hooks/scaffold.mjs                  # write an authored component from a real one's shape
 hooks/guard-destructive.mjs         # PreToolUse: ask before clearing shared instance state
 hooks/ui-coverage.mjs               # object -> layout / list view / tab coverage
 skills/using-aspen/SKILL.md         # entry point and router
