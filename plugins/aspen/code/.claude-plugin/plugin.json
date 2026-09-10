@@ -1,6 +1,6 @@
 {
-    "name": "aspen",
-    "displayName": "Aspen",
+    "name": "aspen-code",
+    "displayName": "Aspen Code",
     "description": "Developer workflow skills for customizing the Aspen Platform with the aspen CLI. Ships using-aspen (discover the CLI and drive the build loop), read-metadata (read the instance's model as the source of truth), map-model (one subagent per component type), verify-change (prove a change works; writes are human-approved), diagnose (reproduce before fixing) and complete-object-ui (a new object needs a layout, list view and tab), plus hooks that keep a Markdown digest of the instance's metadata current and ask before commands that clear the shared dev set.",
     "version": "1.4.0",
     "author": {

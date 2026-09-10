@@ -9,14 +9,30 @@ A release tag names the tool, then its version:
 
 ```
 builder-v0.11.0
-plugin-v1.0.0
 stdio-mcp-v0.1.14
+aspen-code--v1.4.0
+aspen-cowork--v0.1.7
 ```
 
 The prefix is what keeps the tools independent: GitHub keys a release to a
-tag, so `builder-v0.12.0` and `plugin-v1.1.0` are unrelated events that can
-happen in either order, or a month apart. A bare `v1.2.3` tag would force one
-version onto everything here, which is exactly what this layout avoids.
+tag, so `builder-v0.12.0` and `aspen-code--v1.5.0` are unrelated events that
+can happen in either order, or a month apart. A bare `v1.2.3` tag would force
+one version onto everything here, which is exactly what this layout avoids.
+
+**The two plugins get a prefix each**, not a shared `plugin-` one. They are
+versioned separately and change for unrelated reasons, so a single prefix
+would make every `aspen-code` release look like it said something about
+`aspen-cowork`.
+
+The plugins use `--v` rather than Builder's `-v` because that is what
+`claude plugin tag` produces, and cutting the tag with that command is worth
+more than a consistent separator -- it refuses to tag unless `plugin.json`
+and the marketplace entry agree on the name and version, which is exactly the
+mistake nobody catches by eye. Builder and the runtime MCP keep `-v`: their
+tags are cut by hand or by `scripts/publish-builder.sh`, and several are
+already public.
+
+No plugin tag has been cut yet, so nothing is carrying an older spelling.
 
 Adding a tool later means picking a new prefix. Nothing else changes.
 
@@ -118,9 +134,10 @@ version-less names, overwritten on each publish. That is what keeps the
 README's download links permanent.
 
 It is deliberately **not** GitHub's own `/releases/latest/`, which resolves to
-the most recent release ACROSS THIS WHOLE REPOSITORY -- so publishing a
-`plugin-` release would silently repoint every Builder download link at a
-release holding no installers, 404ing with nothing to say why.
+the most recent release ACROSS THIS WHOLE REPOSITORY -- so publishing an
+`aspen-code--` or `aspen-cowork--` release would silently repoint every Builder
+download link at a release holding no installers, 404ing with nothing to say
+why.
 
 The versioned `builder-vX.Y.Z` release remains the archive, and the only way to
 get a specific older build.
@@ -190,33 +207,72 @@ only go forward.
 Same rule as Builder: written by hand, in the words of someone who does not
 have the source. Say what a person will notice, not what changed in the code.
 
-## The Claude plugin
+## The Claude plugins
 
-The plugin is NOT installed from a release. Claude Code reads
+Two plugins ship from `plugins/aspen/`, and they are separate products:
+
+| Plugin | Directory | Lane | Tag |
+| --- | --- | --- | --- |
+| `aspen-code` | `plugins/aspen/code/` | Author metadata with the `aspen` CLI | `aspen-code--vX.Y.Z` |
+| `aspen-cowork` | `plugins/aspen/cowork/` | Work live records over the runtime MCP | `aspen-cowork--vX.Y.Z` |
+
+Neither is installed from a release. Claude Code reads
 `.claude-plugin/marketplace.json` at the root of this repository, so what a
 user installs is the repository's CONTENTS at the ref they add:
 
 ```
 /plugin marketplace add aspen-crm/aspen-tools
-/plugin install aspen@aspen
+/plugin install aspen-code@aspen
+/plugin install aspen-cowork@aspen
 ```
 
-That means a change to `plugins/aspen/` is live for anyone adding or updating
-the marketplace as soon as it lands on the default branch. A `plugin-vX.Y.Z`
-tag and release is therefore a MARKER and a changelog, not the delivery
-mechanism -- useful for saying what changed and for pinning, not for getting
-the code to people.
+The marketplace is named `aspen`; that is what `@aspen` refers to, and it does
+not change when a plugin is added or renamed.
 
-Keep `plugins/aspen/.claude-plugin/plugin.json`'s `version` in step with the
-tag when you cut one, so a user reading the installed plugin's version can
-find the matching release notes.
+That means a change to `plugins/aspen/code/` is live for anyone adding or
+updating the marketplace as soon as it lands on the default branch. An
+`aspen-code--vX.Y.Z` tag and release is therefore a MARKER and a changelog,
+not the delivery mechanism -- useful for saying what changed and for pinning,
+not for getting the code to people.
+
+### Cutting a plugin tag
+
+Bump the `version` in that plugin's `.claude-plugin/plugin.json`, commit, then
+let the CLI cut the tag -- it reads the version rather than taking one from
+you, and refuses if the manifest and the marketplace entry disagree:
+
+```bash
+claude plugin tag --dry-run plugins/aspen/code   # prints the tag, creates nothing
+claude plugin tag --push plugins/aspen/code
+```
+
+The two plugins' versions are unrelated and are expected to drift apart. A
+user reading an installed plugin's version should be able to find the matching
+release notes, which is the whole reason the manifest version and the tag have
+to agree.
+
+`aspen-cowork` has a second dependency Builder does not: it teaches the ten
+`aspen_*` tools of the `aspen-runtime-mcp` server but ships none of them. A
+release of the server that renames a tool or an error code breaks the plugin's
+guidance without changing a file here, so cut a `aspen-cowork` release when the
+server moves under it, not only when a skill is edited.
+
+### Renaming or adding a plugin is a breaking change for installers
+
+A user has `aspen-code@aspen` installed by NAME. Changing the `name` in
+`plugin.json` does not migrate them -- their existing install keeps pointing
+at a plugin the marketplace no longer offers, and they have to install the new
+name themselves. Say so in the release notes when it happens, and treat it as
+a major version bump.
 
 ## Adding another tool
 
-1. Put it under `plugins/<name>/` if it is a Claude plugin, and add it to the
-   `plugins` array in `.claude-plugin/marketplace.json` with
-   `"source": "./plugins/<name>"`. If it is a binary, it needs no directory
-   here at all -- only releases. Builder and the runtime MCP are both that
-   second shape: nothing of either is committed.
-2. Give it a tag prefix.
+1. Put it under `plugins/aspen/<name>/` if it is a Claude plugin, and add it
+   to the `plugins` array in `.claude-plugin/marketplace.json` with
+   `"source": "./plugins/aspen/<name>"`. Its `plugin.json` `name` is what
+   users type, so prefix it: `aspen-<name>`. If it is a binary, it needs no
+   directory here at all -- only releases. Builder and the runtime MCP are
+   both that second shape: nothing of either is committed.
+2. Give it a tag prefix -- `claude plugin tag` derives one from the plugin
+   name, so for a plugin this is already decided.
 3. Add a section to the README saying how to get it.

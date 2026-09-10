@@ -23,7 +23,7 @@ When they say Builder is installed and they have signed in, verify `aspen --vers
 run `aspen login --base-url <instance>` and let them approve it in the browser. You never see,
 type, ask for, or print a token.
 
-## Step 2 — Install the Aspen plugin
+## Step 2 — Install the Aspen Code plugin
 
 The plugin installs from this repo's Claude Code marketplace — there is nothing to download. You
 cannot run a slash command yourself, so hand these two to the human and wait for them to run both
@@ -31,8 +31,11 @@ in Claude Code:
 
 ```
 /plugin marketplace add aspen-crm/aspen-tools
-/plugin install aspen@aspen
+/plugin install aspen-code@aspen
 ```
+
+`aspen-code` is the one this document needs. The same marketplace also carries `aspen-cowork`, the
+collaboration half — it is not part of this setup, so do not install it here unless asked.
 
 When the plugin is installed, its skills become available and route themselves as you work:
 
@@ -61,5 +64,5 @@ change works — `verify-change` is what closes it.
 - Metadata and records on the platform cannot be deleted, so anything you create while testing is
   permanent — say so before the human starts.
 - The instance is shared with other builders. Some `aspen move` commands clear the dev set or halt
-  an in-flight checkin, which reaches their work — confirm with the human first. The plugin's
+  an in-flight checkin, which reaches their work — confirm with the human first. `aspen-code`'s
   `guard-destructive` hook will stop and ask as well, but that is a backstop, not the approval.

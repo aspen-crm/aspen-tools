@@ -1,7 +1,8 @@
-# Aspen — Claude Code plugin
+# Aspen Code — Claude Code plugin
 
 Developer workflow skills for customizing an [Aspen Platform](https://github.com/aspen-crm) instance
-with the `aspen` CLI.
+with the `aspen` CLI. This is the build half of the Aspen tools; the collaboration half ships
+separately as [aspen-cowork](../cowork).
 
 ## Skills
 
@@ -126,22 +127,23 @@ node "${CLAUDE_PLUGIN_ROOT}/hooks/model-digest.mjs" verify /path/to/instance
 
 ```
 /plugin marketplace add aspen-crm/aspen-tools
-/plugin install aspen@aspen
+/plugin install aspen-code@aspen
 ```
 
 The skills route themselves as you work; you can also invoke one directly by its namespaced name,
-e.g. `/aspen:read-metadata`. (The plugin is named `aspen` regardless of the repo name.)
+e.g. `/aspen-code:read-metadata`. (The plugin is named `aspen-code`; the marketplace it comes from
+is named `aspen`, which is what the `@aspen` suffix refers to.)
 
 ### Local development
 
 ```
-claude --plugin-dir /path/to/aspen-tools/plugins/aspen
+claude --plugin-dir /path/to/aspen-tools/plugins/aspen/code
 ```
 
 ### Tests
 
 ```
-cd plugins/aspen && node --test "test/*.test.mjs"
+cd plugins/aspen/code && node --test "test/*.test.mjs"
 ```
 
 The fixture is synthesized rather than copied from a real instance — structurally
@@ -151,7 +153,7 @@ metadata.
 ## Layout
 
 ```
-.claude-plugin/plugin.json          # plugin manifest (name: aspen)
+.claude-plugin/plugin.json          # plugin manifest (name: aspen-code)
 agents/aspen-component-mapper.md    # one type's mapper; no Bash, no network
 agents/aspen-ui-proposer.md         # proposes layout sections and list view columns
 hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
