@@ -10,6 +10,68 @@ with the `aspen` CLI.
 | `using-aspen`   | routes on any task | The entry point: discover the CLI from `aspen --help` (nothing hardcoded), extend delivered components, author custom ones, and the safety rails. |
 | `read-metadata` | routes on any task | Read the instance's model as the source of truth, starting from the digest, before authoring or changing anything. |
 | `map-model`     | after a download   | Fans out one subagent per component type to write what each type *means* — conventions, relationships, extension points. |
+| `verify-change` | after a checkin    | Proves the change actually works — read the resolved model back, then exercise it with data. Any write is permanent and human-approved first. |
+| `diagnose`      | on a failure       | Reproduce, then localize to a checkin phase before changing anything. No fix without a reproduction. |
+| `complete-object-ui` | after an object | Checks whether the object has a layout, list view and tab; offers to author the missing ones and guides the shape. |
+
+## Safety rails
+
+`using-aspen` says the instance is shared. A `PreToolUse` hook makes that a property of
+the system rather than of the model's diligence: `hooks/guard-destructive.mjs` asks —
+never blocks — on `aspen move checkin-clear` and `aspen move clear-package`, the two verbs
+that reach the dev set every builder on the instance shares.
+
+It matches on what a command *means*, not one spelling of it: quotes, tabs, line
+continuations, case and an absolute path to the binary all resolve to the same verb. It
+returns `permissionDecision: "ask"`, so a host that does not understand the field sees a
+plain exit 0 — an unrecognized field degrades to *allowed*, never to *blocked*, and the
+hook cannot wedge a recovery path.
+
+**Record writes are deliberately not guarded here.** The `aspen` CLI has no record verbs,
+so there is no command shape to match, and a rule matching some other tool would read as
+though record writes were covered when nothing is. `verify-change` owns that gate, in the
+conversation.
+
+## UI coverage
+
+A new object exists only to an API caller until something surfaces it. Three components
+do that, and they are not independent: `layout_p` renders one record, `list_view_p` is
+the rows, `tab_p` is where the list view is reached from — and a tab is invisible until a
+`tab_collection_p` lists it.
+
+`hooks/ui-coverage.mjs` answers which objects have which, grouping on each component's
+`object` attribute rather than its name, because the platform ships names like
+`currency_view_p` that say nothing about their object. It reads the tree on every call
+and stores nothing, so it cannot go stale.
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/hooks/ui-coverage.mjs" report [object]
+```
+
+### Object types
+
+Where an object sets `uses-object-types`, a layout can name one type through
+`object-type`, and a type with no layout of its own **renders with the object's**. So the
+report breaks a typed object down per type, and writing an `object_type_p` file asks
+whether that type wants a layout specific to it — an enhancement, never a fix. Inheriting
+is the designed behaviour, and on a real instance every one of the three object types has
+its own layout anyway.
+
+The base type's layout drops the type from its name (`product_p.layout_p` for
+`product_p.base_p`); every other type keeps it (`product_p.bundle_p.layout_p`). Only
+layouts vary by type — the object owns its list view and tab.
+
+A `PostToolUse` hook runs the same check when an object or object type file is authored
+and surfaces only that component's gap. Two things it reports are worth telling apart:
+
+- **A list view or tab with no layout** is a defect: someone reaches a row, clicks it,
+  and there is no layout to open the record with. It appears nowhere in platform
+  metadata — only a customer can create it.
+- **A type-using object with no layout at all** is the worst version of the first case:
+  "inherit the object layout" inherits nothing, so every type is unrenderable.
+- **A tab no collection lists** is an observation, not a defect. The platform itself
+  ships tabs it never places (3 of 10 on a real instance), so the report names the
+  collections it searched and leaves the judgement to you.
 
 ## The model digest
 
@@ -91,10 +153,16 @@ metadata.
 ```
 .claude-plugin/plugin.json          # plugin manifest (name: aspen)
 agents/aspen-component-mapper.md    # one type's mapper; no Bash, no network
-hooks/hooks.json                    # SessionStart + PostToolUse wiring
+agents/aspen-ui-proposer.md         # proposes layout sections and list view columns
+hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
 hooks/model-digest.mjs              # the digest: detect, build, verify, hooks
+hooks/guard-destructive.mjs         # PreToolUse: ask before clearing shared instance state
+hooks/ui-coverage.mjs               # object -> layout / list view / tab coverage
 skills/using-aspen/SKILL.md         # entry point and router
 skills/read-metadata/SKILL.md       # read the model as the source of truth
 skills/map-model/SKILL.md           # the fan-out
+skills/verify-change/SKILL.md       # prove it worked; the approval gate on writes
+skills/diagnose/SKILL.md            # reproduce and localize before fixing
+skills/complete-object-ui/SKILL.md  # give a new object a layout, list view and tab
 test/                               # node:test suite + synthesized fixture
 ```
