@@ -81,7 +81,7 @@ test('the standard-field rule is inferred with the objects that evidence it', ()
   const standard = rules.find((r) => r.kind === 'standard-fields')
   assert.ok(standard, 'standard-fields rule inferred')
   assert.deepEqual([...standard.fields].sort(), [...STANDARD].sort())
-  assert.equal(standard.evidence, 7) // every compiled object; widget_p has none
+  assert.equal(standard.evidence, 9) // every compiled object; widget_p alone has none
 })
 
 test('the standard-field rule is scoped to a ctype, not intersected across all of them', () => {

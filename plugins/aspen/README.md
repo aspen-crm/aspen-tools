@@ -53,12 +53,27 @@ and stores nothing, so it cannot go stale.
 node "${CLAUDE_PLUGIN_ROOT}/hooks/ui-coverage.mjs" report [object]
 ```
 
-A `PostToolUse` hook runs the same check when an object file is authored and surfaces
-only that object's gap. Two things it reports are worth telling apart:
+### Object types
+
+Where an object sets `uses-object-types`, a layout can name one type through
+`object-type`, and a type with no layout of its own **renders with the object's**. So the
+report breaks a typed object down per type, and writing an `object_type_p` file asks
+whether that type wants a layout specific to it — an enhancement, never a fix. Inheriting
+is the designed behaviour, and on a real instance every one of the three object types has
+its own layout anyway.
+
+The base type's layout drops the type from its name (`product_p.layout_p` for
+`product_p.base_p`); every other type keeps it (`product_p.bundle_p.layout_p`). Only
+layouts vary by type — the object owns its list view and tab.
+
+A `PostToolUse` hook runs the same check when an object or object type file is authored
+and surfaces only that component's gap. Two things it reports are worth telling apart:
 
 - **A list view or tab with no layout** is a defect: someone reaches a row, clicks it,
   and there is no layout to open the record with. It appears nowhere in platform
   metadata — only a customer can create it.
+- **A type-using object with no layout at all** is the worst version of the first case:
+  "inherit the object layout" inherits nothing, so every type is unrenderable.
 - **A tab no collection lists** is an observation, not a defect. The platform itself
   ships tabs it never places (3 of 10 on a real instance), so the report names the
   collections it searched and leaves the judgement to you.

@@ -26,6 +26,7 @@ import { collect, loadConfig } from './model-digest.mjs'
 // and `user_view_p`, whose names say nothing about the object they serve.
 const BUCKETS = { layout_p: 'layouts', list_view_p: 'listViews', tab_p: 'tabs' }
 const COLLECTION = 'tab_collection_p'
+const OBJECT_TYPE = 'object_type_p'
 
 const LABELS = { layouts: 'layout', listViews: 'list view', tabs: 'tab' }
 
@@ -42,15 +43,24 @@ export function coverage (config) {
   const model = collect(config)
   const objects = new Map()
   const ensure = (name) => {
-    if (!objects.has(name)) objects.set(name, { object: name, layouts: [], listViews: [], tabs: [] })
+    if (!objects.has(name)) {
+      objects.set(name, { object: name, layouts: [], objectLayouts: [], listViews: [], tabs: [], usesTypes: false, types: [] })
+    }
     return objects.get(name)
   }
 
-  // Every object, so an object with nothing on it is a row rather than an absence.
-  for (const c of model.components.values()) if (c.ctype === 'object_p') ensure(c.name)
-
   const placed = new Set()
   const collections = []
+  const typesOf = new Map()      // object -> [{ name, isBase }]
+  const layoutForType = new Map() // object type -> the layout naming it
+
+  // Every object, so an object with nothing on it is a row rather than an absence. The
+  // object itself declares whether it uses types -- nothing has to be inferred.
+  for (const c of model.components.values()) {
+    if (c.ctype !== 'object_p') continue
+    ensure(c.name).usesTypes = Boolean(docOf(c)?.['uses-object-types'])
+  }
+
   for (const c of model.components.values()) {
     const doc = docOf(c)
     if (c.ctype === COLLECTION) {
@@ -58,15 +68,41 @@ export function coverage (config) {
       for (const entry of doc?.tabs ?? []) if (entry?.tab) placed.add(entry.tab)
       continue
     }
+    if (c.ctype === OBJECT_TYPE) {
+      if (doc?.object) {
+        if (!typesOf.has(doc.object)) typesOf.set(doc.object, [])
+        typesOf.get(doc.object).push({ name: c.name, isBase: Boolean(doc['is-base']) })
+      }
+      continue
+    }
     const bucket = BUCKETS[c.ctype]
-    if (bucket && doc?.object) ensure(doc.object)[bucket].push(c.name)
+    if (!bucket || !doc?.object) continue
+    ensure(doc.object)[bucket].push(c.name)
+    if (c.ctype === 'layout_p') {
+      // A layout either names a type or is the object's own. Both are layouts; only the
+      // second is what an untyped record renders with.
+      if (doc['object-type']) { if (!layoutForType.has(doc['object-type'])) layoutForType.set(doc['object-type'], c.name) }
+      else ensure(doc.object).objectLayouts.push(c.name)
+    }
   }
 
   for (const c of objects.values()) {
     for (const bucket of Object.values(BUCKETS)) c[bucket].sort()
+    c.objectLayouts.sort()
+    c.types = (typesOf.get(c.object) ?? [])
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => ({ ...t, layout: layoutForType.get(t.name) ?? null }))
+    // A type with no layout of its own renders with the object's, so this is an
+    // enhancement worth offering -- never a defect. Flagging it would cry wolf on every
+    // type that is working exactly as designed.
+    c.typesInheriting = c.types.filter((t) => !t.layout).map((t) => t.name)
+    c.inheritsFrom = c.objectLayouts[0] ?? c.types.find((t) => t.isBase)?.layout ?? null
+
     c.unplacedTabs = c.tabs.filter((t) => !placed.has(t))
     // A missing layout is only a bug once something can reach a record. An object with
-    // no UI at all is not broken -- it is just not surfaced yet.
+    // no UI at all is not broken -- it is just not surfaced yet. Object types do not add
+    // a second rule here; they raise the stakes on this one, because with no layout of
+    // any kind there is nothing for any type to fall back to.
     c.needsLayout = c.layouts.length === 0 && (c.listViews.length > 0 || c.tabs.length > 0)
     c.complete = c.layouts.length > 0 && c.listViews.length > 0 &&
       c.tabs.length > 0 && c.unplacedTabs.length === 0
@@ -92,6 +128,26 @@ function renderOne (c, collections = []) {
       `> **\`${c.object}\` has a list view or a tab but no layout.** Someone can reach a row`,
       '> and click it, and there is no layout for the record to open with. Author the layout',
       '> before this ships.')
+    if (c.types.length) {
+      // With no layout of any kind, "inherit the object's layout" inherits nothing, so
+      // every type is affected rather than just untyped records.
+      lines.push(`> Every one of its object types is affected — ${cell(c.types.map((t) => t.name))} —`,
+        '> because there is no object layout for any of them to fall back to.')
+    }
+  }
+  if (c.types.length) {
+    lines.push('', '### Object types', '', '| Type | Layout |', '| --- | --- |')
+    for (const t of c.types) {
+      const has = t.layout
+        ? `\`${t.layout}\``
+        : c.inheritsFrom ? `inherits \`${c.inheritsFrom}\`` : 'inherits — **and there is no object layout to inherit**'
+      lines.push(`| \`${t.name}\`${t.isBase ? ' (base)' : ''} | ${has} |`)
+    }
+    if (c.typesInheriting.length && c.inheritsFrom) {
+      lines.push('',
+        `> ${cell(c.typesInheriting)} render with the object layout. Giving one its own layout`,
+        '> is an enhancement, not a fix — offer it, do not flag it.')
+    }
   }
   if (c.unplacedTabs.length) {
     // Not stated as a defect. The platform itself ships tabs it never places -- on a real
@@ -140,17 +196,36 @@ async function readStdin () {
 }
 
 const OBJECT_FILE = /(?:^|\/)object_p\/([^/]+)\.json$/
+const TYPE_FILE = /(?:^|\/)object_type_p\/([^/]+)\.json$/
+
+const OFFER = '\nOffer this with the `complete-object-ui` skill. Do not author any of it unasked.\n'
 
 function postTool (cwd, payload) {
-  const object = OBJECT_FILE.exec(String(payload?.tool_input?.file_path ?? ''))?.[1]
-  if (!object) return
+  const file = String(payload?.tool_input?.file_path ?? '')
+  const object = OBJECT_FILE.exec(file)?.[1]
+  const type = TYPE_FILE.exec(file)?.[1]
+  if (!object && !type) return
   const config = loadConfig(cwd)
   if (!config) return
   const cov = coverage(config)
+
+  if (type) {
+    const owner = [...cov.objects.values()].find((c) => c.types.some((t) => t.name === type))
+    const t = owner?.types.find((t) => t.name === type)
+    // It already has its own layout, so there is nothing to offer.
+    if (!t || t.layout) return
+    const inherits = owner.inheritsFrom
+      ? `It currently renders with \`${owner.inheritsFrom}\`.`
+      : `\`${owner.object}\` has no object layout, so this type has nothing to render with at all.`
+    return emit(
+      `\`${type}\` is an object type on \`${owner.object}\` with no layout of its own. ${inherits}\n\n` +
+      'Ask whether it should have a layout specific to this type — what this type shows that the ' +
+      'object layout does not. Inheriting is a perfectly good answer.\n' + OFFER)
+  }
+
   const c = cov.objects.get(object)
   if (!c || c.complete) return
-  emit(renderOne(c, cov.collections) +
-    '\nOffer to fill the gap with the `complete-object-ui` skill. Do not author any of it unasked.\n')
+  emit(renderOne(c, cov.collections) + OFFER)
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

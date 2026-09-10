@@ -93,6 +93,57 @@ test('an unplaced tab keeps the object from being complete', () => {
   assert.equal(c.complete, false)
 })
 
+// ---- object types -----------------------------------------------------------
+
+test('a type-using object lists its types', () => {
+  const c = of('order_p')
+  assert.equal(c.usesTypes, true)
+  assert.deepEqual(c.types.map((t) => t.name), ['order_p.base_p', 'order_p.rush_p'])
+})
+
+test('a plain object has no types', () => {
+  const c = of('contact_p')
+  assert.equal(c.usesTypes, false)
+  assert.deepEqual(c.types, [])
+})
+
+test('a type with its own layout records it', () => {
+  const base = of('order_p').types.find((t) => t.name === 'order_p.base_p')
+  assert.equal(base.layout, 'order_p.layout_p')
+  assert.equal(base.isBase, true)
+})
+
+test('a type with no layout of its own inherits the object layout', () => {
+  const rush = of('order_p').types.find((t) => t.name === 'order_p.rush_p')
+  assert.equal(rush.layout, null)
+  assert.deepEqual(of('order_p').typesInheriting, ['order_p.rush_p'])
+})
+
+test('an inheriting type is not a defect -- inheriting is the designed behaviour', () => {
+  // The offer to give it its own layout is an enhancement. Flagging it would cry wolf
+  // on every type that is perfectly fine as it is.
+  assert.equal(of('order_p').needsLayout, false)
+})
+
+test('a type-using object with no layout at all is still flagged', () => {
+  // ticket_p is reachable through a list view and a tab and has no layout of any kind,
+  // so its types have nothing to fall back to.
+  const c = of('ticket_p')
+  assert.deepEqual(c.layouts, [])
+  assert.equal(c.needsLayout, true)
+})
+
+test('the warning for a typed object says its types are affected too', () => {
+  const out = render(coverage(config(project())), 'ticket_p')
+  assert.match(out, /ticket_p\.base_p|every type|all .* types/i)
+})
+
+test('the report shows which types have their own layout and which inherit', () => {
+  const out = render(coverage(config(project())), 'order_p')
+  assert.match(out, /order_p\.rush_p/)
+  assert.match(out, /inherit/i)
+})
+
 // ---- the report -------------------------------------------------------------
 
 test('the report for one object names what is missing', () => {
@@ -148,6 +199,18 @@ test('writing something that is not an object says nothing', () => {
 test('a complete object does not nag', () => {
   const dir = configured()
   assert.equal(hook(dir, join(dir, 'metacode', 'metadata', 'object_p', 'contact_p.json')), null)
+})
+
+test('writing an object type offers it a layout of its own', () => {
+  const dir = configured()
+  const out = hook(dir, join(dir, 'metacode', 'metadata', 'object_type_p', 'order_p.rush_p.json'))
+  assert.match(out.hookSpecificOutput.additionalContext, /order_p\.rush_p/)
+  assert.match(out.hookSpecificOutput.additionalContext, /order_p\.layout_p/) // what it inherits
+})
+
+test('writing an object type that already has its own layout does not nag', () => {
+  const dir = configured()
+  assert.equal(hook(dir, join(dir, 'metacode', 'metadata', 'object_type_p', 'order_p.base_p.json')), null)
 })
 
 test('an unconfigured project stays silent rather than erroring', () => {

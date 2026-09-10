@@ -57,6 +57,41 @@ parent). Those two cover almost everything; `people_role`, `custom_code` and
 
 Iterate on the shape with the human. Then author the file.
 
+## 2b. Object types
+
+An object declares `uses-object-types` itself, so you never have to infer it. Where it is
+true, a layout can name one type through `object-type`, and **a type with no layout of its
+own renders with the object's**. That is normal: inheriting is the designed behaviour, not
+a gap.
+
+**When someone creates an object type, ask whether it wants its own layout.** Offer it as
+an enhancement, never as a fix, and make the question concrete:
+
+> `product_p.bundle_p` currently renders with `product_p.layout_p`. Should Bundle show
+> something different — different fields, a different order, a section Product does not
+> have? Inheriting is a perfectly good answer.
+
+The object type carries its own `fields` list, with `required` and `picklist-filter` per
+field. That is the best seed for the question: it already says how this type narrows the
+object. Spawn `aspen-ui-proposer` with the type, and it will propose a **diff from the
+inherited layout** rather than a fresh design.
+
+**Naming:** the base type's layout drops the type from its name; every other type keeps
+it. On a real instance that is `product_p.layout_p` for `product_p.base_p`, and
+`product_p.bundle_p.layout_p` for `product_p.bundle_p`.
+
+**Only layouts are per-type.** List views and tabs belong to the object — a real object
+with two types still has one list view and one tab. Do not offer per-type versions of
+those.
+
+**The one real defect:** a type-using object with **no layout at all**. Then "inherit the
+object layout" inherits nothing and every type is unrenderable. That is the same warning
+as above, and object types raise its stakes rather than adding a new rule.
+
+If you meet a type-using object that has a layout with **no** `object-type` on it, say so
+and stop. That combination appears nowhere on a real instance, and guessing what the
+platform does with it is worse than asking.
+
 ## 3. List view
 
 Ask for, in this order:
@@ -105,4 +140,6 @@ what you authored actually landed.
 | "The object has no layout, so it's broken" | Join, job and audit objects have none by design. Ask. |
 | "I'll write the tab, then the list view" | They reference each other. Author them as a pair. |
 | "I'll put every field on the layout" | Propose a shape and let the human cut it. A dump is not a design. |
+| "This type has no layout, so it's broken" | It renders with the object's. Offer it one; do not flag it. |
+| "I'll give the new type its own list view and tab too" | Only layouts are per-type. The object owns the list view and tab. |
 | "I'll guess the section attribute names" | Read a real layout. Guessing costs a checkin round trip. |

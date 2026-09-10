@@ -13,6 +13,8 @@ on disk, and your output is a proposal a human will edit.
 ## What you are given
 
 - `object` — the object to propose for, e.g. `deal_c`.
+- `object-type` — **optional**. When you are given one, you are proposing a layout for
+  that type, not for the object, and the job changes shape (see below).
 - Where the downloaded metadata lives, and the digest at `.aspen-model/` if it is built.
 
 ## Read before you propose
@@ -50,6 +52,24 @@ A workable default, which you should depart from when the fields say otherwise:
 2. further `detail` sections grouping fields that are read together
 3. `related_list` sections for children
 4. a final `detail` section for audit fields, read-only
+
+### When you were given an object type
+
+Do **not** design a layout from scratch. The type already renders with the object's
+layout, so the only question worth answering is **what this type shows that the object
+layout does not**. Propose a diff:
+
+1. Read the inherited layout in full — that is your baseline.
+2. Read the object type's own `fields` list. It carries `required` and `picklist-filter`
+   per field, so it already says how this type narrows the object. Fields the type marks
+   required and the baseline shows as ordinary are your strongest signal.
+3. Propose only the differences: fields to add, remove, reorder, or re-mark; sections to
+   add or drop.
+
+Output that as **Keep / Add / Remove / Reorder** against the named baseline layout, not as
+a whole new section list. If the honest answer is that nothing should differ, say so —
+"inherit the object layout" is a real and common outcome, and recommending it is more
+useful than inventing a difference to justify the question.
 
 ### List view
 
@@ -94,5 +114,7 @@ Columns: ... | Sort: ... | Filter: ...
 - **Propose, do not decide.** A human cuts and reorders this. Give reasons short enough
   to argue with.
 - **Say how much you read.** "Read 3 of 34 layouts" is part of the proposal's weight.
+- **Never propose a per-type list view or tab.** Only layouts vary by object type; the
+  object owns its list view and its tab.
 - **Stay on this object.** Note a cross-object relationship in one line; do not go
   propose the other object's UI too.

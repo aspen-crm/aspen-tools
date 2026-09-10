@@ -28,6 +28,14 @@
 //                 `object` attribute, because the real platform ships names like
 //                 `currency_view_p` that say nothing about their object
 //   alpha_p, beta_p, widget_p   no UI at all
+//
+// Object types. A layout can name one, and a type with no layout of its own renders
+// with the object's:
+//
+//   order_p       uses-object-types, base_p (own layout) + rush_p (inherits)
+//   ticket_p      uses-object-types, one type, and NO layout at all -- reachable via a
+//                 list view and tab, so there is nothing for any of its types to fall
+//                 back to. The defect object types make worse rather than a new one.
 
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
@@ -74,8 +82,19 @@ const OBJECTS = {
   // authored in the baseline rather than added by the instance.
   alpha_p: { baseline: [{ name: 'score_p', type: 'id', subtype: 'parent' }, f('score_chk_p')] },
   beta_p: { baseline: [{ name: 'score_p', type: 'id', subtype: 'parent' }, f('score_chk_p')] },
-  widget_p: { baseline: [f('label_p')], noCompiled: true }
+  widget_p: { baseline: [f('label_p')], noCompiled: true },
+  order_p: { baseline: [f('order_no_p'), f('rush_reason_p')], usesTypes: true },
+  ticket_p: { baseline: [f('summary_p')], usesTypes: true }
 }
+
+// `<object>.<type>_p`, and the base type's layout drops the type from its name:
+// the real instance has product_p.layout_p for the base and
+// product_p.bundle_p.layout_p for the rest.
+export const OBJECT_TYPES = [
+  { name: 'order_p.base_p', object: 'order_p', isBase: true, layout: 'order_p.layout_p' },
+  { name: 'order_p.rush_p', object: 'order_p', isBase: false, layout: null },
+  { name: 'ticket_p.base_p', object: 'ticket_p', isBase: true, layout: null }
+]
 
 const OVERLAY = { contact_p: [f('nickname_c')] }
 
@@ -84,13 +103,15 @@ export const LIST_VIEWS = [
   { name: 'task_p.list_view_p', object: 'task_p', tab: 'task_p.tab_p', columns: ['subject_p'], 'query-filter': 'owner_p is not null' },
   // The name says nothing about its object, exactly like the platform's own
   // `currency_view_p`. Anything grouping by filename gets this one wrong.
-  { name: 'special_view_p', object: 'email_p', tab: null, columns: ['subject_p'] }
+  { name: 'special_view_p', object: 'email_p', tab: null, columns: ['subject_p'] },
+  { name: 'ticket_p.list_view_p', object: 'ticket_p', tab: 'ticket_p.tab_p', columns: ['summary_p'] }
 ]
 
 export const TABS = [
   { name: 'contact_p.tab_p', object: 'contact_p', 'default-list-view': 'contact_p.list_view_p' },
   // Deliberately in no collection: the tab exists and nobody can reach it.
-  { name: 'task_p.tab_p', object: 'task_p', 'default-list-view': 'task_p.list_view_p' }
+  { name: 'task_p.tab_p', object: 'task_p', 'default-list-view': 'task_p.list_view_p' },
+  { name: 'ticket_p.tab_p', object: 'ticket_p', 'default-list-view': 'ticket_p.list_view_p' }
 ]
 
 export const TAB_COLLECTIONS = [
@@ -107,7 +128,11 @@ export function buildFixture (root) {
 
   for (const [name, spec] of Object.entries(OBJECTS)) {
     write(`platform/object_p/${name}.json`, {
-      ctype: 'object_p', name, label: name.replace(/_p$/, ''), fields: spec.baseline
+      ctype: 'object_p',
+      name,
+      label: name.replace(/_p$/, ''),
+      'uses-object-types': Boolean(spec.usesTypes),
+      fields: spec.baseline
     })
 
     const overlay = OVERLAY[name]
@@ -125,6 +150,7 @@ export function buildFixture (root) {
       ctype: 'object_p',
       name,
       label: name.replace(/_p$/, ''),
+      'uses-object-types': Boolean(spec.usesTypes),
       fields: [...std(), ...spec.baseline, ...(overlay ?? []), ...(spec.derived ?? [])]
     })
   }
@@ -142,6 +168,34 @@ export function buildFixture (root) {
       _derived: { attribution: 'none', from: 'metadata', scalars: 'resolved' },
       ...doc
     })
+  }
+
+  for (const t of OBJECT_TYPES) {
+    const doc = {
+      ctype: 'object_type_p',
+      name: t.name,
+      label: t.name,
+      object: t.object,
+      'is-base': t.isBase,
+      lifecycle: null,
+      fields: [{ active: true, field: 'order_no_p', name: 'order_no_p', required: null }]
+    }
+    write(`platform/object_type_p/${t.name}.json`, doc)
+    write(`compiled/object_type_p/${t.name}.json`, doc)
+  }
+
+  // A layout that names a type. Only ever on a uses-object-types object.
+  for (const t of OBJECT_TYPES.filter((t) => t.layout)) {
+    const doc = {
+      ctype: 'layout_p',
+      name: t.layout,
+      label: t.layout,
+      object: t.object,
+      'object-type': t.name,
+      sections: [{ name: 'main_p', label: 'Main', 'section-type': 'detail', columns: 2 }]
+    }
+    write(`platform/layout_p/${t.layout}.json`, doc)
+    write(`compiled/layout_p/${t.layout}.json`, doc)
   }
 
   // List views, tabs and collections. A list view and its tab reference each other,
