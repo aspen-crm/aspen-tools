@@ -26,7 +26,7 @@ ordering or shared-state issue. Do not move on because it passed.
 
 ## 2. Localize: which phase broke?
 
-Checking in is not one step. `aspen move --help` lists the chain, and it runs in order:
+Checking in is not one step. `.aspen/bin/aspen move --help` lists the chain, and it runs in order:
 
 | Phase | What failing there means |
 |--------|--------------------------|
@@ -69,7 +69,7 @@ change works. Go to `verify-change`.
 
 ## Recovery — the shared-state escape hatches
 
-When a checkin is wedged, `aspen move --help` documents two commands that clear instance
+When a checkin is wedged, `.aspen/bin/aspen move --help` documents two commands that clear instance
 state. Both reach **every builder on the instance**, not just your package:
 
 - `clear-package` — clears this package's contents from the instance's dev set.

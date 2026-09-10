@@ -75,5 +75,5 @@ Re-pull too before touching something you have not looked at recently.
 - The digest tells you what exists and where it lives. A map tells you how the type
   behaves. The source file tells you what it looks like — and it is the only one of the
   three you author against.
-- Find the exact CLI command with `aspen --help` and `aspen move --help` before you run
-  anything. Do not assume the flags; the help output wins.
+- Find the exact CLI command with `.aspen/bin/aspen --help` and `.aspen/bin/aspen move --help`
+  before you run anything. Do not assume the flags; the help output wins.

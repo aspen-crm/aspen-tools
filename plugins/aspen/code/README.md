@@ -8,7 +8,7 @@ separately as [aspen-cowork](../cowork).
 
 | Skill           | Invoke             | What it does                                                              |
 | --------------- | ------------------ | ------------------------------------------------------------------------- |
-| `using-aspen`   | routes on any task | The entry point: discover the CLI from `aspen --help` (nothing hardcoded), extend delivered components, author custom ones, and the safety rails. |
+| `using-aspen`   | routes on any task | The entry point: discover the CLI at `.aspen/bin/aspen` (nothing hardcoded), extend delivered components, author custom ones, and the safety rails. |
 | `read-metadata` | routes on any task | Read the instance's model as the source of truth, starting from the digest, before authoring or changing anything. |
 | `map-model`     | after a download   | Fans out one subagent per component type to write what each type *means* — conventions, relationships, extension points. |
 | `verify-change` | after a checkin    | Proves the change actually works — read the resolved model back, then exercise it with data. Any write is permanent and human-approved first. |

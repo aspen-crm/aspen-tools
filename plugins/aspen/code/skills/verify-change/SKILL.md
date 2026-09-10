@@ -40,7 +40,7 @@ and still reject or mangle the value you put in it. The proof is a record: creat
 read it back, confirm the value survived.
 
 **You almost certainly cannot do this yourself.** The `aspen` CLI is the metadata lane and
-has no record verbs — check `aspen --help` and see for yourself rather than taking this
+has no record verbs — check `.aspen/bin/aspen --help` and see for yourself rather than taking this
 skill's word for it, since the CLI is the authority on its own commands. If a project has
 some other record access, it is that project's, not something this plugin assumes.
 
