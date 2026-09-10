@@ -10,6 +10,7 @@ A release tag names the tool, then its version:
 ```
 builder-v0.11.0
 plugin-v1.0.0
+stdio-mcp-v0.1.14
 ```
 
 The prefix is what keeps the tools independent: GitHub keys a release to a
@@ -127,6 +128,68 @@ get a specific older build.
 The macOS build is unsigned unless a signing identity is configured, so a first
 open needs right-click then Open. Worth saying wherever the link is handed out.
 
+## Runtime MCP
+
+Source lives in the private `aspen-crm/aspen-ai`, under `aspen-runtime-mcp/`.
+The `.mcpb` bundles are built there by `release-runtime-mcp.yml` and published
+HERE, so a download link can be handed to someone who has no access to the
+source.
+
+**Two files are published: macOS and Windows.** Claude Desktop, which is what
+installs an `.mcpb`, runs on those two only. The workflow also builds
+`linux-x86_64` and `linux-aarch64` for other hosts that launch a local MCP
+server; those stay on the build and are available on request.
+
+The macOS bundle is universal, so unlike Builder there is no second mac file.
+
+The version is whatever the bundle says about itself. Read it before tagging,
+and make the tag match -- a user who checks their installed version has to be
+able to find the matching release:
+
+```bash
+unzip -p aspen-runtime-mcp-macos.mcpb manifest.json | grep -o '"version":"[^"]*"'
+```
+
+### Publishing
+
+There is no script yet; Builder's guards are about a public subset of a private
+release line, which does not apply here. By hand:
+
+```bash
+VERSION=0.1.14
+TAG="stdio-mcp-v$VERSION"
+
+# versioned release: the archive, with versioned filenames
+cp aspen-runtime-mcp-macos.mcpb   "aspen-runtime-mcp-$VERSION-macos.mcpb"
+cp aspen-runtime-mcp-windows.mcpb "aspen-runtime-mcp-$VERSION-windows.mcpb"
+gh release create "$TAG" \
+  "aspen-runtime-mcp-$VERSION-macos.mcpb" \
+  "aspen-runtime-mcp-$VERSION-windows.mcpb" \
+  --repo aspen-crm/aspen-tools \
+  --title "Aspen Runtime MCP $VERSION" --notes-file notes.md
+
+# stdio-mcp-latest: version-less filenames, overwritten each time
+gh release upload stdio-mcp-latest \
+  aspen-runtime-mcp-macos.mcpb aspen-runtime-mcp-windows.mcpb \
+  --repo aspen-crm/aspen-tools --clobber
+gh release edit stdio-mcp-latest --repo aspen-crm/aspen-tools \
+  --notes "Always the current Aspen Runtime MCP. Currently $VERSION."
+```
+
+`stdio-mcp-latest` is a fixed tag created with `--latest=false`, for the same
+reason `builder-latest` is: GitHub's own "Latest" resolves across the whole
+repository, so a `builder-` release would silently repoint every MCP download
+link at a release holding no bundles.
+
+Do not move `stdio-mcp-latest` backwards. The versioned release is the archive
+and can be published for any version; the pointer everyone downloads should
+only go forward.
+
+### The notes are public
+
+Same rule as Builder: written by hand, in the words of someone who does not
+have the source. Say what a person will notice, not what changed in the code.
+
 ## The Claude plugin
 
 The plugin is NOT installed from a release. Claude Code reads
@@ -153,6 +216,7 @@ find the matching release notes.
 1. Put it under `plugins/<name>/` if it is a Claude plugin, and add it to the
    `plugins` array in `.claude-plugin/marketplace.json` with
    `"source": "./plugins/<name>"`. If it is a binary, it needs no directory
-   here at all -- only releases.
+   here at all -- only releases. Builder and the runtime MCP are both that
+   second shape: nothing of either is committed.
 2. Give it a tag prefix.
 3. Add a section to the README saying how to get it.

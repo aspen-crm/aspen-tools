@@ -32,6 +32,42 @@ specific version, or an older one, use the
 [`builder-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=builder&expanded=true)
 directly.
 
+## Aspen Runtime MCP
+
+A local MCP server that lets Claude work an instance's records: view, search,
+report, create and update, over the instance's own API. It is the runtime
+counterpart to Builder -- it changes records, not the model.
+
+It ships as an `.mcpb` bundle, which Claude Desktop installs in one click.
+Cowork on the desktop bridges to whatever is installed in Claude Desktop, so
+this is also how a Cowork user gets it.
+
+These links always give you the current version:
+
+| Platform | Download |
+| --- | --- |
+| macOS (universal) | [aspen-runtime-mcp-macos.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
+| Windows (x64) | [aspen-runtime-mcp-windows.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
+
+Two builds are published, for the same reason as Builder: Claude Desktop runs
+on macOS and Windows only. The macOS bundle is universal, so one file covers
+Apple silicon and Intel. Linux bundles are built and available on request, for
+other hosts that launch a local MCP server.
+
+The binary carries only an ad-hoc signature -- it is not signed with a
+Developer ID and not notarized -- so macOS will warn on first run.
+
+Open the `.mcpb` in **Claude Desktop -> Settings -> Extensions**. It asks for
+two things: the full instance URL, `https://<host>/<domain>/<instance>`, and a
+personal API key created in the instance's **API Keys** screen. Leave the API
+base path at its default. The key is held in Desktop's secret store, and the
+model never sees it.
+
+The `stdio-mcp-latest` release says which version it currently holds. For a
+specific version, or an older one, use the
+[`stdio-mcp-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=stdio-mcp&expanded=true)
+directly.
+
 ## Aspen — Claude Code plugin
 
 Developer workflow skills for the Aspen Platform. Installed from this
