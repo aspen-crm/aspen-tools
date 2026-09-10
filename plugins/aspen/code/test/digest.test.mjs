@@ -1,13 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildFixture, STANDARD } from './fixtures/build-fixture.mjs'
-import { build, collect, detect, inferRules } from '../hooks/model-digest.mjs'
+import { build, collect, detect, inferRules, locate } from '../hooks/model-digest.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = join(HERE, '..', 'hooks', 'model-digest.mjs')
@@ -224,6 +224,61 @@ test('the session-start hook stays silent in a project that is not Aspen', () =>
   const cwd = mkdtempSync(join(tmpdir(), 'not-aspen-'))
   const out = execFileSync('node', [SCRIPT, 'session-start'], { cwd, encoding: 'utf8', input: '' })
   assert.equal(out.trim(), '')
+})
+
+// ---- knowing where you are --------------------------------------------------
+//
+// Builder puts each instance in its own folder under ~/Aspen, and that folder is
+// where the session has to be rooted. These cover the three ways a session can sit
+// relative to it. HOME is redirected at a fixture so the tests never read the real one.
+
+function fixtureHome (...instances) {
+  // realpath: macOS hands out temp dirs under a symlinked /var, and the child
+  // process reports the resolved cwd -- an unresolved HOME would never match it.
+  const home = realpathSync(mkdtempSync(join(tmpdir(), 'aspen-home-')))
+  for (const name of instances) mkdirSync(join(home, 'Aspen', name, 'metacode'), { recursive: true })
+  return home
+}
+
+const inHome = (home, cwd) =>
+  execFileSync('node', [SCRIPT, 'session-start'], { cwd, encoding: 'utf8', input: '', env: { ...process.env, HOME: home } })
+
+test('locate reads the instance folder off the tree, not off the folder name', () => {
+  const home = fixtureHome('anything-at-all')
+  assert.deepEqual(locate(join(home, 'Aspen', 'anything-at-all'), home), { where: 'instance', name: 'anything-at-all' })
+  assert.deepEqual(locate(join(home, 'Aspen'), home), { where: 'near', instances: ['anything-at-all'] })
+  assert.deepEqual(locate(join(home, 'elsewhere'), home), { where: 'elsewhere' })
+})
+
+test('an instance folder with nothing downloaded yet is told to download, not left silent', () => {
+  const home = fixtureHome('acme.com-dev')
+  const out = inHome(home, join(home, 'Aspen', 'acme.com-dev'))
+  assert.match(out, /acme\.com-dev/)
+  assert.match(out, /active set/i)
+})
+
+test('a session opened at ~/Aspen names the instance folders to reopen in', () => {
+  const home = fixtureHome('acme.com-dev', 'acme.com-prod')
+  const out = inHome(home, join(home, 'Aspen'))
+  assert.match(out, /acme\.com-dev/)
+  assert.match(out, /acme\.com-prod/)
+  assert.match(out, /reopen/i)
+})
+
+test('an unrelated project stays silent even when instance folders exist on the machine', () => {
+  const home = fixtureHome('acme.com-dev')
+  const cwd = join(home, 'work', 'some-other-repo')
+  mkdirSync(cwd, { recursive: true })
+  const out = inHome(home, cwd)
+  assert.equal(out.trim(), '', 'no Aspen noise in a project that has nothing to do with Aspen')
+})
+
+test('a Builder instance folder is recognised by its private cache alone', () => {
+  const home = realpathSync(mkdtempSync(join(tmpdir(), 'aspen-home-')))
+  const cwd = join(home, 'Aspen', 'acme.com-dev')
+  mkdirSync(join(cwd, '.aspen'), { recursive: true })
+  writeFileSync(join(cwd, '.aspen', 'state.json'), '{"components":{},"v":1}')
+  assert.match(inHome(home, cwd), /active set/i)
 })
 
 test('a checkin marks the digest stale', () => {
