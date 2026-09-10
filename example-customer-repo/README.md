@@ -27,17 +27,9 @@ directories directly, with no `custom/` layer.
 The Rust half depends on [`aspen-crm`](https://crates.io/crates/aspen-crm) from crates.io, so it
 needs no checkout: `Cargo.lock` is committed and a fresh clone builds as is.
 
-The UI half's `@aspen-crm/sdk` and `@veeva/x-cli` are pinned to internal tarballs rather than a
-registry:
-
-```
-https://static-assets.veevaxdev.com/npm/platform/sdk/26.3.3/26.3.3.9/aspen-crm-sdk-26.3.3.tgz
-https://static-assets.veevaxdev.com/npm/platform/x-cli/26.3.3/26.3.3.9/veeva-x-cli-26.3.3.tgz
-```
-
-The URL carries both the release and its build (`26.3.3` / `26.3.3.9`), and the path exposes no
-`latest` alias, so moving to a new release means finding the build number for it. Both packages
-ship from one pipeline and shared build `9` at this release. Neither name exists on public npm.
+The UI half depends on [`@aspen-crm/sdk`](https://www.npmjs.com/package/@aspen-crm/sdk) and
+[`@aspen-crm/x-cli`](https://www.npmjs.com/package/@aspen-crm/x-cli) from npm, so `npm install`
+needs no registry configuration beyond the default.
 
 ## What is in it
 

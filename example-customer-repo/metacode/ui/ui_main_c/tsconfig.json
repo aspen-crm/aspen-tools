@@ -1,3 +1,3 @@
 {
-    "extends": "@veeva/x-cli/lib/tsconfig"
+    "extends": "@aspen-crm/x-cli/lib/tsconfig"
 }
