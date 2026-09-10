@@ -7,7 +7,7 @@ on:
 
 jobs:
   plugin:
-    name: aspen plugin
+    name: aspen-code plugin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,5 +15,5 @@ jobs:
         with:
           node-version: '22'
       - name: Run the digest test suite
-        working-directory: plugins/aspen
+        working-directory: plugins/aspen/code
         run: node --test "test/*.test.mjs"

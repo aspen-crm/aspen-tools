@@ -4,9 +4,14 @@
   "owner": { "name": "Aspen CRM" },
   "plugins": [
     {
-      "name": "aspen",
-      "source": "./plugins/aspen",
+      "name": "aspen-code",
+      "source": "./plugins/aspen/code",
       "description": "Developer workflow skills for customizing an Aspen instance with the aspen CLI."
+    },
+    {
+      "name": "aspen-cowork",
+      "source": "./plugins/aspen/cowork",
+      "description": "Work an Aspen CRM over the runtime MCP (.mcpb) — read, search, report, create, and update records. No CLI; the server confirm-gates writes."
     }
   ]
 }

@@ -63,24 +63,40 @@ personal API key created in the instance's **API Keys** screen. Leave the API
 base path at its default. The key is held in Desktop's secret store, and the
 model never sees it.
 
+The server carries the tools; the `aspen-cowork` plugin below carries the
+procedures for using them well. Take both -- neither is much use alone.
+
 The `stdio-mcp-latest` release says which version it currently holds. For a
 specific version, or an older one, use the
 [`stdio-mcp-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=stdio-mcp&expanded=true)
 directly.
 
-## Aspen — Claude Code plugin
+## Claude Code plugins
 
-Developer workflow skills for the Aspen Platform. Installed from this
-repository directly rather than from a release:
+Two plugins, split by the lane you are working in. **aspen-code** is the
+pro-code loop, driven by the `aspen` CLI: author metadata, compile, deploy,
+verify. **aspen-cowork** is the runtime loop, driven by the Aspen runtime MCP:
+read, search, report on and update live records, with no CLI at all. They
+install independently, so you can take one without the other. Both come from
+this repository directly rather than from a release:
 
 ```
 /plugin marketplace add aspen-crm/aspen-tools
-/plugin install aspen@aspen
+/plugin install aspen-code@aspen
+/plugin install aspen-cowork@aspen
 ```
 
-Updating the marketplace picks up whatever is on the default branch, so you do
-not wait for a release to get a fix. See [plugins/aspen](plugins/aspen) for
-what it ships.
+| Plugin | Lane | Needs |
+| --- | --- | --- |
+| [aspen-code](plugins/aspen/code) | Customize an instance: read the model, author `_c` components, compile, deploy, verify. | The `aspen` CLI, which comes with Aspen Builder. |
+| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create and update. | The Aspen Runtime MCP `.mcpb`, above. |
+
+`aspen-cowork` teaches tools it does not carry, so it does nothing on its own —
+install the runtime MCP alongside it.
+
+The marketplace they come from is named `aspen`, which is what the `@aspen`
+suffix refers to. Updating the marketplace picks up whatever is on the default
+branch, so you do not wait for a release to get a fix.
 
 ## Example customer repository
 
@@ -103,6 +119,6 @@ checkout and is a guess. `AGENTS.md` says where to look.
 ## Adding a tool
 
 `docs/releasing.md` covers the layout and the tag convention. In short: a
-Claude plugin goes under `plugins/<name>/` and gets listed in
+Claude plugin goes under `plugins/aspen/<name>/` and gets listed in
 `.claude-plugin/marketplace.json`; anything distributed as a binary needs only
 a tag prefix and a release.
