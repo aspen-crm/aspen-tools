@@ -68,27 +68,16 @@ test('the non-destructive verbs are left alone', () => {
   ]) assert.equal(decide(cmd), null, cmd)
 })
 
-// ---- record writes ----------------------------------------------------------
+// ---- what this guard does NOT cover -----------------------------------------
 
-test('an unconfirmed write is a dry run and gets no prompt', () => {
-  // aspenx refuses these and sends nothing, so prompting would be pure friction.
-  assert.equal(decide('aspenx record create account_p --data \'{"name_c":"Acme"}\''), null)
-  assert.equal(decide('aspenx record delete account_p --id abc'), null)
-})
-
-test('a confirmed write asks', () => {
-  assert.ok(asks('aspenx record create account_p --data \'{"name_c":"Acme"}\' --confirmed'))
-  assert.ok(asks('aspenx record update account_p --data \'{"id_p":"x"}\' --confirmed'))
-})
-
-test('a confirmed delete says it cannot be undone', () => {
-  const reason = decide('aspenx record delete account_p --id abc --confirmed')
-  assert.match(reason, /cannot be undone/)
-})
-
-test('reads are never gated', () => {
-  assert.equal(decide("aspenx record query --aql 'SELECT id_p FROM account_p'"), null)
-  assert.equal(decide('aspenx describe object_p'), null)
+test('record traffic is not guarded here, because there is no record verb to guard', () => {
+  // The aspen CLI has no record verbs. A rule matching some other tool's command shape
+  // would imply record writes are covered when nothing is; verify-change owns that gate
+  // in the conversation instead.
+  for (const cmd of [
+    'aspen record create account_p',
+    'curl -X POST https://example.aspen-crm.com/api/v24.3/data/account_p'
+  ]) assert.equal(decide(cmd), null, cmd)
 })
 
 // ---- the contract with the host ---------------------------------------------

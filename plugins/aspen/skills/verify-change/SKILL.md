@@ -32,54 +32,41 @@ checkin said. Go to `diagnose`.
 A read-back is enough on its own for anything structural — a new picklist value, a
 layout section, a renamed label. Stop here unless the change is about *data*.
 
-## Level 2 — round-trip a record (gated)
+## Level 2 — exercise it with data (the human's step)
 
-For a change that has to hold data — a new field, a required flag, a relationship, a
-type change — the proof is a record: create one, read it back, confirm the value
-survived the round trip.
+For a change that has to hold data — a new field, a required flag, a relationship, a type
+change — reading the model back is not proof. A field can be present, correctly typed,
+and still reject or mangle the value you put in it. The proof is a record: create one,
+read it back, confirm the value survived.
 
-This writes to a shared instance. **Get explicit human approval first.**
+**You almost certainly cannot do this yourself.** The `aspen` CLI is the metadata lane and
+has no record verbs — check `aspen --help` and see for yourself rather than taking this
+skill's word for it, since the CLI is the authority on its own commands. If a project has
+some other record access, it is that project's, not something this plugin assumes.
 
-### The approval gate
+So Level 2 is normally **handed to the human**: ask them to open the object in the UI,
+create or edit one record exercising exactly what you changed, and tell you what happened.
+Make the ask specific enough to act on:
 
-Before any command that writes, put this in front of the human and wait for a clear yes:
+> Please open a Contract record and set **Renewal Date** and **ARR**. I need to know the
+> date picker accepts it and the amount saves with two decimals. Anything you create stays
+> on the instance — nothing on the platform is deleted.
 
-- **What object** you will write to.
-- **The exact field values**, written out — not "a test record", the actual payload.
-- **That it is permanent.** Anything you create while testing stays on the instance and
-  other people will see it. Do not plan on cleaning up afterwards; write as though you
-  cannot.
-- **Which instance** — confirm the binding rather than assuming it, so nobody discovers
-  the test data was written somewhere that mattered.
+### If you do have a way to write
 
-Then wait. Silence is not approval, and neither is the human having approved a different
-write earlier in the session. Ask again for each one.
+Whoever runs it, the same gate applies **before** anything reaches the instance:
 
-The plugin's `guard-destructive` hook also stops and asks on a confirmed write. **That
-is a backstop, not the approval** — it catches the case where you forgot, and a human
-clicking through a permission prompt has not seen the field values. The approval happens
-in the conversation, in your words, before you run anything.
+- **What object**, and **the exact field values** — written out, not "a test record".
+- **That it is permanent.** What you create while testing stays, and other people see it.
+  Do not plan on cleaning up; write as though you cannot.
+- **Which instance** — confirm the binding rather than assuming it.
 
-### Running it
+Then wait for a clear yes. Silence is not approval, and neither is a yes to a different
+write earlier in the session; ask again for each one.
 
-There are no record verbs in the `aspen` CLI — it is the metadata lane. Record traffic
-goes through a separate tool (`aspenx`, or a runtime MCP, depending on how this machine
-is set up). **Check what is actually available** — `aspenx --help` — rather than assuming
-it is installed; if there is no record lane here, say so and stop at Level 1 instead of
-inventing one.
-
-Where `aspenx` is present, the shape of the round trip is:
-
-1. **Read first.** A query or a describe costs nothing and is never gated. Confirm the
-   object and the field names you are about to write.
-2. **Dry-run the write.** `aspenx` refuses a write without `--confirmed` and sends
-   nothing, so running it un-confirmed shows you exactly what would go without touching
-   the instance. Show the human that output — it is the best possible version of the
-   approval gate above.
-3. **Write, once approved.** Re-run with `--confirmed`.
-4. **Read it back by id** and confirm the value the instance stored is the value you
-   sent. A write that reports success and stores something else — a truncated string, a
-   coerced number, an empty lookup — is the failure this whole step exists to catch.
+Then **read the record back by id** and compare against what you sent. A write that
+reports success and stores something else — a truncated string, a coerced number, an
+empty lookup — is the failure this whole step exists to catch.
 
 ## Report what you actually proved
 
@@ -100,5 +87,5 @@ someone else.
 | "I'll create a test record to check" | Not until the human has seen the object, the values, and approved. |
 | "I'll delete the test record afterwards" | Write as though you cannot. Get approval on that basis. |
 | "They approved a write earlier" | Approval is per write, not per session. |
-| "The permission prompt is the approval" | The prompt is a backstop. The human has not seen the values in it. |
 | "The write returned 200, so the value is right" | Read it back by id. Coercion and truncation both return success. |
+| "I'll write a test record to check" | The CLI has no record verbs. Ask the human to exercise it, or say you could not. |

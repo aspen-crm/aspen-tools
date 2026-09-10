@@ -31,6 +31,22 @@ A page marked **unresolved** has no resolved layer, so its member list is what w
 authored, not what the instance actually has. Say so when it matters; do not present an
 unresolved count as the truth.
 
+## Object types
+
+An object can declare `uses-object-types`, and where it does, a component may name one
+type through an `object-type` attribute. On a real instance that means **one object has
+several layouts** — `product_p.layout_p` for its base type and
+`product_p.bundle_p.layout_p` for another — and the base type's layout drops the type from
+its name while every other type keeps it.
+
+That is normal structure, **not a duplicate and not an outlier**. If you are mapping a type
+that carries `object-type`, group by object first and report the per-type variants as the
+shape they are. Reporting them as anomalies is the specific mistake this section exists to
+prevent.
+
+A type with no component of its own falls back to the object's, so an object having fewer
+layouts than it has types is also not a finding.
+
 ## How to read
 
 1. Read your inventory file whole. It is scoped to your type, so it is small enough.
@@ -80,6 +96,10 @@ Write exactly one file, `.aspen-model/maps/<ctype>.md`:
   map that admits a gap is useful; a map that guesses is a trap.
 - **Never describe a derived member as authorable.** Members marked *derived — do not
   author* are added by the instance. An agent that authors one causes a checkin error.
+- **Do not compute UI coverage.** Which objects have a layout, list view or tab is
+  answered for free by `hooks/ui-coverage.mjs`. Reading files to work it out again is
+  paying tokens for something a script already did; map what the components *mean*
+  instead.
 - **Quote real names.** "Most objects carry `extid_p`" beats "objects carry audit
   fields".
 - **Be specific and short.** This file is read to decide something, not to be admired.

@@ -34,13 +34,25 @@ in Claude Code:
 /plugin install aspen@aspen
 ```
 
-When the plugin is installed, the `using-aspen` and `read-metadata` skills become available.
+When the plugin is installed, its skills become available and route themselves as you work:
+
+| Skill | For |
+| --- | --- |
+| `using-aspen` | the entry point — discovers the CLI, routes everything else |
+| `read-metadata` | read the instance's model before authoring |
+| `map-model` | understand what the model *means*, not just what exists |
+| `complete-object-ui` | a new object needs a layout, list view and tab |
+| `verify-change` | prove a change works; a green checkin is not proof |
+| `diagnose` | a compile or checkin failed — reproduce before fixing |
 
 ## Step 3 — Build
 
 Invoke the `using-aspen` skill and follow where it routes you. It discovers the CLI's commands from
 `aspen --help` (nothing hardcoded), reads the instance's model with `read-metadata` before you
-author, and drives the extend-`_p` / author-`_c` loop.
+author, and drives the loop: **discover -> author -> compile -> deploy -> verify**.
+
+The last step is a real one. A checkin that goes green proves the metadata compiled, not that the
+change works — `verify-change` is what closes it.
 
 ## Safety
 
@@ -48,3 +60,6 @@ author, and drives the extend-`_p` / author-`_c` loop.
 - Never see, type, ask for, or print an API token.
 - Metadata and records on the platform cannot be deleted, so anything you create while testing is
   permanent — say so before the human starts.
+- The instance is shared with other builders. Some `aspen move` commands clear the dev set or halt
+  an in-flight checkin, which reaches their work — confirm with the human first. The plugin's
+  `guard-destructive` hook will stop and ask as well, but that is a backstop, not the approval.

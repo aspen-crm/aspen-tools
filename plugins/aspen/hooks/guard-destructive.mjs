@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // PreToolUse (Bash) guard for the commands whose effects reach past the person running
-// them: the instance's shared dev set, and record writes that cannot be taken back.
+// them: the instance's shared dev set.
+//
+// Record writes are deliberately NOT guarded here. The `aspen` CLI has no record verbs at
+// all, so there is no command shape to match, and a rule matching a tool this toolchain
+// does not have would be worse than no rule -- it would read as though record writes were
+// covered when nothing is. `verify-change` owns that gate, in the conversation.
 //
 // It never blocks. Every match returns `permissionDecision: "ask"`, which puts the
 // decision in front of the human rather than refusing what is often a legitimate
@@ -42,24 +47,6 @@ const SHARED_STATE = [
   }
 ]
 
-// Record writes. aspenx refuses a write without `--confirmed` and sends nothing, so the
-// un-confirmed form is a useful dry run and gets no prompt; the gate belongs on the form
-// that actually reaches the instance.
-const RECORD_WRITES = [
-  {
-    verb: 'aspenx record delete',
-    reason: 'This permanently removes record(s) from the instance and cannot be undone. Confirm the object and the exact ids with the human -- read the records back first if you have not seen them.'
-  },
-  {
-    verb: 'aspenx record create',
-    reason: 'This writes record(s) to a shared instance, and what you create while testing stays there. Confirm the object and the exact field values with the human first.'
-  },
-  {
-    verb: 'aspenx record update',
-    reason: 'This overwrites field values on an existing record. Confirm the id and what changes -- old value to new -- with the human first.'
-  }
-]
-
 export function decide (command) {
   const norm = normalize(command)
 
@@ -69,11 +56,6 @@ export function decide (command) {
 
   for (const rule of SHARED_STATE) {
     if (norm.includes(rule.verb)) return rule.reason
-  }
-  if (norm.includes('--confirmed')) {
-    for (const rule of RECORD_WRITES) {
-      if (norm.includes(rule.verb)) return rule.reason
-    }
   }
   return null
 }

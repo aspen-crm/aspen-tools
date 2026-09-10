@@ -22,6 +22,17 @@ Run this **once per download**, not once per session. Maps survive a rebuild.
 Skip it for a question a grep answers. Mapping thousands of components is real token
 spend.
 
+**Skip it for coverage questions too.** "Which objects have a layout, a list view, a tab"
+is deterministic, and `hooks/ui-coverage.mjs` answers it in a second without an agent:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/hooks/ui-coverage.mjs" report [object]
+```
+
+Map `layout_p`, `list_view_p` and `tab_p` to learn what those components *are* on this
+instance — the section conventions, what references what, where a builder extends one.
+Not to count them.
+
 ## Fan out
 
 1. **Read `.aspen-model/index.md`.** Its component-type table lists every type, its
