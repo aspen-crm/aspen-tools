@@ -134,10 +134,14 @@ version-less names, overwritten on each publish. That is what keeps the
 README's download links permanent.
 
 It is deliberately **not** GitHub's own `/releases/latest/`, which resolves to
-the most recent release ACROSS THIS WHOLE REPOSITORY -- so publishing an
-`aspen-code--` or `aspen-cowork--` release would silently repoint every Builder
-download link at a release holding no installers, 404ing with nothing to say
-why.
+the most recent release ACROSS THIS WHOLE REPOSITORY.
+
+**This is no longer hypothetical.** `/releases/latest/` currently resolves to
+`stdio-mcp-v0.1.14`, which holds no installers -- so a Builder link written
+against it would 404 today, with nothing on the page to say why. Every download
+link in the README points at a FIXED tag (`builder-latest`, `stdio-mcp-latest`)
+for exactly this reason. Keep it that way: a link that names a release by
+recency belongs to whichever tool shipped last.
 
 The versioned `builder-vX.Y.Z` release remains the archive, and the only way to
 get a specific older build.
@@ -201,6 +205,13 @@ link at a release holding no bundles.
 Do not move `stdio-mcp-latest` backwards. The versioned release is the archive
 and can be published for any version; the pointer everyone downloads should
 only go forward.
+
+It is paired with the `aspen-cowork` plugin, and the pairing runs one way: the
+plugin teaches tools the server owns. **The server is the authority on both the
+tool names and the error codes.** A server release that renames a tool or drops
+an error code breaks the plugin's guidance without changing a file in
+`plugins/aspen/cowork/`, and nothing here will fail to build. When the server
+moves, re-read the cowork skills against it and cut a plugin release too.
 
 ### The notes are public
 

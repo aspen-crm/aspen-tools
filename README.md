@@ -63,6 +63,9 @@ personal API key created in the instance's **API Keys** screen. Leave the API
 base path at its default. The key is held in Desktop's secret store, and the
 model never sees it.
 
+The server carries the tools; the `aspen-cowork` plugin below carries the
+procedures for using them well. Take both -- neither is much use alone.
+
 The `stdio-mcp-latest` release says which version it currently holds. For a
 specific version, or an older one, use the
 [`stdio-mcp-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=stdio-mcp&expanded=true)
@@ -86,10 +89,10 @@ this repository directly rather than from a release:
 | Plugin | Lane | Needs |
 | --- | --- | --- |
 | [aspen-code](plugins/aspen/code) | Customize an instance: read the model, author `_c` components, compile, deploy, verify. | The `aspen` CLI, which comes with Aspen Builder. |
-| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create and update. | The Aspen runtime MCP (`.mcpb`), installed in your host. |
+| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create and update. | The Aspen Runtime MCP `.mcpb`, above. |
 
-`aspen-cowork` teaches tools it does not carry, so it does nothing without the
-runtime MCP server — its README says how to get one.
+`aspen-cowork` teaches tools it does not carry, so it does nothing on its own —
+install the runtime MCP alongside it.
 
 The marketplace they come from is named `aspen`, which is what the `@aspen`
 suffix refers to. Updating the marketplace picks up whatever is on the default

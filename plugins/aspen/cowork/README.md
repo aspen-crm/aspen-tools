@@ -15,10 +15,17 @@ pro-code loop (author → validate → deploy → verify), that is the sibling
 Two pieces: the runtime MCP `.mcpb` (the tools) and this plugin (the knowledge). Neither
 works alone — the plugin teaches tools it does not carry.
 
-1. **The server.** The `.mcpb` bundle is not distributed from this repository; ask for the
-   build for your OS (`macos`, `windows`, `linux-x86_64`, `linux-aarch64`). Install it in
-   your host — Claude Desktop / Cowork: double-click, or Settings → Extensions — then enter
-   your instance base URL and API token when prompted.
+1. **The server.** Download the bundle for your machine. These links always give you the
+   current version:
+
+   | Platform | Download |
+   | --- | --- |
+   | macOS | [aspen-runtime-mcp-macos.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
+   | Windows | [aspen-runtime-mcp-windows.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
+
+   Install it in your host — Claude Desktop / Cowork: double-click, or Settings →
+   Extensions — then enter your instance base URL and API token when prompted. You never
+   type the token anywhere else; the bundle holds it in its own config.
 
 2. **This plugin.**
 
