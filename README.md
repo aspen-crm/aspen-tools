@@ -105,6 +105,15 @@ The marketplace they come from is named `aspen`, which is what the `@aspen`
 suffix refers to. Updating the marketplace picks up whatever is on the default
 branch, so you do not wait for a release to get a fix.
 
+**Setting up a machine for `aspen-code`?** [docs/start.md](docs/start.md) is a
+setup guide written for Claude Code to execute. Hand it over verbatim -- a
+pasted GitHub URL gets summarized on the way in, and the summary drops the
+steps that matter. Paste this into Claude Code:
+
+```
+Run `curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/start.md` and follow the document it prints, step by step.
+```
+
 ## Example customer repository
 
 `example-customer-repo/` is the smallest project that exercises every part of

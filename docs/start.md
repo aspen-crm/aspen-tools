@@ -74,8 +74,10 @@ The plugin's hooks and its `.aspen-model/` digest follow the session's directory
 its path arguments to this folder, and `.aspen/bin/aspen` only resolves from here — so a session
 rooted anywhere else lines up with nothing.
 
-Run `ls ~/Aspen` and read the entries. If the session is not already rooted in the right one, hand
-that to the human — reopening Claude Code is their step, and `cd` is not a substitute for it:
+Run `ls ~/Aspen` and read the entries, then hand the human the reopen — even if this session is
+already rooted in the right folder. A plugin installed into a running session has no hooks yet;
+they attach when a session starts. Reopening Claude Code is their step, and `cd` is not a
+substitute for it:
 
 ```
 Please reopen Claude Code in ~/Aspen/<domain>-<instance>, then tell me when you're back.

@@ -35,12 +35,16 @@ If it does not:
 
 ## The rule: discover the CLI, do not assume it
 
-Your tool is the `aspen` CLI. **The CLI is the source of truth for its own commands** — this plugin
-deliberately names almost none, because a hardcoded verb list goes stale the moment the CLI changes.
+Your tool is the `aspen` CLI. It lives inside the instance folder at `.aspen/bin/aspen` — Builder
+puts it there and does not add it to `PATH`, and neither do you. Run it by that path from the
+instance folder; everywhere these skills say `aspen`, that is the command they mean.
 
-- Run `aspen --help` to see the top-level commands, then `aspen <command> --help` and
-  `aspen <command> <subcommand> --help` to find the exact verbs, arguments, and flags for the task
-  in front of you.
+**The CLI is the source of truth for its own commands** — this plugin deliberately names almost
+none, because a hardcoded verb list goes stale the moment the CLI changes.
+
+- Run `.aspen/bin/aspen --help` to see the top-level commands, then `--help` on the one command
+  you are about to run for its exact verbs, arguments, and flags. Read help for the task in front
+  of you, not the whole tree.
 - If a capability seems to be missing, check help before concluding it is — do not guess a verb or
   a flag and run it hopefully.
 - The CLI is agent-aware: it detects when an agent is driving it and adjusts its output. You can
@@ -52,7 +56,7 @@ deliberately names almost none, because a hardcoded verb list goes stale the mom
 |--------|-------|
 | You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata` |
 | You need to understand the model, not just list it — conventions, relationships, extension points | `map-model` |
-| Authoring, compiling, or deploying a change | discover the commands with `aspen --help` and run the loop |
+| Authoring, compiling, or deploying a change | discover the commands with `.aspen/bin/aspen --help` and run the loop |
 | You created or extended an object, or it cannot be seen in the UI | `complete-object-ui` |
 | A checkin or deploy succeeded and you need to prove the change actually works | `verify-change` |
 | A compile, checkin, or deploy failed, or the instance is behaving unexpectedly | `diagnose` |
@@ -85,7 +89,8 @@ trust it.
 |---------|---------|
 | "I'll `cd` to the instance folder and work from here" | The hooks follow the session's directory, not your shell's. Have the human reopen Claude Code there. |
 | "There is no instance folder, so I'll run `aspen init`" | Builder creates it. `init` adds a Rust crate, a TypeScript project and a rival `CLAUDE.md`. |
-| "`aspen <verb>` probably exists" | This plugin lists no verbs. Run `aspen --help` and confirm. |
+| "`aspen <verb>` probably exists" | This plugin lists no verbs. Run `.aspen/bin/aspen --help` and confirm. |
+| "`aspen` is not found, so I'll find it or put it on `PATH`" | It is at `.aspen/bin/aspen` in the instance folder. Run it by that path. |
 | "I'll guess the object or field names" | Read them with `read-metadata`; the instance is the source of truth. |
 | "I'll hand-write the metadata from memory" | Pull the active set and copy the shape of a real component. |
 | "I'll validate the change myself first" | The instance validates on checkin. Deploy and read its errors. |

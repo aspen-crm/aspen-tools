@@ -126,7 +126,7 @@ unplaced tab is not automatically wrong; ask rather than assume.
 
 ## Closing
 
-Deploy with the commands `aspen --help` gives you, then go to `verify-change`. Re-run the
+Deploy with the commands `.aspen/bin/aspen --help` gives you, then go to `verify-change`. Re-run the
 coverage report afterwards: it reads the tree, so it is the cheapest confirmation that
 what you authored actually landed.
 
