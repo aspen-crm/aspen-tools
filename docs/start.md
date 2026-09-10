@@ -14,14 +14,19 @@ creates that instance's folder at `~/Aspen/<domain>-<instance>` and installs the
 there: run it by that path from the instance folder. Everywhere this document or the plugin's
 skills say `aspen`, that means `.aspen/bin/aspen`.
 
-Run `ls ~/Aspen/*/.aspen/bin/aspen*`. If it lists a binary, the CLI is installed — run it with
-`--version` to confirm, then go to Step 2. There is no `whoami`: sign-in shows itself the first
-time you run a command that talks to the instance, which fails with `No instance is logged in.`
-if the human has not signed in.
+Find it and check its version in one command — don't split this into two:
 
-If nothing is listed, this is the human's step — installing a desktop app, signing in and opening
-the instance is not something you do for them. Hand them the Builder download for their machine
-and wait:
+```
+a=$(find ~/Aspen -path '*/.aspen/bin/aspen' 2>/dev/null | head -1); [ -n "$a" ] && "$a" --version || echo "no aspen CLI yet"
+```
+
+If it prints a version, the CLI is installed — go to Step 2. (There is no `whoami`; whether the
+human has signed in shows itself the first time you run a command that talks to the instance, which
+fails with `No instance is logged in.` — handle that if and when it happens, not now.)
+
+If it prints `no aspen CLI yet`, this is the human's step — installing a desktop app, signing in
+and opening the instance is not something you do for them. Hand them the Builder download for their
+machine and wait:
 
 - macOS (Apple Silicon): https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-arm64.dmg
 - Windows (x64): https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-x64.exe
@@ -34,8 +39,8 @@ then ask them to open Builder again:
 xattr -dr com.apple.quarantine "/Applications/Aspen Builder.app"
 ```
 
-When they say Builder is installed, they have signed in and the instance is open, run
-`ls ~/Aspen/*/.aspen/bin/aspen*` again and verify `--version` on what it lists. If a later command
+When they say Builder is installed, they have signed in and the instance is open, run the same
+one-liner again to confirm a version prints. If a later command
 reports `No instance is logged in.`, ask them to sign in in Builder — or, as a fallback, run
 `.aspen/bin/aspen login --instance <instance>` from the instance folder and let them approve it in
 the browser. You never see, type, ask for, or print a token.
