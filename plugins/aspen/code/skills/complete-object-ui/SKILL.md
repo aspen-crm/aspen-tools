@@ -115,14 +115,18 @@ unplaced tab is not automatically wrong; ask rather than assume.
 
 ## Authoring the files
 
-- **Copy the shape of a real component of the same type.** Never invent an attribute
-  name or an enum value — `aspen-model-reader` brings back a working example verbatim in
-  one step, and guessing costs a checkin round trip.
+- **Do not hand-write the JSON.** `node "${CLAUDE_PLUGIN_ROOT}/hooks/scaffold.mjs" new
+  <ctype> <name>` copies the shape from a real component of the type — the attribute set,
+  the entry shapes, the enum values — so you never invent one. Set what you decided with
+  `--label`, `--add <array>=<ref>` and `--set <path>=<json>`; it lists any reference it
+  could not carry for you to fill.
 - **Name it `<object>.<ctype>`** — `deal_c.layout_p`, `deal_c.list_view_p`,
   `deal_c.tab_p`. That is what this instance does; the exceptions are platform-only.
 - Every field you reference must exist on the object. Check against the resolved layer.
-- Hand `aspen-executor` the files — full content, into the authored root, one file per
-  component — and let the human review the diff rather than the JSON.
+- The tab and its list view point at each other: scaffold the list view, then the tab
+  with `--set default-list-view=<view>`, then add the view's `tab` back.
+- Once the files look right, hand `aspen-executor` the compile-and-checkin commands and
+  let the human review the diff rather than the JSON.
 
 ## Closing
 

@@ -14,9 +14,10 @@ you are for.
 
 ## What you are given
 
-- **Files** — for each, the path (always under the authored root — `metacode/metadata/<ctype>/`
-  in a Builder folder) and its full content, or a real component's path to copy plus the
-  exact edits to make to the copy.
+- **Files** — either exact `scaffold.mjs` commands to run (the usual case — the session
+  builds a component's file from a real one that way), or, for a hand-authored file, its
+  path under the authored root (`metacode/metadata/<ctype>/` in a Builder folder) and its
+  full content. Run the scaffold commands as given; do not second-guess the shape.
 - **Commands** — an ordered list, each spelled out: `.aspen/bin/aspen compile`, then
   `.aspen/bin/aspen move save-package`, and so on. The CLI is at `.aspen/bin/aspen` in
   the session's folder; it is not on `PATH`, and you do not put it there.
