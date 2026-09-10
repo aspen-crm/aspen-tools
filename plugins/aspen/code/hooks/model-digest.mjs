@@ -18,6 +18,7 @@
 
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { basename, join, relative, resolve } from 'node:path'
 
 const CONFIG_NAME = 'aspen-model.json'
@@ -55,6 +56,35 @@ function newestMtime (paths) {
 // metadata root -- real projects are full of those.
 const CTYPE_DIR = /_[pc]$/
 const ctypeDirs = (root) => subdirs(root).filter((d) => CTYPE_DIR.test(basename(d)) && jsonFiles(d).length > 0)
+
+// ------------------------------------------------------------- instance folder
+
+// Builder creates one folder per instance under ~/Aspen, named <domain>-<instance>,
+// and `aspen init --dir` defaults to the same root. That folder is where a session
+// has to be rooted: the CLI resolves the instance from the login, and the hooks and
+// the digest all key off the session's own directory.
+const ASPEN_HOME = 'Aspen'
+const BUILDER_STATE = join('.aspen', 'state.json')
+
+// Recognise the folder by what Builder leaves in it, never by its name -- the name
+// is the instance's, and nothing on disk has to match it. `.aspen/` holds the token
+// as well as the cache, so existence is all this ever asks about; it is never read.
+const isInstanceFolder = (dir) =>
+  isDir(join(dir, 'metacode')) || existsSync(join(dir, BUILDER_STATE))
+
+// Where this session sits relative to the instance folders on the machine.
+export function locate (cwd, home = homedir()) {
+  if (isInstanceFolder(cwd)) return { where: 'instance', name: basename(cwd) }
+
+  // Only ever speak up from the two directories a person lands in by mistake. A
+  // machine with instance folders on it is somebody's daily driver, and an Aspen
+  // notice in an unrelated repo is noise every session for the rest of their life.
+  const root = join(home, ASPEN_HOME)
+  if (cwd !== root && cwd !== home) return { where: 'elsewhere' }
+
+  const instances = subdirs(root).filter(isInstanceFolder).map((d) => basename(d))
+  return instances.length ? { where: 'near', instances } : { where: 'elsewhere' }
+}
 
 // ---------------------------------------------------------------------- detect
 
@@ -518,13 +548,30 @@ function cmdVerify (dir) {
   }
 }
 
-function sessionStart (cwd) {
+// What to say when there is no metadata to index: it depends entirely on where the
+// session is, and in most places the answer is nothing at all.
+function guidance (place) {
+  if (place.where === 'instance') {
+    return `This is the Aspen instance folder \`${place.name}\`, but no metadata has been ` +
+      'downloaded into it yet. Read the model before authoring — the `read-metadata` skill has ' +
+      'the loop for pulling the active set. The digest builds itself once the files land.'
+  }
+  if (place.where === 'near') {
+    return 'No Aspen metadata here. Builder keeps each instance in its own folder under ' +
+      `\`~/${ASPEN_HOME}\`: ${place.instances.map((n) => `\`${n}\``).join(', ')}. Aspen work happens ` +
+      'with Claude Code rooted in one of those — ask the human to reopen it there rather than ' +
+      'working from here.'
+  }
+  return ''
+}
+
+function sessionStart (cwd, home = homedir()) {
   const config = loadConfig(cwd)
   if (!config) {
-    // No config. Say so only if this actually looks like an Aspen project -- otherwise
-    // stay silent, because most projects have nothing to do with Aspen.
+    // No config. Metadata on disk means this is an Aspen project that just needs
+    // indexing; otherwise where the session sits decides whether to say anything.
     const found = detect(cwd)
-    if (!Object.keys(found.roots).length) emit('')
+    if (!Object.keys(found.roots).length) emit(guidance(locate(cwd, home)))
     emit(`Aspen metadata is here but not indexed. Run \`node "\${CLAUDE_PLUGIN_ROOT}/hooks/model-digest.mjs" detect\` to write ${CONFIG_NAME}, then build the digest.`)
   }
   const state = readState(config)

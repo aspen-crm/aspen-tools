@@ -14,6 +14,25 @@ You are customizing an **Aspen** CRM. Two kinds of work, one loop:
 The loop is the same for both, and the same for you, the human, and CI:
 **discover -> author -> compile -> deploy -> verify**.
 
+## Step zero: know where you are
+
+Every Aspen session is rooted in the **instance folder** — the one Aspen Builder creates at
+`~/Aspen/<domain>-<instance>`, for example `~/Aspen/veeva.com-treehouse`. It holds
+`metacode/{platform,active,compiled,metadata}`, the exported record data, and Builder's private
+`.aspen/` cache. The CLI takes which instance you are working on from the login and defaults its
+own path arguments to this folder; the plugin's hooks and the `.aspen-model/` digest key off the
+session's directory. Nothing lines up if the session is rooted anywhere else.
+
+Confirm you are in it before anything else — the directory should hold `metacode/` and `.aspen/`.
+If it does not:
+
+- List `~/Aspen`. Each entry is one instance folder.
+- **Stop and ask the human to reopen Claude Code in the right one.** Do not `cd` there and work
+  from a session rooted elsewhere: the hooks run against the session's directory, so the digest
+  and the guards would be watching a tree you are not editing.
+- If `~/Aspen` is empty or missing, the human has not opened this instance in Builder yet. That
+  is their step, not yours.
+
 ## The rule: discover the CLI, do not assume it
 
 Your tool is the `aspen` CLI. **The CLI is the source of truth for its own commands** — this plugin
@@ -45,6 +64,10 @@ trust it.
 
 ## Non-negotiables
 
+- **Builder owns the instance folder — never run `aspen init`.** It scaffolds a Rust crate, a
+  TypeScript project, and its own `AGENTS.md` and `CLAUDE.md` into the folder. None of that is
+  needed to customize a CRM, and those last two compete with these skills. Builder creates the
+  folder; when it is missing, the human opens the instance in Builder.
 - **Never handle the human's credentials.** Signing in (`aspen login`) is a browser hand-off you
   start and the human completes. You never see, type, ask for, or print a token.
 - **The instance is shared.** Some `aspen move` operations clear the dev set or halt an in-flight
@@ -60,6 +83,8 @@ trust it.
 
 | Thought | Reality |
 |---------|---------|
+| "I'll `cd` to the instance folder and work from here" | The hooks follow the session's directory, not your shell's. Have the human reopen Claude Code there. |
+| "There is no instance folder, so I'll run `aspen init`" | Builder creates it. `init` adds a Rust crate, a TypeScript project and a rival `CLAUDE.md`. |
 | "`aspen <verb>` probably exists" | This plugin lists no verbs. Run `aspen --help` and confirm. |
 | "I'll guess the object or field names" | Read them with `read-metadata`; the instance is the source of truth. |
 | "I'll hand-write the metadata from memory" | Pull the active set and copy the shape of a real component. |
