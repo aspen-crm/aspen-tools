@@ -9,7 +9,7 @@ separately as [aspen-cowork](../cowork).
 | Skill           | Invoke             | What it does                                                              |
 | --------------- | ------------------ | ------------------------------------------------------------------------- |
 | `using-aspen`   | routes on any task | The entry point: discover the CLI at `.aspen/bin/aspen` (nothing hardcoded), extend delivered components, author custom ones, and the safety rails. |
-| `read-metadata` | routes on any task | Read the instance's model as the source of truth, starting from the digest, before authoring or changing anything. |
+| `read-metadata` | routes on any task | Read the instance's model as the source of truth before authoring or changing anything — a reader agent on a faster model walks the digest and brings back paths and shapes. |
 | `map-model`     | after a download   | Fans out one subagent per component type to write what each type *means* — conventions, relationships, extension points. |
 | `verify-change` | after a checkin    | Proves the change actually works — read the resolved model back, then exercise it with data. Any write is permanent and human-approved first. |
 | `diagnose`      | on a failure       | Reproduce, then localize to a checkin phase before changing anything. No fix without a reproduction. |
@@ -154,8 +154,10 @@ metadata.
 
 ```
 .claude-plugin/plugin.json          # plugin manifest (name: aspen-code)
-agents/aspen-component-mapper.md    # one type's mapper; no Bash, no network
+agents/aspen-model-reader.md        # answers one model question from the digest; sonnet
+agents/aspen-component-mapper.md    # one type's mapper; sonnet; no Bash, no network
 agents/aspen-ui-proposer.md         # proposes layout sections and list view columns
+agents/aspen-executor.md            # writes decided files, runs decided commands; sonnet
 hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
 hooks/model-digest.mjs              # the digest: detect, build, verify, hooks
 hooks/guard-destructive.mjs         # PreToolUse: ask before clearing shared instance state

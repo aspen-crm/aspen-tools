@@ -115,20 +115,20 @@ unplaced tab is not automatically wrong; ask rather than assume.
 
 ## Authoring the files
 
-- **Copy the shape of a real component of the same type.** Read one from the downloaded
-  metadata and edit it. Never invent an attribute name or an enum value — `read-metadata`
-  gets you a working example in one step, and guessing costs a checkin round trip.
+- **Copy the shape of a real component of the same type.** Never invent an attribute
+  name or an enum value — `aspen-model-reader` brings back a working example verbatim in
+  one step, and guessing costs a checkin round trip.
 - **Name it `<object>.<ctype>`** — `deal_c.layout_p`, `deal_c.list_view_p`,
   `deal_c.tab_p`. That is what this instance does; the exceptions are platform-only.
 - Every field you reference must exist on the object. Check against the resolved layer.
-- Write into the authored root, one file per component, and let the human review the
-  diff rather than the JSON.
+- Hand `aspen-executor` the files — full content, into the authored root, one file per
+  component — and let the human review the diff rather than the JSON.
 
 ## Closing
 
-Deploy with the commands `.aspen/bin/aspen --help` gives you, then go to `verify-change`. Re-run the
-coverage report afterwards: it reads the tree, so it is the cheapest confirmation that
-what you authored actually landed.
+Give `aspen-executor` the deploy commands `.aspen/bin/aspen --help` gives you, then go to
+`verify-change`. Re-run the coverage report afterwards: it reads the tree, so it is the
+cheapest confirmation that what you authored actually landed.
 
 ## Red flags — STOP
 

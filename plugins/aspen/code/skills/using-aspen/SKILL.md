@@ -50,13 +50,31 @@ none, because a hardcoded verb list goes stale the moment the CLI changes.
 - The CLI is agent-aware: it detects when an agent is driving it and adjusts its output. You can
   force this with `--agent yes`; prefer it for structured, non-interactive output.
 
+## Who does what
+
+You are the session that **decides**: what to build, what shape it takes, whether it worked.
+Reading and execution go to agents on a faster model, so your time goes on judgment, not on
+walking files:
+
+| Work | Who |
+|------|-----|
+| A question about the model — what exists, what a component looks like, where its authored file goes | `aspen-model-reader`, one per question |
+| What a whole component type *means* — conventions, relationships, extension points | `aspen-component-mapper`, fanned out by `map-model` |
+| A layout and list view proposal for an object | `aspen-ui-proposer` |
+| Writing the files you designed, then compile → save → checkin | `aspen-executor`, one per step |
+| Deciding, designing, confirming with the human, verifying, diagnosing | you |
+
+Spawn a reader rather than opening the digest yourself for anything beyond a single grep. Give
+an executor the exact files and the exact commands: it fills no gaps, stops at the first
+failure, and brings the error back to you — diagnosing it is yours.
+
 ## Router
 
 | Moment | Go to |
 |--------|-------|
-| You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata` |
+| You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata`, which spawns `aspen-model-reader` |
 | You need to understand the model, not just list it — conventions, relationships, extension points | `map-model` |
-| Authoring, compiling, or deploying a change | discover the commands with `.aspen/bin/aspen --help` and run the loop |
+| The change is decided — files to write, commands to run | `aspen-executor`, with the commands `.aspen/bin/aspen --help` gives you |
 | You created or extended an object, or it cannot be seen in the UI | `complete-object-ui` |
 | A checkin or deploy succeeded and you need to prove the change actually works | `verify-change` |
 | A compile, checkin, or deploy failed, or the instance is behaving unexpectedly | `diagnose` |

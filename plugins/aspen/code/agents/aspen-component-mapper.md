@@ -2,6 +2,7 @@
 name: aspen-component-mapper
 description: Reads one Aspen component type (objects, layouts, picklists, and so on) from the downloaded metadata and writes a map of it — shape, conventions, relationships, extension points. Spawned in parallel, one per type, by the map-model skill. Not for authoring or deploying.
 tools: Read, Grep, Glob, Write
+model: sonnet
 ---
 
 # Aspen component mapper
