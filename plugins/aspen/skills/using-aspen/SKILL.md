@@ -32,9 +32,13 @@ deliberately names almost none, because a hardcoded verb list goes stale the mom
 | Moment | Go to |
 |--------|-------|
 | You need to know the instance's model — what `_p` exists and is extendable, or what `_c` you have | `read-metadata` |
+| You need to understand the model, not just list it — conventions, relationships, extension points | `map-model` |
 | Authoring, compiling, or deploying a change | discover the commands with `aspen --help` and run the loop |
 
 Always read the model with `read-metadata` before you extend a `_p` component or author a `_c` one.
+The plugin keeps a Markdown digest of the instance's metadata at `.aspen-model/`, refreshed on
+session start and after every download — start there, and check its freshness stamp before you
+trust it.
 
 ## Non-negotiables
 
@@ -56,3 +60,5 @@ Always read the model with `read-metadata` before you extend a `_p` component or
 | "I'll guess the object or field names" | Read them with `read-metadata`; the instance is the source of truth. |
 | "I'll hand-write the metadata from memory" | Pull the active set and copy the shape of a real component. |
 | "I'll validate the change myself first" | The instance validates on checkin. Deploy and read its errors. |
+| "I'll add the companion field too" | Derived members are added by the instance. Authoring one is a checkin error. |
+| "The overlay file shows one field, so that's the object" | A component spans layers. Read the resolved view, not one file. |
