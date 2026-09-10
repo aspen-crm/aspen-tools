@@ -227,7 +227,7 @@ Two plugins ship from `plugins/aspen/`, and they are separate products:
 | `aspen-code` | `plugins/aspen/code/` | Author metadata with the `aspen` CLI | `aspen-code--vX.Y.Z` |
 | `aspen-cowork` | `plugins/aspen/cowork/` | Work live records over the runtime MCP | `aspen-cowork--vX.Y.Z` |
 
-Neither is installed from a release. Claude Code reads
+**In Claude Code, neither is installed from a release.** Claude Code reads
 `.claude-plugin/marketplace.json` at the root of this repository, so what a
 user installs is the repository's CONTENTS at the ref they add:
 
@@ -241,10 +241,67 @@ The marketplace is named `aspen`; that is what `@aspen` refers to, and it does
 not change when a plugin is added or renamed.
 
 That means a change to `plugins/aspen/code/` is live for anyone adding or
-updating the marketplace as soon as it lands on the default branch. An
-`aspen-code--vX.Y.Z` tag and release is therefore a MARKER and a changelog,
-not the delivery mechanism -- useful for saying what changed and for pinning,
-not for getting the code to people.
+updating the marketplace as soon as it lands on the default branch. For
+`aspen-code`, an `aspen-code--vX.Y.Z` tag and release is therefore a MARKER and
+a changelog, not the delivery mechanism -- useful for saying what changed and
+for pinning, not for getting the code to people.
+
+### `aspen-cowork` also ships as a zip, and that one IS the delivery
+
+Cowork installs a plugin by **uploading a zip** in Customize -> Plugins. It has
+no `/plugin` command, and pointing it at the marketplace has not worked in
+practice. So `aspen-cowork` is published as a release asset as well, and for a
+Cowork user that asset -- not the default branch -- is what they run.
+
+Build it from the plugin directory; never assemble one by hand:
+
+```bash
+./scripts/package-plugin.sh plugins/aspen/cowork    # -> dist/aspen-cowork-<version>.zip
+```
+
+The script stages the plugin, generates a one-plugin `marketplace.json` into the
+zip (the repository has no nested one to copy -- here the plugin is an entry in
+the root marketplace, in the zip there is no root marketplace to belong to),
+validates what is about to ship rather than the source tree, and pins every
+mtime to the plugin's last commit so two builds of one commit are byte-identical.
+Build from a clean tree: a dirty one reuses the previous commit's timestamp.
+
+**Why it is built and not hand-made.** The zip previously lived in a GCS bucket,
+maintained by hand. It drifted to five versions behind the repository and still
+carried the router under its pre-rename name, which collided with `aspen-code`'s
+router of the same name -- a bug that could not be seen from this repository,
+because nothing here referenced that file. Generated at tag time, that cannot
+recur. The bucket is gone; do not resurrect it.
+
+Publishing follows the runtime MCP's shape -- a versioned archive plus a fixed
+pointer tag, so the download link in `docs/installing-for-cowork.md` is
+permanent:
+
+```bash
+VERSION=0.1.8
+./scripts/package-plugin.sh plugins/aspen/cowork
+
+# versioned release: the archive
+gh release create "aspen-cowork--v$VERSION" "dist/aspen-cowork-$VERSION.zip" \
+  --repo aspen-crm/aspen-tools \
+  --title "Aspen Cowork $VERSION" --notes-file notes.md
+
+# aspen-cowork-latest: version-less filename, overwritten each time
+cp "dist/aspen-cowork-$VERSION.zip" dist/aspen-cowork-plugin.zip
+gh release upload aspen-cowork-latest dist/aspen-cowork-plugin.zip \
+  --repo aspen-crm/aspen-tools --clobber
+gh release edit aspen-cowork-latest --repo aspen-crm/aspen-tools \
+  --notes "Always the current Aspen Cowork plugin. Currently $VERSION."
+```
+
+`aspen-cowork-latest` is a fixed tag created with `--latest=false`, for the same
+reason `builder-latest` and `stdio-mcp-latest` are: GitHub's own "Latest"
+resolves across the whole repository. Do not move it backwards.
+
+**The zip and the marketplace must not diverge.** They are the same plugin
+delivered two ways, and a Cowork user and a Claude Code user comparing notes
+should be on the same version. Cut the zip from the same commit you tag, in the
+same pass -- not later, from whatever the tree looks like then.
 
 ### Cutting a plugin tag
 

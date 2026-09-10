@@ -94,6 +94,13 @@ this repository directly rather than from a release:
 `aspen-cowork` teaches tools it does not carry, so it does nothing on its own —
 install the runtime MCP alongside it.
 
+**Working in Cowork rather than Claude Code?** Cowork installs a plugin by
+uploading a zip, so take `aspen-cowork` from the release instead —
+[aspen-cowork-plugin.zip](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip),
+always the current build. Same plugin, same version; only the delivery differs.
+[docs/installing-for-cowork.md](docs/installing-for-cowork.md) is the end-to-end
+guide, covering the runtime MCP too.
+
 The marketplace they come from is named `aspen`, which is what the `@aspen`
 suffix refers to. Updating the marketplace picks up whatever is on the default
 branch, so you do not wait for a release to get a fix.
