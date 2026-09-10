@@ -151,10 +151,10 @@ open needs right-click then Open. Worth saying wherever the link is handed out.
 
 ## Runtime MCP
 
-Source lives in the private `aspen-crm/aspen-ai`, under `aspen-runtime-mcp/`.
-The `.mcpb` bundles are built there by `release-runtime-mcp.yml` and published
-HERE, so a download link can be handed to someone who has no access to the
-source.
+The source is private and lives elsewhere; the `.mcpb` bundles are built there
+by `release-runtime-mcp.yml` and published HERE, so a download link can be
+handed to someone who has no access to the source. Anyone who needs the source
+already knows where it is -- this page is read by people who do not.
 
 **Two files are published: macOS and Windows.** Claude Desktop, which is what
 installs an `.mcpb`, runs on those two only. The workflow also builds
