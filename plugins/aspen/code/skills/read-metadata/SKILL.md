@@ -9,29 +9,25 @@ The **instance is the source of truth** for the model. Read it before you extend
 delivered component or author a custom one — never guess an object, field, picklist, or
 layout shape from memory.
 
-## Start at the digest
+## Ask the reader
 
-The plugin keeps a Markdown index of the downloaded metadata at `.aspen-model/`, rebuilt
-on session start and after every download. Three levels, smallest first:
+The plugin keeps a Markdown digest of the downloaded metadata at `.aspen-model/`, built
+on session start and after every download. Do not walk it yourself: spawn
+`aspen-model-reader` with the question or the task, and it comes back with the
+components involved, their layers and paths, a real component's source to copy, the
+derived members to leave alone, and the digest's freshness. One reader per question;
+several questions, several readers in one message.
 
-1. `.aspen-model/index.md` — the map: component types, counts, inferred derived-member
-   rules, and which maps exist.
-2. `.aspen-model/types/<ctype>.md` — every component of one type. **Grep these**; a real
-   platform tier runs to thousands of rows.
-3. `.aspen-model/components/<page>.md` — one component's members, its layers, and the
-   paths to its source files.
-
-```
-grep -i "account" .aspen-model/types/*.md        # find it, get its page
-cat .aspen-model/components/object_p__account_p.md
-```
+A single name lookup is the exception — `grep -i "account" .aspen-model/types/*.md` is
+faster than an agent. Anything that needs a second file is the reader's.
 
 Where a mapper has been through a type, `.aspen-model/maps/<ctype>.md` says what that
 type *means*. Missing or `(stale)`, and the question needs understanding rather than a
 name? Invoke `map-model`.
 
-If `.aspen-model/` is missing, the project may not be configured yet — run the plugin's
-`detect` to write `aspen-model.json`, then build.
+If `.aspen-model/` is missing: in a Builder instance folder the session-start hook builds
+it, so the session is not rooted there — ask the human to reopen Claude Code in it.
+Anywhere else, run the plugin's `detect` to write `aspen-model.json`, then `build`.
 
 ## Four layers, one component
 
@@ -74,6 +70,6 @@ Re-pull too before touching something you have not looked at recently.
   component you just read rather than inventing it.
 - The digest tells you what exists and where it lives. A map tells you how the type
   behaves. The source file tells you what it looks like — and it is the only one of the
-  three you author against.
+  three you author against. The reader brings it back verbatim; design against that.
 - Find the exact CLI command with `.aspen/bin/aspen --help` and `.aspen/bin/aspen move --help`
   before you run anything. Do not assume the flags; the help output wins.

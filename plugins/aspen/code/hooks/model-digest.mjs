@@ -13,7 +13,8 @@
 //   detect         propose roots by sampling file content, write aspen-model.json
 //   build          rebuild unconditionally (run it by hand)
 //   verify <dir>   report what would be inferred from a real tree; writes nothing
-//   session-start  rebuild if the metadata changed since the last build, then report
+//   session-start  index a Builder folder the first time; otherwise rebuild if the
+//                  metadata changed since the last build, then report
 //   post-tool      react to an `aspen` command that just ran (rebuild, or mark stale)
 
 import { createHash } from 'node:crypto'
@@ -64,7 +65,8 @@ const ctypeDirs = (root) => subdirs(root).filter((d) => CTYPE_DIR.test(basename(
 // has to be rooted: the CLI resolves the instance from the login, and the hooks and
 // the digest all key off the session's own directory.
 const ASPEN_HOME = 'Aspen'
-const BUILDER_STATE = join('.aspen', 'state.json')
+const BUILDER_DIR = '.aspen'
+const BUILDER_STATE = join(BUILDER_DIR, 'state.json')
 
 // Recognise the folder by what Builder leaves in it, never by its name -- the name
 // is the instance's, and nothing on disk has to match it. `.aspen/` holds the token
@@ -494,6 +496,13 @@ const describe = (state, extra = '') =>
   `Aspen model digest ready at \`${DEFAULT_OUT}/index.md\` (${state.components} components, ` +
   `${state.resolved} resolved). Read it before authoring; ${extra || 'open a component\'s source file for its authoritative shape.'}`
 
+// Whether a skill loads is normally the model's call, made from its description. In
+// the instance folder that call is already made: every task here is an Aspen task, and
+// the router is the skill that knows it. Say so, so no session starts by guessing.
+const route = (cwd) =>
+  `This session is rooted in the Aspen instance folder \`${basename(cwd)}\`. Invoke the ` +
+  '`using-aspen` skill before doing anything here — it routes every Aspen task. '
+
 async function readStdin () {
   if (process.stdin.isTTY) return {}
   const chunks = []
@@ -566,18 +575,26 @@ function guidance (place) {
 }
 
 function sessionStart (cwd, home = homedir()) {
-  const config = loadConfig(cwd)
+  let config = loadConfig(cwd)
   if (!config) {
     // No config. Metadata on disk means this is an Aspen project that just needs
     // indexing; otherwise where the session sits decides whether to say anything.
     const found = detect(cwd)
     if (!Object.keys(found.roots).length) emit(guidance(locate(cwd, home)))
-    emit(`Aspen metadata is here but not indexed. Run \`node "\${CLAUDE_PLUGIN_ROOT}/hooks/model-digest.mjs" detect\` to write ${CONFIG_NAME}, then build the digest.`)
+    // In Builder's own folder the layout is Builder's convention, so a root classified
+    // by name is not a guess and there is nothing for a person to confirm: index it and
+    // carry on. Anywhere else, detect writes a proposal and the agent asks.
+    if (!isDir(join(cwd, BUILDER_DIR))) {
+      emit(`Aspen metadata is here but not indexed. Run \`node "\${CLAUDE_PLUGIN_ROOT}/hooks/model-digest.mjs" detect\` to write ${CONFIG_NAME}, then build the digest.`)
+    }
+    writeFileSync(join(cwd, CONFIG_NAME), JSON.stringify(found, null, 2) + '\n')
+    config = loadConfig(cwd)
   }
+  const lead = isInstanceFolder(cwd) ? route(cwd) : ''
   const state = readState(config)
-  if (state && !state.stale && currentMtime(config) <= state.sourceMtime) emit(describe(state))
+  if (state && !state.stale && currentMtime(config) <= state.sourceMtime) emit(lead + describe(state))
   const result = build(config)
-  emit(result.status === 'built' ? describe(result.state, 'it was just rebuilt from the metadata on disk.') : '')
+  emit(result.status === 'built' ? lead + describe(result.state, 'it was just rebuilt from the metadata on disk.') : lead)
 }
 
 function postTool (cwd, payload) {

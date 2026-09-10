@@ -220,6 +220,29 @@ test('with no config the session-start hook names detect and exits 0', () => {
   assert.match(out, /detect/)
 })
 
+test('in a Builder folder the session-start hook indexes without being asked', () => {
+  // Builder's folder has a fixed layout, so there is nothing for a person to confirm.
+  const cwd = project()
+  mkdirSync(join(cwd, '.aspen'))
+  const out = execFileSync('node', [SCRIPT, 'session-start'], { cwd, encoding: 'utf8', input: '' })
+  assert.ok(existsSync(join(cwd, 'aspen-model.json')))
+  assert.ok(existsSync(join(cwd, '.aspen-model', 'index.md')))
+  assert.match(out, /digest ready/)
+  assert.doesNotMatch(out, /detect/)
+})
+
+test('in an instance folder the session-start hook routes the session to using-aspen', () => {
+  // Whether the skill loads is the model's call; this makes it the folder's.
+  const cwd = project()
+  mkdirSync(join(cwd, '.aspen'))
+  const first = execFileSync('node', [SCRIPT, 'session-start'], { cwd, encoding: 'utf8', input: '' })
+  const again = execFileSync('node', [SCRIPT, 'session-start'], { cwd, encoding: 'utf8', input: '' })
+  for (const out of [first, again]) {
+    assert.match(out, /Invoke the `using-aspen` skill/)
+    assert.match(out, /Aspen model digest ready/)
+  }
+})
+
 test('the session-start hook stays silent in a project that is not Aspen', () => {
   const cwd = mkdtempSync(join(tmpdir(), 'not-aspen-'))
   const out = execFileSync('node', [SCRIPT, 'session-start'], { cwd, encoding: 'utf8', input: '' })
