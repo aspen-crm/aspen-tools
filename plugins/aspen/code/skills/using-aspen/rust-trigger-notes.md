@@ -128,16 +128,18 @@ before re-reading the `aspen_crm` API from memory:
 3. **Picklist item names are exact strings, not a compiler-checked enum.** `"cancelled_c"` in Rust
    has to match the picklist item's `name` in its metadata JSON byte-for-byte; nothing catches a
    mismatch except comparing the two files.
-4. **If the trigger inserts or updates a record, check the `Result` explicitly, not just via `?`.**
-   Writing a field with the wrong `RecordFieldValue` variant for its own `type`/`subtype` (see the
-   table above) is accepted by the compiler — every variant is a valid `RecordFieldValue` — and
-   still fails at `execute_insert`/`execute_update`, but from wherever the human triggered the
-   event (e.g. changing a picklist value in the UI), that failure surfaces nowhere they'd think to
-   look. Log the `Err` case yourself instead of relying on `?` alone:
+4. **If the trigger inserts or updates a record, capture the `Result` and check `.failures()` —
+   `?` alone silently drops row-level rejections.** `execute_insert`/`execute_update` return
+   `Result<BatchProcessed, BatchFailure>`: the `Err` side is a whole-batch failure (a malformed
+   request) and is all a bare `execute_insert(request)?;` — return value unused — can ever surface.
+   A single row that fails validation (wrong `RecordFieldValue` variant for the field's own
+   `type`/`subtype`, see the table above; a missing required field; anything else the platform
+   rejects) comes back inside `Ok(BatchProcessed)`, in `.failures()` — `?` never sees it, and
+   discarding the return value throws it away. Always bind the result and check both:
    ```rust
-   match context.services().record().execute_insert(request) {
-       Ok(_) => {}
-       Err(e) => aspen_crm::warn!(context, "org_sub_watcher_c: insert failed: {e:?}"),
+   let result = context.services().record().execute_insert(request)?;
+   for failure in result.failures() {
+       aspen_crm::warn!(context, "org_sub_watcher_c: insert row failed: {failure:?}");
    }
    ```
    This is exactly the class of bug that bit a real `org_c` trigger: `task_p.owner_p`/`what_p` are
