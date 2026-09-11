@@ -175,6 +175,30 @@ This is all about *writing* a field on a `RecordInput`. Reading one back — fro
 a query row — is a different code path with its own variant; don't assume it round-trips the same
 way (see "Reading fields in a trigger" above).
 
+## Date arithmetic for a `date` field
+
+`RecordFieldValue::Date` wraps a `jiff::civil::Date` — a calendar date, not `jiff::Timestamp` (an
+instant) or `jiff::Zoned` (an instant with a time zone attached). Getting "N days from now" needs
+converting to the right type *before* adding the calendar span, not after:
+
+```rust
+use jiff::{Span, Timestamp};
+
+let due_date = Timestamp::now()
+    .in_tz("UTC")                                            // -> Result<Zoned, Error>
+    .map(|z| z.date().saturating_add(Span::new().days(7)))    // Zoned -> Date, then add on the Date
+    .unwrap_or_else(|_| jiff::civil::Date::new(2000, 1, 1).unwrap());
+```
+
+`Timestamp::now() + Span::new().days(7)` **compiles clean and fails at runtime, not compile time**:
+*"adding span to timestamp failed: operation can only be performed with units of hours or smaller,
+but found non-zero 'day' units"*. A `Timestamp` is a point on a fixed timeline with no calendar
+attached to it, so a calendar-unit `Span` (`.days()`, `.months()`, …) is a well-typed operation on
+it that only jiff's own runtime check rejects — the type system doesn't catch it, so this one only
+shows up once the trigger actually fires, as an `after trigger error` on the save, not as a compile
+error. Convert to a `Date` first (`.in_tz(<zone>)`, a `&str` — not a `TimeZone` value — returning
+`Result<Zoned, Error>`, then `.date()`), and add the calendar span to *that*.
+
 ## Debugging a trigger that "isn't firing"
 
 A trigger that appears to do nothing after a checkin is not necessarily running at all, and if it
