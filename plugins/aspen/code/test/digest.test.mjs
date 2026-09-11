@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildFixture, STANDARD } from './fixtures/build-fixture.mjs'
-import { build, collect, detect, inferRules, locate } from '../hooks/model-digest.mjs'
+import { build, collect, detect, inferRules, locate, showComponent } from '../hooks/model-digest.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = join(HERE, '..', 'hooks', 'model-digest.mjs')
@@ -115,6 +115,58 @@ test('a single-object pattern is dropped as a rule but survives as an observatio
   const derived = deal.members.filter((m) => m.derived).map((m) => m.name)
   assert.ok(derived.includes('ccode_p'), 'ccode_p observed as derived on deal_p')
   assert.ok(derived.includes('ccdate_p'), 'ccdate_p observed as derived on deal_p')
+})
+
+// ---- show: a deterministic point lookup -------------------------------------
+
+test('show prints the resolved shape verbatim, the authored path, and the derived members', () => {
+  const cwd = project()
+  const out = showComponent(config(cwd), 'object_p', 'contact_p')
+  assert.match(out, /object_p:contact_p/)
+  assert.match(out, /resolved/)
+  // where a change to it would be authored, even though no authored file exists yet
+  assert.match(out, /metacode\/metadata\/object_p\/contact_p\.json/)
+  assert.match(out, /not present/)
+  // the standard fields are called out as not-to-author
+  assert.match(out, /id_p/)
+  assert.match(out, /extid_p/)
+  // the document itself, verbatim, including the overlay member
+  assert.match(out, /"name": "contact_p"/)
+  assert.match(out, /nickname_c/)
+  // never the digest's own annotation
+  assert.doesNotMatch(out, /_derived/)
+})
+
+test('show flags an unresolved component so its member list is not mistaken for the truth', () => {
+  const cwd = project()
+  const out = showComponent(config(cwd), 'object_p', 'widget_p')
+  assert.match(out, /unresolved/)
+  assert.doesNotMatch(out, /resolved from/)
+})
+
+test('show reports no derived members as such rather than omitting the line', () => {
+  const cwd = project()
+  const out = showComponent(config(cwd), 'tab_p', 'contact_p.tab_p')
+  assert.match(out, /derived \(do not author\): none/)
+})
+
+test('show accepts ctype:name as a single argument', () => {
+  const cwd = project()
+  const out = showComponent(config(cwd), 'object_p:contact_p')
+  assert.match(out, /object_p:contact_p/)
+})
+
+test('show on an unknown name lists the near matches of that type', () => {
+  const cwd = project()
+  assert.throws(() => showComponent(config(cwd), 'object_p', 'contnact_p'), /contact_p/)
+})
+
+test('the show CLI prints the document and exits 0', () => {
+  const cwd = project()
+  writeFileSync(join(cwd, 'aspen-model.json'), JSON.stringify(detect(cwd), null, 2))
+  const out = execFileSync('node', [SCRIPT, 'show', 'object_p', 'contact_p'], { cwd, encoding: 'utf8' })
+  assert.match(out, /"name": "contact_p"/)
+  assert.match(out, /object_p:contact_p/)
 })
 
 // ---- detect -----------------------------------------------------------------

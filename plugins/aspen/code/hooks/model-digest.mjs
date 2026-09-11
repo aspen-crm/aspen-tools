@@ -13,6 +13,7 @@
 //   detect         propose roots by sampling file content, write aspen-model.json
 //   build          rebuild unconditionally (run it by hand)
 //   verify <dir>   report what would be inferred from a real tree; writes nothing
+//   show <ctype> <name>  one component's shape, authored path and derived members
 //   session-start  index a Builder folder the first time; otherwise rebuild if the
 //                  metadata changed since the last build, then report
 //   post-tool      react to an `aspen` command that just ran (rebuild, or mark stale)
@@ -376,6 +377,51 @@ function renderComponent (c, cwd) {
   return lines.join('\n') + '\n'
 }
 
+// ------------------------------------------------------------------------ show
+//
+// A deterministic point lookup: one component's shape to copy, where a change to it
+// is authored, and which of its members the instance owns. This is the retrieval the
+// reader agent used to do by hand -- as a command it costs no model time. Interpretive
+// questions ("what would I need to add X to Y") still want the agent; a single "show me
+// this component" does not.
+
+export function showComponent (config, a, b) {
+  const [ctype, name] = b !== undefined ? [a, b] : String(a).split(':')
+  if (!ctype || !name) throw new Error('Usage: show <ctype> <name>  (or <ctype>:<name>)')
+
+  const model = collect(config)
+  const c = model.components.get(`${ctype}:${name}`)
+  if (!c) {
+    const ofType = [...model.components.values()].filter((x) => x.ctype === ctype).map((x) => x.name)
+    if (!ofType.length) {
+      const types = [...new Set([...model.components.values()].map((x) => x.ctype))].sort()
+      throw new Error(`No component of type ${ctype}. Types here: ${types.join(', ')}`)
+    }
+    const stem = name.replace(/_[pc]$/, '').replace(/\..*$/, '')
+    const near = ofType.filter((n) => n.includes(stem) || stem.includes(n.replace(/_[pc]$/, '')))
+    const shown = (near.length ? near : ofType).slice(0, 12).sort()
+    const more = (near.length ? near : ofType).length - shown.length
+    throw new Error(`No ${ctype}:${name}. ${near.length ? 'Did you mean' : `${ofType.length} of that type, e.g.`}: ${shown.join(', ')}${more > 0 ? `, +${more} more (grep .aspen-model/types/${ctype}.md)` : ''}`)
+  }
+
+  const src = c.layers.resolved ?? c.layers.baseline ?? c.layers.authored ?? c.layers.liveOverlay
+  const doc = { ...src.doc }
+  delete doc._derived
+
+  const authoredExisting = c.layers.authored?.path
+  const authoredPath = authoredExisting ?? (config.roots.authored ? join(config.roots.authored, ctype, `${name}.json`) : null)
+  const derived = c.members.filter((m) => m.derived).map((m) => m.name)
+
+  const lines = [`# ${ctype}:${name} (${c.resolved ? 'resolved from compiled/' : 'unresolved — no compiled file'})`, '']
+  if (authoredPath) lines.push(`authored: ${relative(config.cwd, authoredPath)}  (${authoredExisting ? 'present' : 'not present — a change to it is authored here'})`)
+  lines.push(c.resolved
+    ? `resolved: ${relative(config.cwd, c.layers.resolved.path)}`
+    : 'resolved: none — the document below is what was authored, a floor not the instance\'s truth')
+  lines.push(`derived (do not author): ${derived.length ? derived.join(', ') : 'none'}`)
+  lines.push('', `--- ${c.resolved ? 'resolved' : 'authored'} document — copy this shape ---`, JSON.stringify(doc, null, 2))
+  return lines.join('\n') + '\n'
+}
+
 function renderTypeInventory (ctype, list) {
   const lines = [
     `# ${ctype} — ${list.length} components`,
@@ -622,6 +668,13 @@ if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
 
   if (mode === 'detect') guard(mode, () => cmdDetect(cwd))
   else if (mode === 'verify') guard(mode, () => cmdVerify(process.argv[3] ?? cwd))
+  else if (mode === 'show') {
+    guard(mode, () => {
+      const config = loadConfig(cwd)
+      if (!config) { console.log(`No ${CONFIG_NAME}. Run this from the instance folder, where the session-start hook wrote one.`); process.exit(1) }
+      console.log(showComponent(config, process.argv[3], process.argv[4]))
+    })
+  }
   else if (mode === 'build') {
     guard(mode, () => {
       const config = loadConfig(cwd)
@@ -637,7 +690,7 @@ if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
     const payload = await readStdin()
     guard(mode, () => postTool(cwd, payload))
   } else {
-    console.error(`Unknown mode: ${mode}. Use detect, build, verify, session-start, or post-tool.`)
+    console.error(`Unknown mode: ${mode}. Use detect, build, verify, show, session-start, or post-tool.`)
     process.exit(1)
   }
 }

@@ -33,6 +33,12 @@ If it does not:
 - If `~/Aspen` is empty or missing, the human has not opened this instance in Builder yet. That
   is their step, not yours.
 
+## Setting up, not yet rooted?
+
+If you are being asked to set a machine up and this plugin is already here, the setup guide
+is bundled locally at `${CLAUDE_PLUGIN_ROOT}/start.md` — read that file rather than fetching
+it over the network. It walks installing the CLI, the plugin, and opening the instance folder.
+
 ## The rule: discover the CLI, do not assume it
 
 Your tool is the `aspen` CLI. It lives inside the instance folder at `.aspen/bin/aspen` — Builder
