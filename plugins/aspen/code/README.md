@@ -159,8 +159,9 @@ agents/aspen-component-mapper.md    # one type's mapper; sonnet; no Bash, no net
 agents/aspen-ui-proposer.md         # proposes layout sections and list view columns
 agents/aspen-executor.md            # writes decided files, runs decided commands; sonnet
 hooks/hooks.json                    # SessionStart + PreToolUse + PostToolUse wiring
-hooks/model-digest.mjs              # the digest: detect, build, verify, hooks
+hooks/model-digest.mjs              # the digest: detect, build, verify, show, hooks
 hooks/scaffold.mjs                  # write an authored component from a real one's shape
+start.md                            # setup guide, bundled so a re-read after install is local
 hooks/guard-destructive.mjs         # PreToolUse: ask before clearing shared instance state
 hooks/ui-coverage.mjs               # object -> layout / list view / tab coverage
 skills/using-aspen/SKILL.md         # entry point and router
