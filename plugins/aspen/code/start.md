@@ -62,25 +62,19 @@ instance folder they open, not only this one, and its hooks stay silent outside 
 `aspen-code` is the one this document needs. The same marketplace also carries `aspen-cowork`, the
 collaboration half — it is not part of this setup, so do not install it here unless asked.
 
-When the plugin is installed, its skills become available and route themselves as you work:
-
-| Skill | For |
-| --- | --- |
-| `using-aspen` | the entry point — discovers the CLI, routes everything else |
-| `read-metadata` | read the instance's model before authoring |
-| `map-model` | understand what the model *means*, not just what exists |
-| `complete-object-ui` | a new object needs a layout, list view and tab |
-| `verify-change` | prove a change works; a green checkin is not proof |
-| `diagnose` | a compile or checkin failed — reproduce before fixing |
+When the plugin is installed, one skill becomes available — `using-aspen` — and it is the whole
+procedure: the folder map, the CLI commands, and the loop from finding a component's shape through
+authoring, compiling, deploying and verifying. There is nothing to route between; invoke it for any
+change to the instance.
 
 ## Step 3 — Open Claude Code in the instance folder
 
 Builder gives each instance its own folder at `~/Aspen/<domain>-<instance>` — for example
 `~/Aspen/veeva.com-treehouse`. That folder is where all Aspen work happens: it holds the metadata
 under `metacode/`, the exported record data, and the CLI itself with its state under `.aspen/`.
-The plugin's hooks and its `.aspen-model/` digest follow the session's directory, the CLI defaults
-its path arguments to this folder, and `.aspen/bin/aspen` only resolves from here — so a session
-rooted anywhere else lines up with nothing.
+The plugin's hooks follow the session's directory, the CLI defaults its path arguments to this
+folder, and `.aspen/bin/aspen` only resolves from here — so a session rooted anywhere else lines up
+with nothing.
 
 Run `ls ~/Aspen` and read the entries, then hand the human the reopen — even if this session is
 already rooted in the right folder. A plugin installed into a running session has no hooks yet;
@@ -100,12 +94,12 @@ TypeScript project and its own `CLAUDE.md`, none of which this setup wants.
 
 ## Step 4 — Build
 
-Invoke the `using-aspen` skill and follow where it routes you. It discovers the CLI's commands from
-`.aspen/bin/aspen --help` (nothing hardcoded), reads the instance's model with `read-metadata`
-before you author, and drives the loop: **discover -> author -> compile -> deploy -> verify**.
+Invoke the `using-aspen` skill and follow it. The session-start hook has already put the CLI's
+commands in front of you (from `.aspen/bin/aspen --help`), and the skill drives the loop:
+**find the shape -> author -> compile -> deploy -> verify**.
 
 The last step is a real one. A checkin that goes green proves the metadata compiled, not that the
-change works — `verify-change` is what closes it.
+change works — reading the compiled file back and exercising the change is what closes it.
 
 ## Safety
 
