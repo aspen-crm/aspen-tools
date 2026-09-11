@@ -78,7 +78,9 @@ metacode/
      `aspen.server.json` (see `metacode/server/*/aspen.server.json` for the shape). The `aspen_crm`
      crate's own docs.rs coverage is thin — don't chase its API one struct at a time. This skill's
      `rust-trigger-notes.md` has the confirmed shapes (inserting a record, reading an
-     `after_update` batch, open polyids), read only when you need it. For a fuller worked example
+     `after_update` batch, which `RecordFieldValue` variant a field's own type/subtype needs, and
+     what to do when a trigger seems to fire but does nothing), read only when you need it. For a
+     fuller worked example
      than either file gives you, ask the human first, then fetch **only** `example-customer-repo/`
      — not the rest of `aspen-crm/aspen-tools`, which is unrelated plugin and doc source:
      ```
@@ -104,7 +106,10 @@ metacode/
    Pass `./metacode` to `save-package`; the three checkin verbs are ordered and mandatory.
 
 5. **Verify.** A green checkin proves it compiled, not that it works. Read the compiled file back,
-   and exercise the change — open the record, load the page, trigger the event.
+   and exercise the change — open the record, load the page, trigger the event. A Rust trigger
+   that seems to do nothing is almost always still running with a `match` arm silently swallowing
+   the case — `rust-trigger-notes.md`'s "Debugging a trigger" section has the checklist and the
+   diagnostic-logging technique before you start re-reading the `aspen_crm` API from memory.
 
 ## Rules
 

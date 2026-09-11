@@ -2,7 +2,7 @@
     "name": "aspen-code",
     "displayName": "Aspen Code",
     "description": "Customize an Aspen instance with the aspen CLI: one skill (using-aspen) that is the whole loop \u2014 find a real component's shape under metacode/compiled/, author into metacode/metadata/, compile, deploy, verify \u2014 plus a session-start hook that injects the CLI's own command list, a guard that asks before commands clearing the shared dev set, and a guard that denies writes into the generated platform/compiled/active tiers.",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "author": {
         "name": "Aspen CRM"
     },
