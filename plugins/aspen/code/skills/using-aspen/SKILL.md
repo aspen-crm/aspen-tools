@@ -26,7 +26,7 @@ Use those. **Do not re-read help during a task.**
 metacode/
   metadata/<ctype>/<name>.json   authored, the ONLY place you write
   platform/  compiled/  active/  generated siblings — read-only, never edit
-  server/server_main_c/          Rust (record triggers), declared in aspen.server.json
+  server/server_main_c/          Rust (record triggers) — this exact name, see rust-trigger-notes.md
   ui/ui_main_c/                  TypeScript (pages), declared in aspen.client.json
 ```
 
@@ -74,9 +74,12 @@ metacode/
        `relationship` for one object; `polyid`/`lookup` with `allowed-objects` for several;
        `picklist`/`picklist` with `picklist: "<object>.<field>"`. Anything else — still copy it
        from a real object.
-   - *Rust trigger*: a crate under `server/server_main_c/` with the trigger declared in
-     `aspen.server.json` (see `metacode/server/*/aspen.server.json` for the shape). The `aspen_crm`
-     crate's own docs.rs coverage is thin — don't chase its API one struct at a time. This skill's
+   - *Rust trigger*: a crate at **`server/server_main_c/`, that exact directory name** — the
+     platform only ever loads a server codefile named `server_main_c` (or `server_main_a`); any
+     other crate directory compiles and checks in clean and then silently never fires, on any
+     object or event. The trigger declared in its `aspen.server.json` (its `"name"` field, separate
+     from the crate name) is what the `impl` block implements. The `aspen_crm` crate's own docs.rs
+     coverage is thin — don't chase its API one struct at a time. This skill's
      `rust-trigger-notes.md` has the confirmed shapes (inserting a record, reading an
      `after_update` batch, which `RecordFieldValue` variant a field's own type/subtype needs, and
      what to do when a trigger seems to fire but does nothing), read only when you need it. For a
@@ -107,9 +110,12 @@ metacode/
 
 5. **Verify.** A green checkin proves it compiled, not that it works. Read the compiled file back,
    and exercise the change — open the record, load the page, trigger the event. A Rust trigger
-   that seems to do nothing is almost always still running with a `match` arm silently swallowing
-   the case — `rust-trigger-notes.md`'s "Debugging a trigger" section has the checklist and the
-   diagnostic-logging technique before you start re-reading the `aspen_crm` API from memory.
+   that seems to do nothing may not be running at all (check the crate directory is really named
+   `server_main_c` first) or may be running with a `match` arm silently swallowing the case —
+   `rust-trigger-notes.md`'s "Debugging a trigger" section has the ordered checklist, plus the
+   diagnostic-hard-error technique (`aspen_crm::warn!`/`info!` have no confirmed way to be read
+   back; a temporary `error::bail!` surfaces in the UI at the save that fired the trigger) before
+   you start re-reading the `aspen_crm` API from memory.
 
 ## Rules
 
