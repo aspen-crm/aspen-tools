@@ -30,6 +30,10 @@ metacode/
   ui/ui_main_c/                  TypeScript (pages), declared in aspen.client.json
 ```
 
+- A write to `platform/`, `compiled/`, or `active/` is blocked before it happens — not just
+  discouraged. Those tiers don't error on a stray write, they silently discard it, so a hook
+  denies it up front and names the `metadata/` path to use instead.
+
 - `compiled/<ctype>/<name>.json` is the **resolved truth** — platform defaults filled in. It is the
   shape you copy. Builder fills it lazily, so it can be incomplete.
 - The generated tiers are **siblings of `metadata/`, never inside it**, and there is **no `custom/`
@@ -41,14 +45,30 @@ metacode/
 
 1. **Find the shape.** `ls metacode/compiled/<ctype>/` to see what exists, then `cat` one that is
    like what you want. That file is a working example — copy it, do not invent attribute names or
-   enum values.
+   enum values. Filtering a big one down to the part you need: `jq`, not a Python heredoc — one
+   line, no interpreter startup.
 
 2. **Author** into `metacode/metadata/<ctype>/<name>.json`:
    - *Declarative* (object, field, picklist, layout, list view, tab, tab collection): copy the
      compiled shape, change `name`/`label` to your `_c` name with `"namespace": "custom"`, and swap
      in your members. Do **not** author audit or derived fields — the instance adds those itself.
+     A field's `type`/`subtype` is part of that shape, not something to work out from scratch —
+     common pairs, copied from real objects: `text`/`text`; `number`/`number` (a plain count) or
+     `number`/`percentage`; `currency`/`currency`; `datetime`/`datetime`; `id`/`lookup` with
+     `relationship` for one object; `polyid`/`lookup` with `allowed-objects` for several;
+     `picklist`/`picklist` with `picklist: "<object>.<field>"`. Anything else — still copy it from
+     a real object.
    - *Rust trigger*: a crate under `server/server_main_c/` with the trigger declared in
-     `aspen.server.json` (see `metacode/server/*/aspen.server.json` for the shape).
+     `aspen.server.json` (see `metacode/server/*/aspen.server.json` for the shape). The `aspen_crm`
+     crate's own docs.rs coverage is thin — don't chase its API one struct at a time. If nothing
+     local shows a fuller example, ask the human first, then fetch **only**
+     `example-customer-repo/` — not the rest of `aspen-crm/aspen-tools`, which is unrelated plugin
+     and doc source:
+     ```
+     git clone --no-checkout --filter=blob:none --sparse https://github.com/aspen-crm/aspen-tools <dir>
+     git -C <dir> sparse-checkout set example-customer-repo
+     git -C <dir> checkout
+     ```
    - *TypeScript page*: a module under `ui/ui_main_c/src/pages/` with the route declared in
      `aspen.client.json`.
 
@@ -81,3 +101,6 @@ metacode/
   builder on the instance shares — confirm before running them. (A guard hook also stops and asks.)
 - **Never run `aspen init`** (Builder owns the folder) or `aspen login` yourself (it is a browser
   hand-off Builder does; you never see, type, ask for, or print a token).
+- **`ac` is not a system tool** — `/usr/sbin/ac` on macOS is something unrelated. If you need the
+  instance's offline validator, `aspen download ac` fetches the one the logged-in instance
+  publishes; don't search `PATH` for it. The instance still validates on checkin either way.
