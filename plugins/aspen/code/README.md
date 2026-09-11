@@ -87,12 +87,13 @@ cd plugins/aspen/code && node --test "test/*.test.mjs"
 ## Layout
 
 ```
-.claude-plugin/plugin.json       # plugin manifest (name: aspen-code)
-hooks/hooks.json                 # SessionStart + PreToolUse wiring
-hooks/session-start.mjs          # inject the CLI's commands; point at the skill
-hooks/guard-destructive.mjs      # PreToolUse (Bash): ask before clearing shared instance state
-hooks/guard-metadata-writes.mjs  # PreToolUse (Write/Edit): deny writes outside metadata/
-skills/using-aspen/SKILL.md      # the one skill — the whole loop
-start.md                         # setup guide, bundled so a re-read after install is local
-test/                            # node:test suite (session-start, both guards)
+.claude-plugin/plugin.json                # plugin manifest (name: aspen-code)
+hooks/hooks.json                          # SessionStart + PreToolUse wiring
+hooks/session-start.mjs                   # inject the CLI's commands; point at the skill
+hooks/guard-destructive.mjs               # PreToolUse (Bash): ask before clearing shared instance state
+hooks/guard-metadata-writes.mjs           # PreToolUse (Write/Edit): deny writes outside metadata/
+skills/using-aspen/SKILL.md               # the one skill — the whole loop
+skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger
+start.md                                  # setup guide, bundled so a re-read after install is local
+test/                                     # node:test suite (session-start, both guards)
 ```

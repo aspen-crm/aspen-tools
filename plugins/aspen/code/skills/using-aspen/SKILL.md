@@ -30,7 +30,9 @@ metacode/
   ui/ui_main_c/                  TypeScript (pages), declared in aspen.client.json
 ```
 
-- A write to `platform/`, `compiled/`, or `active/` is blocked before it happens — not just
+- `active/` is a **downloaded snapshot of what's currently on the instance**, kept in sync from
+  it — not a place anything you write survives, by design, whatever tool does the writing.
+  A write to `platform/`, `compiled/`, or `active/` is blocked before it happens — not just
   discouraged. Those tiers don't error on a stray write, they silently discard it, so a hook
   denies it up front and names the `metadata/` path to use instead.
 
@@ -51,19 +53,34 @@ metacode/
 2. **Author** into `metacode/metadata/<ctype>/<name>.json`:
    - *Declarative* (object, field, picklist, layout, list view, tab, tab collection): copy the
      compiled shape, change `name`/`label` to your `_c` name with `"namespace": "custom"`, and swap
-     in your members. Do **not** author audit or derived fields — the instance adds those itself.
-     A field's `type`/`subtype` is part of that shape, not something to work out from scratch —
-     common pairs, copied from real objects: `text`/`text`; `number`/`number` (a plain count) or
-     `number`/`percentage`; `currency`/`currency`; `datetime`/`datetime`; `id`/`lookup` with
-     `relationship` for one object; `polyid`/`lookup` with `allowed-objects` for several;
-     `picklist`/`picklist` with `picklist: "<object>.<field>"`. Anything else — still copy it from
-     a real object.
+     in your members.
+     - **The component's own name must end `_c` too, not just its members'.** `org_c.layout_p`
+       fails checkin ("ensure the new component is in the custom namespace"); `org_c.layout_c` is
+       what passes. The same is likely true of names nested inside it (a layout section, say) —
+       copy an existing custom example for those rather than assuming.
+     - Do **not** author platform-derived fields (`id_p`, `cb_p`, audit fields) — the instance
+       adds those itself. **Polyid companion fields are the one exception**: for a polyid like
+       `owner_c` (`related-object-field: "owneron_c"`, `related-display-field: "ownerdn_c"`) you
+       must author both yourself — `owneron_c` as `picklist`/`object_ref` with
+       `polymorphic-field: "owner_c"`, `ownerdn_c` as plain `text` — or checkin-prep fails with
+       `related-object-field 'owneron_c' not found`.
+     - A `number` field needs both `min-value` and `max-value`; checkin-prep fails on a missing
+       `max-value` alone.
+     - `searchable: true` needs an authored `global-search-config` component to go with it —
+       default to `false` unless you're adding that too.
+     - Field `type`/`subtype` is part of the shape, not something to work out from scratch —
+       common pairs, copied from real objects: `text`/`text`; `number`/`number` (a plain count) or
+       `number`/`percentage`; `currency`/`currency`; `datetime`/`datetime`; `id`/`lookup` with
+       `relationship` for one object; `polyid`/`lookup` with `allowed-objects` for several;
+       `picklist`/`picklist` with `picklist: "<object>.<field>"`. Anything else — still copy it
+       from a real object.
    - *Rust trigger*: a crate under `server/server_main_c/` with the trigger declared in
      `aspen.server.json` (see `metacode/server/*/aspen.server.json` for the shape). The `aspen_crm`
-     crate's own docs.rs coverage is thin — don't chase its API one struct at a time. If nothing
-     local shows a fuller example, ask the human first, then fetch **only**
-     `example-customer-repo/` — not the rest of `aspen-crm/aspen-tools`, which is unrelated plugin
-     and doc source:
+     crate's own docs.rs coverage is thin — don't chase its API one struct at a time. This skill's
+     `rust-trigger-notes.md` has the confirmed shapes (inserting a record, reading an
+     `after_update` batch, open polyids), read only when you need it. For a fuller worked example
+     than either file gives you, ask the human first, then fetch **only** `example-customer-repo/`
+     — not the rest of `aspen-crm/aspen-tools`, which is unrelated plugin and doc source:
      ```
      git clone --no-checkout --filter=blob:none --sparse https://github.com/aspen-crm/aspen-tools <dir>
      git -C <dir> sparse-checkout set example-customer-repo
@@ -99,6 +116,10 @@ metacode/
   before the human starts.
 - **The instance is shared.** `aspen move checkin-clear` and `clear-package` clear state every
   builder on the instance shares — confirm before running them. (A guard hook also stops and asks.)
+  They are not interchangeable: `clear-package` refuses while a checkin is in progress ("invoke
+  the checkin-clear action" instead) — reach for `checkin-clear` when a `checkin-prep` partially
+  started and needs halting before you can re-save; reach for `clear-package` to drop an
+  unsubmitted save from the dev set.
 - **Never run `aspen init`** (Builder owns the folder) or `aspen login` yourself (it is a browser
   hand-off Builder does; you never see, type, ask for, or print a token).
 - **`ac` is not a system tool** — `/usr/sbin/ac` on macOS is something unrelated. If you need the
