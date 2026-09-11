@@ -6,7 +6,7 @@ is the build half of the Aspen tools; the collaboration half ships separately as
 
 Deliberately small. Its whole job is to remove decisions from the session — one skill that is the
 entire procedure, a session-start hook that hands the model the CLI's own commands so it never
-stops to discover them, and one safety guard. No metadata index, no subagents, nothing to route
+stops to discover them, and two safety guards. No metadata index, no subagents, nothing to route
 between.
 
 ## The one skill
@@ -38,14 +38,21 @@ exact commands — including the ordered checkin chain — in context before the
 re-reads help mid-work. Outside an instance folder it points the human at the right one. It touches
 no network, authors nothing, and fails quiet.
 
-## Safety rail
+## Safety rails
 
-`hooks/guard-destructive.mjs` (a `PreToolUse` hook) asks — never blocks — before `aspen move
-checkin-clear` and `aspen move clear-package`, the two verbs that reach the dev set every builder on
-the instance shares. It matches on what a command *means* (quotes, tabs, line continuations, case,
-and an absolute path to the binary all resolve to the same verb) and returns
+`hooks/guard-destructive.mjs` (a `PreToolUse` hook on `Bash`) asks — never blocks — before `aspen
+move checkin-clear` and `aspen move clear-package`, the two verbs that reach the dev set every
+builder on the instance shares. It matches on what a command *means* (quotes, tabs, line
+continuations, case, and an absolute path to the binary all resolve to the same verb) and returns
 `permissionDecision: "ask"`, so a host that does not understand the field degrades to *allowed*,
 never *blocked* — the hook cannot wedge a recovery path.
+
+`hooks/guard-metadata-writes.mjs` (a `PreToolUse` hook on `Write`/`Edit`) denies — there is nothing
+to ask about — a write into `metacode/platform/`, `metacode/compiled/`, or `metacode/active/`. Those
+tiers don't error on a stray write, they silently discard it, so without this a session can "author"
+a whole object there, watch every field report success, and only find out from a failed deploy
+minutes later. The hook computes the `metadata/` path that would have worked and hands it back in
+the denial reason.
 
 ## Reading the model
 
@@ -80,11 +87,12 @@ cd plugins/aspen/code && node --test "test/*.test.mjs"
 ## Layout
 
 ```
-.claude-plugin/plugin.json     # plugin manifest (name: aspen-code)
-hooks/hooks.json               # SessionStart + PreToolUse wiring
-hooks/session-start.mjs        # inject the CLI's commands; point at the skill
-hooks/guard-destructive.mjs    # PreToolUse: ask before clearing shared instance state
-skills/using-aspen/SKILL.md    # the one skill — the whole loop
-start.md                       # setup guide, bundled so a re-read after install is local
-test/                          # node:test suite (session-start, guard)
+.claude-plugin/plugin.json       # plugin manifest (name: aspen-code)
+hooks/hooks.json                 # SessionStart + PreToolUse wiring
+hooks/session-start.mjs          # inject the CLI's commands; point at the skill
+hooks/guard-destructive.mjs      # PreToolUse (Bash): ask before clearing shared instance state
+hooks/guard-metadata-writes.mjs  # PreToolUse (Write/Edit): deny writes outside metadata/
+skills/using-aspen/SKILL.md      # the one skill — the whole loop
+start.md                         # setup guide, bundled so a re-read after install is local
+test/                            # node:test suite (session-start, both guards)
 ```
