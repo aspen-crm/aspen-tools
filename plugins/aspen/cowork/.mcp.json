@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aspen-runtime-mcp": {
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/aspen-runtime-mcp.sh"]
+    }
+  }
+}

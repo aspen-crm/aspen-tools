@@ -17,3 +17,15 @@ jobs:
       - name: Run the digest test suite
         working-directory: plugins/aspen/code
         run: node --test "test/*.test.mjs"
+
+  cowork:
+    name: aspen-cowork plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run the launcher and installer tests
+        working-directory: plugins/aspen/cowork
+        run: node --test "test/*.test.mjs"

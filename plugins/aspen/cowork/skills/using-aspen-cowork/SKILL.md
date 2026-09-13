@@ -6,8 +6,8 @@ description: Use when starting any task that reads or writes a customer's Aspen 
 # Using Aspen (runtime lane)
 
 You are working a customer's live **Aspen** CRM through the **runtime MCP** — the tools the
-`aspen-runtime-mcp` server exposes, namespaced `aspen_*` (the host shows them as
-`mcp__aspen-runtime-mcp__aspen_*`). There is **no CLI, no file authoring, no deploy or
+`aspen-runtime-mcp` server exposes, namespaced `aspen_*` (the host shows them under its own
+prefix, such as `mcp__aspen-runtime-mcp__aspen_*`). There is **no CLI, no file authoring, no deploy or
 promote here** — only reading and editing the signed-in user's records. Everything you can
 see is already permission-scoped to that user.
 

@@ -156,12 +156,22 @@ by `release-runtime-mcp.yml` and published HERE, so a download link can be
 handed to someone who has no access to the source. Anyone who needs the source
 already knows where it is -- this page is read by people who do not.
 
-**Two files are published: macOS and Windows.** Claude Desktop, which is what
-installs an `.mcpb`, runs on those two only. The workflow also builds
-`linux-x86_64` and `linux-aarch64` for other hosts that launch a local MCP
-server; those stay on the build and are available on request.
+**Four files are published: macOS, Windows, and Linux for x86_64 and arm64.**
+Claude Desktop, which is what installs an `.mcpb`, runs on the first two only,
+so the README links only those. The Linux bundles are for hosts that launch a
+local MCP server themselves: on Claude Code,
+`plugins/aspen/cowork/bin/install-runtime-mcp.sh` downloads the bundle for the
+machine it runs on, Linux included, and takes the server out of it.
 
 The macOS bundle is universal, so unlike Builder there is no second mac file.
+
+**The asset names are a contract.** That installer builds its URL from the
+tag and the platform: `stdio-mcp-latest/aspen-runtime-mcp-<platform>.mcpb`,
+or `stdio-mcp-v<version>/aspen-runtime-mcp-<version>-<platform>.mcpb` for a
+pinned version, with `<platform>` one of `macos`, `linux-x86_64`,
+`linux-aarch64`. Renaming an asset, or publishing a version without one of the
+four, breaks every install from then on, with nothing in this repository
+failing to say so.
 
 The version is whatever the bundle says about itself. Read it before tagging,
 and make the tag match -- a user who checks their installed version has to be
@@ -181,17 +191,17 @@ VERSION=0.1.14
 TAG="stdio-mcp-v$VERSION"
 
 # versioned release: the archive, with versioned filenames
-cp aspen-runtime-mcp-macos.mcpb   "aspen-runtime-mcp-$VERSION-macos.mcpb"
-cp aspen-runtime-mcp-windows.mcpb "aspen-runtime-mcp-$VERSION-windows.mcpb"
+for p in macos windows linux-x86_64 linux-aarch64; do
+  cp "aspen-runtime-mcp-$p.mcpb" "aspen-runtime-mcp-$VERSION-$p.mcpb"
+done
 gh release create "$TAG" \
-  "aspen-runtime-mcp-$VERSION-macos.mcpb" \
-  "aspen-runtime-mcp-$VERSION-windows.mcpb" \
+  aspen-runtime-mcp-"$VERSION"-{macos,windows,linux-x86_64,linux-aarch64}.mcpb \
   --repo aspen-crm/aspen-tools \
   --title "Aspen Runtime MCP $VERSION" --notes-file notes.md
 
 # stdio-mcp-latest: version-less filenames, overwritten each time
 gh release upload stdio-mcp-latest \
-  aspen-runtime-mcp-macos.mcpb aspen-runtime-mcp-windows.mcpb \
+  aspen-runtime-mcp-{macos,windows,linux-x86_64,linux-aarch64}.mcpb \
   --repo aspen-crm/aspen-tools --clobber
 gh release edit stdio-mcp-latest --repo aspen-crm/aspen-tools \
   --notes "Always the current Aspen Runtime MCP. Currently $VERSION."
@@ -265,6 +275,14 @@ the root marketplace, in the zip there is no root marketplace to belong to),
 validates what is about to ship rather than the source tree, and pins every
 mtime to the plugin's last commit so two builds of one commit are byte-identical.
 Build from a clean tree: a dirty one reuses the previous commit's timestamp.
+
+**The zip leaves out `.mcp.json` and `bin/`, on purpose.** Those two wire the
+runtime MCP up for Claude Code, where the plugin has to start the server
+itself. In Cowork the server is Claude Desktop's extension, holding the token
+in Desktop's secret store; a second entry that starts a launcher would fail
+there for want of a binary, or, once one was installed, list every tool twice.
+This is the one place the zip and the marketplace differ, and the difference
+is by host, not by version.
 
 **Why it is built and not hand-made.** The zip previously lived in a GCS bucket,
 maintained by hand. It drifted to five versions behind the repository and still

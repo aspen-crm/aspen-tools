@@ -49,10 +49,11 @@ These links always give you the current version:
 | macOS (universal) | [aspen-runtime-mcp-macos.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
 | Windows (x64) | [aspen-runtime-mcp-windows.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
 
-Two builds are published, for the same reason as Builder: Claude Desktop runs
+Two builds are linked here, for the same reason as Builder: Claude Desktop runs
 on macOS and Windows only. The macOS bundle is universal, so one file covers
-Apple silicon and Intel. Linux bundles are built and available on request, for
-other hosts that launch a local MCP server.
+Apple silicon and Intel. Linux bundles (x86_64 and arm64) are on the same
+release for hosts that launch a local MCP server themselves; the Claude Code
+installer below fetches them on its own, so they need no link here.
 
 The binary carries only an ad-hoc signature -- it is not signed with a
 Developer ID and not notarized -- so macOS will warn on first run.
@@ -89,10 +90,21 @@ this repository directly rather than from a release:
 | Plugin | Lane | Needs |
 | --- | --- | --- |
 | [aspen-code](plugins/aspen/code) | Customize an instance: read the model, author `_c` components, compile, deploy, verify. | The `aspen` CLI, which comes with Aspen Builder. |
-| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create and update. | The Aspen Runtime MCP `.mcpb`, above. |
+| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create and update. | The Aspen Runtime MCP, above: as the `.mcpb` in Claude Desktop, or put in place by the plugin's own installer on Claude Code. |
 
 `aspen-cowork` teaches tools it does not carry, so it does nothing on its own —
-install the runtime MCP alongside it.
+install the runtime MCP alongside it. On Claude Code the plugin starts the
+server, but cannot install an `.mcpb`, so one command puts the same server
+where the plugin looks (macOS and Linux):
+
+```
+curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/plugins/aspen/cowork/bin/install-runtime-mcp.sh | sh -s -- --instance https://<host>/<domain>/<instance>
+```
+
+The token never passes through the script. `aspen login` covers it for anyone
+with the CLI; everyone else exports `ASPEN_API_TOKEN` in their shell. The
+plugin's [README](plugins/aspen/cowork/README.md#claude-code) has the rest,
+Windows included.
 
 **Working in Cowork rather than Claude Code?** Cowork installs a plugin by
 uploading a zip, so take `aspen-cowork` from the release instead —

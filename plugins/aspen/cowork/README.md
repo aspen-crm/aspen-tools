@@ -12,30 +12,89 @@ pro-code loop (author → validate → deploy → verify), that is the sibling
 
 ## Install
 
-Two pieces: the runtime MCP `.mcpb` (the tools) and this plugin (the knowledge). Neither
-works alone — the plugin teaches tools it does not carry.
+Two pieces: the runtime MCP (the tools) and this plugin (the knowledge). Neither works
+alone — the plugin teaches tools it does not carry. How the server gets there depends on
+the host.
 
-1. **The server.** Download the bundle for your machine. These links always give you the
-   current version:
+### Claude Code
 
-   | Platform | Download |
-   | --- | --- |
-   | macOS | [aspen-runtime-mcp-macos.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
-   | Windows | [aspen-runtime-mcp-windows.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
+The plugin carries the server's wiring — `.mcp.json` runs `bin/aspen-runtime-mcp.sh` as
+the server — but not the server itself. Claude Code cannot install an `.mcpb`, so a
+one-line installer unpacks the same bundle to a fixed place instead.
 
-   Install it in your host — Claude Desktop / Cowork: double-click, or Settings →
-   Extensions — then enter your instance base URL and API token when prompted. You never
-   type the token anywhere else; the bundle holds it in its own config.
-
-2. **This plugin.**
+1. **This plugin.**
 
    ```
    /plugin marketplace add aspen-crm/aspen-tools
    /plugin install aspen-cowork@aspen
    ```
 
-The server registers under the name **`aspen-runtime-mcp`**, so its tools appear to the host
-as `mcp__aspen-runtime-mcp__aspen_*`.
+2. **The server** (macOS and Linux):
+
+   ```
+   curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/plugins/aspen/cowork/bin/install-runtime-mcp.sh | sh -s -- --instance https://<host>/<domain>/<instance>
+   ```
+
+   It downloads the current bundle for the machine, puts the server at
+   `~/.config/aspen/mcp/aspen-runtime-mcp` — honouring `ASPEN_CONFIG_DIR` and
+   `XDG_CONFIG_HOME` the way the `aspen` CLI does — and records the instance URL beside it
+   in `env`, mode 600. `--version X.Y.Z` pins a release; `--file some.mcpb` installs a
+   bundle already downloaded. Run it again to upgrade.
+
+3. **The token.** The installer never asks for it. One of:
+
+   - `aspen login --instance <URL>`, once. The server reuses the CLI's stored login, and
+     then `--instance` above was optional too.
+   - `export ASPEN_API_TOKEN=…` (and `ASPEN_INSTANCE`) in the shell you start Claude Code
+     from.
+   - A line `ASPEN_API_TOKEN='secret-token:aspen_…'` in `~/.config/aspen/mcp/env`.
+
+   Shell values win over the file, and an empty value counts as unset — a stray
+   `export ASPEN_API_TOKEN=` does not block the CLI-login fallback.
+
+Then start a new session. `/mcp` lists the server as **`aspen-runtime-mcp`** under this
+plugin; if it shows as failed, the server is not installed, and the launcher's message
+names the installer. A build of your own can stand in for the installed one:
+`export ASPEN_RUNTIME_MCP=/path/to/aspen-runtime-mcp`.
+
+Registered the server by hand before this plugin carried it (`claude mcp add …`)? Remove
+that entry, or every tool appears twice.
+
+**Windows.** The launcher is a shell script, so the plugin's server entry fails there.
+Take `server\aspen-runtime-mcp.exe` out of the
+[Windows bundle](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb)
+(it is a zip) and register it directly:
+`claude mcp add --scope user aspen-runtime-mcp -- C:\path\to\aspen-runtime-mcp.exe --stdio`.
+
+**Without this plugin** the installed server registers the same way:
+`claude mcp add --scope user aspen-runtime-mcp -- ~/.config/aspen/mcp/aspen-runtime-mcp --stdio`,
+plus `-e ASPEN_INSTANCE=…` unless the CLI is logged in. Only the launcher reads the `env`
+file.
+
+### Claude Desktop and Cowork
+
+1. **The server.** Download the bundle for your machine and open it — double-click, or
+   Settings → Extensions. It asks for the instance base URL and the API token; the token
+   goes into Desktop's secret store and is typed nowhere else. These links always give you
+   the current version:
+
+   | Platform | Download |
+   | --- | --- |
+   | macOS | [aspen-runtime-mcp-macos.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
+   | Windows | [aspen-runtime-mcp-windows.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
+
+   Cowork on the desktop bridges to whatever Desktop has installed, so this is the Cowork
+   route too.
+
+2. **This plugin.** Cowork takes it as a zip rather than from the marketplace —
+   [docs/installing-for-cowork.md](../../../docs/installing-for-cowork.md) is the
+   end-to-end guide. That zip leaves out `.mcp.json` and `bin/`: there the server is
+   Desktop's extension, and a second, launcher-driven copy would fail to start or double
+   every tool.
+
+The server registers under the name **`aspen-runtime-mcp`** everywhere; the host puts its
+own prefix in front of the tools (`mcp__aspen-runtime-mcp__aspen_*` in Claude Desktop,
+`mcp__plugin_aspen-cowork_aspen-runtime-mcp__aspen_*` in Claude Code).
 
 ## What's inside
 
@@ -97,11 +156,16 @@ it, never the other way round.
 
 ```
 .claude-plugin/plugin.json           # plugin manifest (name: aspen-cowork)
+.mcp.json                            # Claude Code only: runs bin/aspen-runtime-mcp.sh as the server
+bin/aspen-runtime-mcp.sh             # launcher: finds the installed server, settles identity, execs it
+bin/install-runtime-mcp.sh           # unpacks the .mcpb into ~/.config/aspen/mcp for Claude Code
 skills/using-aspen-cowork/SKILL.md   # the router: namespace grammar, non-negotiables, routes
 skills/explore/SKILL.md              # describe the model; never guess a name
 skills/records/SKILL.md              # reads + confirm-gated writes + the evidence loop
 skills/query-report/SKILL.md         # natural-language query and group-by report
 agents/schema-explorer.md            # read-only sweep -> a compact map
+test/runtime-mcp.test.mjs            # launcher + installer, end to end on a fake bundle
 ```
 
-No `hooks/` directory, on purpose — see above.
+No `hooks/` directory, on purpose — see above. `.mcp.json` and `bin/` are not in the
+Cowork zip — see Install.
