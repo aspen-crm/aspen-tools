@@ -92,7 +92,12 @@ metacode/
      git -C <dir> checkout
      ```
    - *TypeScript page*: a module under `ui/ui_main_c/src/pages/` with the route declared in
-     `aspen.client.json`.
+     `aspen.client.json`. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing
+     to import for the look — style your own markup with Aspen's `--ap-sem-*` CSS variables, never
+     a hex value or px size (light/dark and phone widths then come for free). This skill's
+     `ui-design-tokens.md` is the inventory: every semantic token by name, with the per-component
+     `--ap-comp-*` names in `ui-component-tokens.md` beside it (grep it for one component; never
+     read it whole). Read them when you're styling, not before.
 
 3. **Compile.**
    - `aspen compile --rust ./metacode` — **never bare `aspen compile`** (it also picks a TypeScript
