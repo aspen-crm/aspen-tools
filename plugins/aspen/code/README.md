@@ -94,6 +94,8 @@ hooks/guard-destructive.mjs               # PreToolUse (Bash): ask before cleari
 hooks/guard-metadata-writes.mjs           # PreToolUse (Write/Edit): deny writes outside metadata/
 skills/using-aspen/SKILL.md               # the one skill — the whole loop
 skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger
+skills/using-aspen/ui-design-tokens.md    # --ap-sem-* token inventory, read only when styling a page
+skills/using-aspen/ui-component-tokens.md # every --ap-comp-* name; grep it for one component
 start.md                                  # setup guide, bundled so a re-read after install is local
 test/                                     # node:test suite (session-start, both guards)
 ```
