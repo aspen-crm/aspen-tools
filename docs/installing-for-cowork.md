@@ -140,8 +140,10 @@ Need the file again?
 > **Using Claude Code as well?** There the plugin comes from this repository's marketplace
 > instead — `/plugin marketplace add aspen-crm/aspen-tools`, then
 > `/plugin install aspen-cowork@aspen`. Same plugin, same version; only the delivery
-> differs. The marketplace also carries `aspen-code`, the CLI-authoring lane, which is not
-> part of this setup.
+> differs. Claude Code cannot install an `.mcpb`, so there the plugin starts the server
+> itself from a copy its own one-line installer puts in place — the plugin's
+> [README](../plugins/aspen/cowork/README.md#claude-code) has that. The marketplace also
+> carries `aspen-code`, the CLI-authoring lane, which is not part of this setup.
 
 ## Step 5 — Check it worked
 

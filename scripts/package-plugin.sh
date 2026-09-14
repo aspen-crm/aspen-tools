@@ -38,11 +38,16 @@ STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 BUILD="$STAGE/$NAME"
 
-# Copy the plugin verbatim, minus anything that is repository bookkeeping.
+# Copy the plugin verbatim, minus anything that is repository bookkeeping, and
+# minus the Claude Code server wiring (.mcp.json and the bin/ it runs). In Cowork
+# the runtime MCP is Claude Desktop's extension; a second entry that starts a
+# launcher would fail there, or list every tool twice once the launcher found a
+# server. See docs/releasing.md.
 mkdir -p "$BUILD"
 tar -cf - -C "$PLUGIN_DIR" \
     --exclude='.git' --exclude='.gitignore' --exclude='.DS_Store' \
-    --exclude='node_modules' --exclude='test' . | tar -xf - -C "$BUILD"
+    --exclude='node_modules' --exclude='test' \
+    --exclude='.mcp.json' --exclude='bin' . | tar -xf - -C "$BUILD"
 
 # The zip stands alone, so it carries its own one-plugin marketplace.
 python3 - "$BUILD/.claude-plugin/marketplace.json" "$NAME" "$DESC" <<'PY'
