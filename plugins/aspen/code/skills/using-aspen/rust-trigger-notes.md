@@ -1,12 +1,12 @@
 # Rust trigger notes
 
-Read this only when you're actually authoring a Rust trigger. The rest of `using-aspen`'s loop —
-find the shape, compile, deploy, verify — is identical for this and everything else you author, so
-it stays in `SKILL.md`; this file is the part specific to the `aspen_crm` crate, whose own docs.rs
-coverage is thin (8.84% at last check). Confirmed from a real trigger that compiled clean, deployed
-clean, and — after the fixes below — actually fired and produced the expected record. Getting from
-"compiles and deploys" to "fires" took a multi-hour live debugging session; every fact below is
-what that session actually hit, not what seemed plausible going in.
+Read this only when you're actually authoring a Rust trigger, and after `trigger-patterns.rs`
+beside it — that file is six handlers that fired on a real instance, and copying the nearest one
+is faster than learning the rules first. This file is the rules those patterns obey, for when
+none of them is your case. The rest of `using-aspen`'s loop — find the shape, validate, compile,
+deploy, verify — is identical for this and everything else you author, so it stays in `SKILL.md`.
+The `aspen_crm` crate's own docs.rs coverage is thin (8.84% at last check); every fact below was
+hit in a live session, not inferred.
 
 ## The crate directory must be named `server_main_c` (or `server_main_a`)
 
@@ -40,12 +40,61 @@ raise with the platform team, not something to work around by naming a second cr
 
 ## Before the first compile
 
-`aspen compile --rust` builds with `--locked`, so a crate with no `Cargo.lock` fails. Generate one
-once, then commit it:
+Three things, in this order. The skeleton beside this file (`server-skeleton/`) has all of them
+done; if you started from it, skip to the next section.
+
+1. **`rust-toolchain.toml` at the instance root** — beside `metacode/`, not inside the crate:
+   ```toml
+   [toolchain]
+   channel = "1.98.0"
+   targets = ["wasm32-wasip2"]
+   ```
+   Without it cargo uses the rustup default, and on any other channel the crate compiles and
+   links, then fails componentization:
+   ```
+   error: failed to parse core wasm for componentization
+     0: decoding custom section component-type:wit-bindgen:0.58.0:aspen-entrypoints:...
+     1: invalid leading byte (0x63) for component defined type
+   ```
+   It names wit-bindgen, so it reads as a dependency-version problem. It is not: lockfiles pin
+   identical wit-bindgen versions either way. The mismatch is between the toolchain's bundled
+   `wasm-component-ld` and what `aspen-crm`'s macro emits. A real session spent six calls on
+   lockfile diffs, clean rebuilds and bisecting to a stub handler before finding the missing
+   file. **And the obvious control experiment lies**: building another instance's working crate
+   from *its* directory silently picks up *its* pin, so "their crate builds, mine doesn't" says
+   nothing about your code. Check for the file first.
+2. `rustup target add wasm32-wasip2`, once per machine.
+3. `aspen compile --rust` builds with `--locked`, so a crate with no `Cargo.lock` fails. Generate
+   one once, then commit it:
+   ```
+   cd metacode/server/<crate>/ && cargo generate-lockfile
+   ```
+
+## Registration: `aspen.server.json`
+
+```json
+{ "record-triggers": [ { "name": "<trigger>_c", "object": "<object>", "events": ["after_update"] } ] }
+```
+
+`events` takes exactly these six strings: `before_insert`, `after_insert`, `before_update`,
+`after_update`, `before_delete`, `after_delete`. Each maps to a context type of the same name
+(`AfterUpdateContext`) and a method of the same name on the trait `entrypoints!` generates from
+`name`. Neither `object` nor `events` is checked against metadata at compile time.
+
+## When the notes don't cover it: read the crate source, not docs.rs
+
+After the first build the crate is on disk, and grepping it is the one reliable way to confirm a
+type, variant or method name:
 
 ```
-cd metacode/server/<crate>/ && cargo generate-lockfile
+ls -d ~/.cargo/registry/src/*/aspen-crm-0.1.0/src/
 ```
+
+`record/types.rs` has the `RecordFieldValue` enum (every variant), `record/trigger/*.rs` has
+each context type and what its records expose (`get`/`set` on before-* records, `get` on
+after-* records, `id()` only on delete records), `services/` has the query and record builders.
+`aspen-crm-macros` is a dead end for a componentization error — that comes from the toolchain,
+see above, not from what `entrypoints!` generates.
 
 ## Inserting a record
 

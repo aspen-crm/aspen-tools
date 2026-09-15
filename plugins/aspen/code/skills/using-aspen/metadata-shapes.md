@@ -41,10 +41,12 @@ nothing, or when a `list_view_p` or `tab_p` behaves unlike its JSON suggests.
 
 ## Reading the instance before you author
 
-- `aspen move download-active-set` needs an explicit tier flag — `--platform-dir`, `--app-dir`,
-  or `--custom-dir` — and refuses a non-empty target. Your overrides of platform components land
-  in the **custom** tier; the platform tier keeps showing stock labels, so verify an override in
-  `active/`, not in `platform/`.
+- Builder keeps `metacode/platform/` and `metacode/active/` filled from the instance; they are
+  what the validate step reads. If either is missing or stale, `aspen move download-active-set`
+  refills it — it needs an explicit tier flag (`--platform-dir`, `--app-dir`, `--custom-dir`) and
+  refuses a non-empty target, so empty the directory first. Your overrides of platform
+  components land in the **custom** tier; the platform tier keeps showing stock labels, so verify
+  an override in `active/`, not in `platform/`.
 - **Undocumented enum values** (a `tab-type`, a `column-type`): two ways to find them, neither in
   a doc. Check in a bogus value and read the error, which usually lists the accepted ones; or run
   `strings` on the offline validator (`aspen download ac`) and grep near a value you already

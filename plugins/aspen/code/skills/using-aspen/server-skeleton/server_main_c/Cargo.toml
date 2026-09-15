@@ -1,0 +1,23 @@
+# Guest crate for the `server_main_c` codefile, compiled to a wasm32-wasip2 component.
+# The crate name must match the codefile directory name: `aspen move save-package`
+# looks for `target/wasm32-wasip2/release/server_main_c.wasm`.
+#
+# Detached from the parent workspace (empty `[workspace]` table).
+[package]
+name = "server_main_c"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# The Rust SDK, from crates.io. Bump the version to move to a new platform release.
+aspen-crm = "0.1.0"
+
+# Emit DWARF line tables so a guest trap's WASM backtrace carries source `file:line`.
+[profile.release]
+debug = "line-tables-only"

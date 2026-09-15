@@ -7,6 +7,13 @@
 // read it 22 times). Everything else it needs -- the folder map, the loop, the rules --
 // is static and lives in the `using-aspen` skill.
 //
+// It also says, in one line, which of three optional pieces the folder does not have yet:
+// the Rust toolchain pin, the server crate, the offline validator. Each is silent when
+// missing -- a crate without the pin compiles and then dies at componentization with an
+// error naming wit-bindgen, which a real session chased through lockfile diffs for six
+// calls -- so the cheapest place to notice is before the first command, not after it.
+// The hook only reports; the skill says how to add each, and Builder owns the folder.
+//
 // Outside an instance folder, it points the human at the right one. It never builds an
 // index, never authors, never deploys, and fails quiet: a crash here must be quieter
 // than the value it adds.
@@ -34,6 +41,19 @@ const cliPath = (cwd) => {
   }
   return null
 }
+
+// Optional pieces of an instance folder, each checked by the one path that proves it.
+// Order is the order a trigger session needs them; the validator last because it is
+// wanted for every metadata deploy, triggers or not.
+const OPTIONAL = [
+  { path: 'rust-toolchain.toml', label: '`rust-toolchain.toml` (a trigger crate fails componentization without it)' },
+  { path: join('metacode', 'server', 'server_main_c'), label: '`metacode/server/server_main_c/` (no trigger crate)' },
+  { path: 'ac', label: '`./ac` (the offline validator; `aspen download ac`)' }
+]
+
+export const missing = (cwd) => OPTIONAL
+  .filter((o) => !existsSync(join(cwd, o.path)) && !existsSync(join(cwd, `${o.path}.exe`)))
+  .map((o) => o.label)
 
 const help = (cli, args) => {
   try {
@@ -67,6 +87,10 @@ export function context (cwd) {
       if (top) lines.push('', '```', '$ aspen --help', top, '```')
       if (move) lines.push('', '```', '$ aspen move --help', move, '```')
     }
+  }
+  const absent = missing(cwd)
+  if (absent.length) {
+    lines.push('', `Not in this folder yet: ${absent.join('; ')}. The skill says how to add each, when a task needs it.`)
   }
   return lines.join('\n')
 }

@@ -52,20 +52,31 @@ metacode/
 
 2. **Author** into `metacode/metadata/<ctype>/<name>.json`:
    - *Declarative* (object, field, picklist, layout, list view, tab, tab collection): copy the
-     compiled shape, change `name`/`label` to your `_c` name with `"namespace": "custom"`, and swap
-     in your members.
+     compiled shape, change `name`/`label` to your `_c` name, and swap in your members.
+     - **Never author a `namespace` field — not on the component, not on a nested member.** The
+       compiled tier shows `namespace` because it is resolved output; the importer refuses it on
+       the way in (`namespace field not allowed in input '<name>'`, one per component). Namespace
+       is inferred from the `_c`/`_p` suffix. Strip it when you copy.
      - **The component's own name must end `_c` too, not just its members'.** `org_c.layout_p`
        fails checkin ("ensure the new component is in the custom namespace"); `org_c.layout_c` is
        what passes. The same is likely true of names nested inside it (a layout section, say) —
        copy an existing custom example for those rather than assuming.
+     - **A name cannot have an underscore in the last two characters before its suffix.**
+       `tier_1_c` fails ("component name cannot contain underscore in the last 2 characters");
+       `tier_one_c` passes. Numbered picklist items are the usual casualty — spell them out.
      - Do **not** author platform-derived fields (`id_p`, `cb_p`, audit fields) — the instance
        adds those itself. **Polyid companion fields are the one exception**: for a polyid like
        `owner_c` (`related-object-field: "owneron_c"`, `related-display-field: "ownerdn_c"`) you
        must author both yourself — `owneron_c` as `picklist`/`object_ref` with
        `polymorphic-field: "owner_c"`, `ownerdn_c` as plain `text` — or checkin-prep fails with
        `related-object-field 'owneron_c' not found`.
-     - A `number` field needs both `min-value` and `max-value`; checkin-prep fails on a missing
-       `max-value` alone.
+     - A `number` field needs both `min-value` and `max-value`, **written as strings**
+       (`"min-value": "0", "max-value": "999999"`, as every compiled one is). A bare integer
+       fails ("expected a Decimal type"); a missing `max-value` fails on its own.
+     - `indexed` is valid on text, picklist, date, datetime, number, currency and uuid fields —
+       **not on `id`, `polyid`, `checkbox`, or `text/long`** ("unknown fields: indexed"). Before
+       setting it on a type not listed here, survey which types carry it:
+       `jq -r '.fields[] | select(has("indexed")) | "\(.type)/\(.subtype)"' metacode/compiled/object_p/*.json | sort -u`
      - `searchable: true` needs an authored `global-search-config` component to go with it —
        default to `false` unless you're adding that too.
      - Field `type`/`subtype` is part of the shape, not something to work out from scratch —
@@ -80,11 +91,19 @@ metacode/
        components … Child components cannot be dropped". `"active": false` is accepted on all of
        them (a child entry takes `active`/`label`/`description`); reordering entries is fine.
      - Overriding a **platform** component: an object-level `label` on `account_p` or
-       `opportunity_p` works. Its base object type (`opportunity_p.base_p`) and a platform
-       picklist (`task_p.priority_p`) reject any override ("Unsupported input for ctype"), and a
-       picklist's `items: unlocked` only applies to the Builder editor, not package import. A
-       platform *field* override is untested and risks the whole batch — to relabel a field in
-       one view, set `label` on that `list_view_p` column instead.
+       `opportunity_p` works. These reject any override, by import ("Unsupported input for
+       ctype") and by the offline validator alike, and `"namespace": "platform"` does not help:
+       - a base object type (`opportunity_p.base_p`);
+       - a platform picklist (`task_p.priority_p`, `role_p`) — so `contact_role_p` roles cannot
+         be extended to a custom object, and `items: unlocked` only applies to the Builder editor;
+       - the stock tab collection (`tab_collection_p:aspen_crm_p`) — so a custom object **cannot
+         be added to the "Aspen" nav**. Author a new custom `tab_collection_p` (`marketing_c`)
+         that lists the platform tabs you want beside your own; referencing a platform tab is
+         fine, only overriding the collection is not.
+       A platform *field* override is untested and risks the whole batch — to relabel a field in
+       one view, set `label` on that `list_view_p` column instead. **Deploy anything that touches
+       a platform component as its own package**, apart from your custom work, so one rejection
+       cannot take the rest down with it.
      - A new field on an object that has record types must also be declared in each of its
        `object_type_p` files, or typed records reject it. A layout needs an `object` attribute
        and names fields by their raw name (`amount_p`), never an object-type alias (`amount_c`).
@@ -95,19 +114,24 @@ metacode/
      platform only ever loads a server codefile named `server_main_c` (or `server_main_a`); any
      other crate directory compiles and checks in clean and then silently never fires, on any
      object or event. The trigger declared in its `aspen.server.json` (its `"name"` field, separate
-     from the crate name) is what the `impl` block implements. The `aspen_crm` crate's own docs.rs
-     coverage is thin — don't chase its API one struct at a time. This skill's
-     `rust-trigger-notes.md` has the confirmed shapes (inserting a record, reading an
-     `after_update` batch, which `RecordFieldValue` variant a field's own type/subtype needs, and
-     what to do when a trigger seems to fire but does nothing), read only when you need it. For a
-     fuller worked example
-     than either file gives you, ask the human first, then fetch **only** `example-customer-repo/`
-     — not the rest of `aspen-crm/aspen-tools`, which is unrelated plugin and doc source:
-     ```
-     git clone --no-checkout --filter=blob:none --sparse https://github.com/aspen-crm/aspen-tools <dir>
-     git -C <dir> sparse-checkout set example-customer-repo
-     git -C <dir> checkout
-     ```
+     from the crate name) is what the `impl` block implements.
+     - **No `server/` yet?** Copy the skeleton that ships beside this file — nothing to fetch:
+       ```
+       cp -R <this skill's dir>/server-skeleton/server_main_c metacode/server/
+       cp <this skill's dir>/server-skeleton/rust-toolchain.toml ./
+       rustup target add wasm32-wasip2      # once per machine
+       ```
+       The `rust-toolchain.toml` goes at the **instance root**, beside `metacode/`, and it is not
+       optional: without it the crate compiles and links, then dies at componentization with
+       `invalid leading byte (0x63)` naming wit-bindgen — an error that reads as a dependency
+       problem and is not one. Don't chase it through lockfiles; check for the pin.
+     - **Don't start from the `aspen_crm` docs** (8.8% coverage). Start from `trigger-patterns.rs`
+       beside this file: six handlers that fired on a real instance — set a field in
+       `before_insert`, a batched lookup, a transition that creates records, one body for two
+       events, a self-writing trigger with its guard, and `before_delete` — plus the helper block
+       they share. Copy the helpers and the one closest to yours. `rust-trigger-notes.md` has the
+       rules behind them (variant per field type, the changed-fields-only batch, the debugging
+       order), read when a pattern doesn't cover your case.
    - *TypeScript page*: a module under `ui/ui_main_c/src/pages/` with the route declared in
      `aspen.client.json`. A custom (`_c`) codefile serves at
      `/ui/c/<base-url-path-part>/<route path>` — `/ui/a/` is app scope, not yours. The page runs
@@ -124,12 +148,31 @@ metacode/
      `--ap-comp-*` names in `ui-component-tokens.md` beside it (grep it for one component; never
      read it whole). Read them when you're styling, not before.
 
-3. **Compile.**
+3. **Validate offline — before anything touches the instance.** The instance's own validator
+   runs locally in 0.2s and reports the same errors `checkin-prep` would, with the same text:
+   ```
+   ./ac validate --custom ./metacode/metadata --active-custom ./metacode/active \
+                 --active-platform ./metacode/platform --format json \
+     | jq -r '.valid, (.["batch-failures"][]?), (.components[].failures[] | select(.subtype != "SKIPPED_DUE_TO_BATCH_ERRORS") | .detail)'
+   ```
+   The first line is `true`/`false`; the rest is only the root causes. **One bad component fails
+   the whole batch**, and every other component then reports `SKIPPED_DUE_TO_BATCH_ERRORS` — the
+   `select` above hides those, because they are the cascade, not the error. Fix what's left, run
+   it again, and only go on when it prints `true`.
+   - `./ac` is at the instance root once `aspen download ac` has fetched it (the session-start
+     note says if it's missing). `platform/` is there in every Builder folder. Omit
+     `--active-custom` only when `metacode/active/` is empty — it is the baseline of what is
+     already deployed, and without it a reference to something already live reads as unresolved.
+   - A metadata-only change can skip step 4. Everything that failed a real `checkin-prep` in the
+     sessions this skill is built from — `namespace`, `indexed` on an id, a bad name, a platform
+     override, a dropped child, a number field's bounds — is caught here first.
+
+4. **Compile.**
    - `aspen compile --rust ./metacode` — **never bare `aspen compile`** (it also picks a TypeScript
      target this layout does not build that way).
    - UI, if you changed it: `cd metacode/ui/ui_main_c && npm install && npm run build`.
 
-4. **Deploy.** Confirm with the human first — this changes the shared instance. Then, in order:
+5. **Deploy.** Confirm with the human first — this changes the shared instance. Then, in order:
    ```
    aspen move save-package ./metacode
    aspen move checkin-prep
@@ -138,13 +181,18 @@ metacode/
    ```
    Pass `./metacode` to `save-package`; the three checkin verbs are ordered and mandatory.
 
-   `save-package` validates shallowly; **`checkin-prep` is the real validator.** One bad component
-   fails the whole batch — every other component reports `SKIPPED_DUE_TO_BATCH_ERRORS` — so find
-   the single error that is not a cascade and fix that one. A failed prep leaves an in-flight
-   package that blocks the next `save-package` ("Operation Save is not allowed"); the way out is
-   `checkin-clear`, under the shared-instance rule below.
+   `save-package` validates shallowly; **`checkin-prep` is the real validator** on the instance
+   side, and step 3 is its local twin. If prep still fails, read its errors the same way — the one
+   that is not `SKIPPED_DUE_TO_BATCH_ERRORS` is the cause. A failed prep leaves an in-flight
+   package that blocks the next `save-package` ("Operation Save is not allowed"). **Recover in
+   this order, no diagnosis needed:**
+   1. `aspen move clear-package` — drops this package from the dev set. Usually enough.
+   2. Only if it refuses with "invoke the checkin-clear action": `aspen move checkin-clear` —
+      halts the stuck checkin and clears the shared sets.
+   Both change shared state, so both are confirmed with the human first (a guard hook asks too).
+   Starting with `clear-package` means the wider one runs only when the instance itself says so.
 
-5. **Verify.** A green checkin proves it compiled, not that it works. Read the compiled file back,
+6. **Verify.** A green checkin proves it compiled, not that it works. Read the compiled file back,
    and exercise the change — open the record, load the page, trigger the event. A Rust trigger
    that seems to do nothing may not be running at all (check the crate directory is really named
    `server_main_c` first) or may be running with a `match` arm silently swallowing the case —
@@ -171,12 +219,13 @@ metacode/
   is rejected at checkin, not honored.
 - **The instance is shared.** `aspen move checkin-clear` and `clear-package` clear state every
   builder on the instance shares — confirm before running them. (A guard hook also stops and asks.)
-  They are not interchangeable: `clear-package` refuses while a checkin is in progress ("invoke
-  the checkin-clear action" instead) — reach for `checkin-clear` when a `checkin-prep` failed or
-  partially started and the next `save-package` is refused; reach for `clear-package` to drop an
-  unsubmitted save from the dev set.
+  When a save is refused, use the recovery order in step 5: `clear-package` first, `checkin-clear`
+  only when the instance says so.
 - **Never run `aspen init`** (Builder owns the folder) or `aspen login` yourself (it is a browser
   hand-off Builder does; you never see, type, ask for, or print a token).
-- **`ac` is not a system tool** — `/usr/sbin/ac` on macOS is something unrelated. If you need the
-  instance's offline validator, `aspen download ac` fetches the one the logged-in instance
-  publishes; don't search `PATH` for it. The instance still validates on checkin either way.
+- **`ac` is not a system tool** — `/usr/sbin/ac` on macOS is something unrelated. The validator is
+  `./ac` at the instance root, put there by `aspen download ac`; don't search `PATH` for it.
+- **What you learn about the platform goes in this plugin, not in memory.** A rule discovered on
+  one instance is true on every instance at that platform version, and a memory file is read by
+  one folder's sessions only. When a checkin or a compile teaches you something this skill does
+  not say, tell the human it belongs in `aspen-tools`.

@@ -1,0 +1,9 @@
+{
+  "record-triggers": [
+    {
+      "name": "contact_logger_c",
+      "object": "contact_p",
+      "events": ["after_insert"]
+    }
+  ]
+}
