@@ -17,10 +17,13 @@ trigger, a TS page:
 1. **Find the shape** — `ls`/`cat` a real component of the type under `metacode/compiled/`.
 2. **Author** — copy that shape into `metacode/metadata/<ctype>/<name>.json`, or write the Rust/TS
    codefile and its descriptor.
-3. **Compile** — `aspen compile --rust ./metacode` (and `npm run build` for UI).
-4. **Deploy** — `aspen move save-package ./metacode`, then `checkin-prep → checkin-index →
+3. **Validate offline** — `./ac validate` against the tiers Builder keeps in the folder. It is
+   the instance's own validator and reports what `checkin-prep` would, in 0.2s, before anything
+   touches the shared instance.
+4. **Compile** — `aspen compile --rust ./metacode` (and `npm run build` for UI).
+5. **Deploy** — `aspen move save-package ./metacode`, then `checkin-prep → checkin-index →
    checkin-deploy`.
-5. **Verify** — read the compiled file back and exercise it; a green checkin is not proof.
+6. **Verify** — read the compiled file back and exercise it; a green checkin is not proof.
 
 It carries the folder map (which directories are authored versus generated, and where server and UI
 code live) and the rules that are easy to get wrong: an object needs a layout, list view and tab in
@@ -28,10 +31,19 @@ a collection before it is usable; nothing on the platform deletes, so retiring i
 and a deleted entry is rejected; one bad component fails the whole checkin batch; never `aspen init`
 or `aspen login` yourself.
 
-Four sibling notes files hold the parts that are read only when authoring that kind of thing, so
-the skill itself stays short: the `aspen_crm` shapes for a Rust trigger, the design-token inventory
-for a page, the metadata shapes that have no compiled example to copy (a dot-walked list view
-column, a custom-page tab), and the XQL rules for a query from either a page or a trigger.
+Sibling files hold the parts that are read only when authoring that kind of thing, so the skill
+itself stays short: the `aspen_crm` shapes for a Rust trigger, the design-token inventory for a
+page, the metadata shapes that have no compiled example to copy (a dot-walked list view column, a
+custom-page tab), and the XQL rules for a query from either a page or a trigger.
+
+For triggers the skill also ships two things a fresh instance folder does not have. A **server
+skeleton** — the toolchain pin, a `server_main_c` crate with its lockfile and descriptor — copied
+in locally rather than fetched, and kept byte-identical to `example-customer-repo/` by a test. And
+**`trigger-patterns.rs`**: six handlers that fired on a real instance, one complete `lib.rs` that
+type-checks on the pinned toolchain, so a new trigger starts from the nearest working one.
+
+Platform rules learned on one instance are true on every instance at that platform version, so
+they go here, not in a per-folder memory. The skill says so, and asks the model to say so too.
 
 The skill is kept aligned with [`example-customer-repo/AGENTS.md`](../../../example-customer-repo/AGENTS.md),
 which is the same map and commands written for a git-checkout customer project.
@@ -41,8 +53,11 @@ which is the same map and commands written for a git-checkout customer project.
 `hooks/session-start.mjs` runs once when a session opens in an instance folder. It executes
 `aspen --help` and `aspen move --help` (~0.1s) and injects their output, so the model has the CLI's
 exact commands — including the ordered checkin chain — in context before the first task, and never
-re-reads help mid-work. Outside an instance folder it points the human at the right one. It touches
-no network, authors nothing, and fails quiet.
+re-reads help mid-work. It adds one line naming which of three optional pieces the folder lacks —
+the Rust toolchain pin, the server crate, the offline validator — because each fails silently or
+misleadingly when absent, and before the first command is the cheapest place to know. Outside an
+instance folder it points the human at the right one. It touches no network, authors nothing, and
+fails quiet.
 
 ## Safety rails
 
@@ -100,10 +115,12 @@ hooks/guard-destructive.mjs               # PreToolUse (Bash): ask before cleari
 hooks/guard-metadata-writes.mjs           # PreToolUse (Write/Edit): deny writes outside metadata/
 skills/using-aspen/SKILL.md               # the one skill — the whole loop
 skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger
+skills/using-aspen/trigger-patterns.rs    # six handlers that fired in production; copy the nearest
+skills/using-aspen/server-skeleton/       # toolchain pin + server_main_c crate; identical to example-customer-repo
 skills/using-aspen/ui-design-tokens.md    # --ap-sem-* token inventory, read only when styling a page
 skills/using-aspen/ui-component-tokens.md # every --ap-comp-* name; grep it for one component
 skills/using-aspen/metadata-shapes.md     # shapes with no compiled example; read when step 1 finds nothing
 skills/using-aspen/query-notes.md         # XQL rules, counting, paging; read before writing a query
 start.md                                  # setup guide, bundled so a re-read after install is local
-test/                                     # node:test suite (session-start, both guards)
+test/                                     # node:test suite (session-start, both guards, skeleton identity)
 ```
