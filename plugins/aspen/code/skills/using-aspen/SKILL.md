@@ -74,6 +74,23 @@ metacode/
        `relationship` for one object; `polyid`/`lookup` with `allowed-objects` for several;
        `picklist`/`picklist` with `picklist: "<object>.<field>"`. Anything else — still copy it
        from a real object.
+     - **To remove anything, retire it with `"active": false`. Never delete its JSON.** Dropping a
+       child entry — a tab from a `tab_collection_p`, a column from a `list_view_p`, a field from
+       an object, a `tab_p` or `list_view_p` itself — fails checkin-prep with "is dropping child
+       components … Child components cannot be dropped". `"active": false` is accepted on all of
+       them (a child entry takes `active`/`label`/`description`); reordering entries is fine.
+     - Overriding a **platform** component: an object-level `label` on `account_p` or
+       `opportunity_p` works. Its base object type (`opportunity_p.base_p`) and a platform
+       picklist (`task_p.priority_p`) reject any override ("Unsupported input for ctype"), and a
+       picklist's `items: unlocked` only applies to the Builder editor, not package import. A
+       platform *field* override is untested and risks the whole batch — to relabel a field in
+       one view, set `label` on that `list_view_p` column instead.
+     - A new field on an object that has record types must also be declared in each of its
+       `object_type_p` files, or typed records reject it. A layout needs an `object` attribute
+       and names fields by their raw name (`amount_p`), never an object-type alias (`amount_c`).
+     - Some shapes have **no compiled example to copy** — a dot-walked list view column, a
+       `custom_page` tab, a `query-filter` on the current user. `metadata-shapes.md` beside this
+       file has them, reverse-engineered and checked in; read it when step 1 turns up nothing.
    - *Rust trigger*: a crate at **`server/server_main_c/`, that exact directory name** — the
      platform only ever loads a server codefile named `server_main_c` (or `server_main_a`); any
      other crate directory compiles and checks in clean and then silently never fires, on any
@@ -92,7 +109,15 @@ metacode/
      git -C <dir> checkout
      ```
    - *TypeScript page*: a module under `ui/ui_main_c/src/pages/` with the route declared in
-     `aspen.client.json`. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing
+     `aspen.client.json`. A custom (`_c`) codefile serves at
+     `/ui/c/<base-url-path-part>/<route path>` — `/ui/a/` is app scope, not yours. The page runs
+     in a **sandboxed guest iframe**: build URLs and navigate through `window.top`, and intercept
+     your own link clicks (`preventDefault` + `stopPropagation`) — the guest runtime mis-resolves
+     even an absolute `href` against the guest route. The SDK's `navigation.navigate` to
+     `/objects/:objectName/:recordId` needs `config.tabName`, or the platform errors "No active
+     tab found". Data comes from the instance's query endpoints via `@aspen-crm/sdk/request`;
+     `query-notes.md` beside this file has the XQL rules and the paging/counting pattern — read it
+     before writing the first query. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing
      to import for the look — style your own markup with Aspen's `--ap-sem-*` CSS variables, never
      a hex value or px size (light/dark and phone widths then come for free). This skill's
      `ui-design-tokens.md` is the inventory: every semantic token by name, with the per-component
@@ -113,6 +138,12 @@ metacode/
    ```
    Pass `./metacode` to `save-package`; the three checkin verbs are ordered and mandatory.
 
+   `save-package` validates shallowly; **`checkin-prep` is the real validator.** One bad component
+   fails the whole batch — every other component reports `SKIPPED_DUE_TO_BATCH_ERRORS` — so find
+   the single error that is not a cascade and fix that one. A failed prep leaves an in-flight
+   package that blocks the next `save-package` ("Operation Save is not allowed"); the way out is
+   `checkin-clear`, under the shared-instance rule below.
+
 5. **Verify.** A green checkin proves it compiled, not that it works. Read the compiled file back,
    and exercise the change — open the record, load the page, trigger the event. A Rust trigger
    that seems to do nothing may not be running at all (check the crate directory is really named
@@ -122,19 +153,27 @@ metacode/
    back; a temporary `error::bail!` surfaces in the UI at the save that fired the trigger) before
    you start re-reading the `aspen_crm` API from memory.
 
+   A UI change has its own false negative: **the codefile's record id rotates every checkin, and
+   the serving URL embeds it under a 1-year immutable cache.** An old URL serves the old bundle
+   forever, which looks exactly like a deploy that did nothing. Reload the browser — and if you
+   fetch the bundle yourself, re-resolve the id from `download-active-set` — before concluding the
+   page did not ship.
+
 ## Rules
 
 - **An object is not usable until it has a `layout_p` + a `list_view_p` + a `tab_p` placed in a
   `tab_collection_p`.** Without a layout its records cannot be opened; without a tab in a collection
   it cannot be reached. After creating an object, `ls metacode/compiled/{layout_p,list_view_p,tab_p}/`
-  to see what it still needs.
+  to see what it still needs. A tab surfaces **only** its `default-list-view` — there is no view
+  picker (platform 26.3.3), so a second list view pointing at the same tab is unreachable.
 - **Nothing on the platform deletes.** Anything you create while testing is permanent — say so
-  before the human starts.
+  before the human starts. Retiring is `"active": false` (author step above); a deleted JSON entry
+  is rejected at checkin, not honored.
 - **The instance is shared.** `aspen move checkin-clear` and `clear-package` clear state every
   builder on the instance shares — confirm before running them. (A guard hook also stops and asks.)
   They are not interchangeable: `clear-package` refuses while a checkin is in progress ("invoke
-  the checkin-clear action" instead) — reach for `checkin-clear` when a `checkin-prep` partially
-  started and needs halting before you can re-save; reach for `clear-package` to drop an
+  the checkin-clear action" instead) — reach for `checkin-clear` when a `checkin-prep` failed or
+  partially started and the next `save-package` is refused; reach for `clear-package` to drop an
   unsubmitted save from the dev set.
 - **Never run `aspen init`** (Builder owns the folder) or `aspen login` yourself (it is a browser
   hand-off Builder does; you never see, type, ask for, or print a token).

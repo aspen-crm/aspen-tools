@@ -37,7 +37,7 @@ needs no registry configuration beyond the default.
 | --- | --- | --- |
 | Global picklist | `metadata/picklist_p/lead_source_c.json` | Three items. Global, so it is not named for an object and no field references it. |
 | Record trigger | `server/server_main_c/` | `contact_logger_c` logs one line per contact on `after_insert`. |
-| Page | `ui/ui_main_c/` | `helloPage` renders one paragraph at `/ui/a/example/`. |
+| Page | `ui/ui_main_c/` | `helloPage` renders one paragraph at `/ui/c/example/` (custom scope; `/ui/a/` is app scope). |
 
 The trigger reads `name_p` and logs it, and does nothing else — no writes, no rejections, so a
 contact insert behaves exactly as it would without it.

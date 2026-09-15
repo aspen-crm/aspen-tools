@@ -90,7 +90,9 @@ look elsewhere first (field name typo, wrong variant) — it almost never means 
 
 Use the id to read anything else about the record with a separate query. **`SELECT` requires a
 `LIMIT`** — a query without one is rejected at query time; adding `LIMIT 1` (nothing else changed)
-turned a real query from failing to working:
+turned a real query from failing to working. The rest of the XQL rules — one line only, `LIMIT` at
+most 1000, two-hop dot-walking, `AS` when two leaf names collide — are in `query-notes.md` beside
+this file; it is the same query language a page sends, so they apply here too:
 
 ```rust
 let id = /* from record.get("id_p") */;
@@ -198,6 +200,27 @@ it that only jiff's own runtime check rejects — the type system doesn't catch 
 shows up once the trigger actually fires, as an `after trigger error` on the save, not as a compile
 error. Convert to a `Date` first (`.in_tz(<zone>)`, a `&str` — not a `TimeZone` value — returning
 `Result<Zoned, Error>`, then `.date()`), and add the calendar span to *that*.
+
+## Smaller confirmed facts
+
+Each of these cost a live debugging round; none is in the crate docs.
+
+- **`after_delete` exposes only `id()`, and the row is already gone** — nothing else about the
+  record can be read from inside it. If the handler needs the record's fields, use `before_delete`
+  and query the row there.
+- **Picklist items are parent-scoped.** An item defined under one object is rejected when written
+  on another — `decision_maker`/`influencer` exist on opportunity only, `champion`/`detractor` on
+  account only. Checkin doesn't catch it; the end user's save does, as an error on *their* write
+  when the trigger fires. Check the item's parent in its picklist JSON before writing it.
+- **A trigger whose write lands back on its own object needs a write-only-on-change guard**, or
+  it re-fires itself (an `org_health_c` handler that writes `org_c` is the shape to watch for).
+  Compare before writing.
+- `runtime_context().current_user_id()` is the acting user — for an owner field, or to skip
+  system-initiated writes.
+- Names and constructors that are easy to get wrong: `RecordFieldValue::Datetime` (lowercase
+  `t`); `Decimal::new(n, scale)` for a comparison against a `number`/`currency` value;
+  `Timestamp::now()` for a datetime value — not `civil::DateTime::new`, whose seven scalar
+  arguments are easy to misorder and buy nothing.
 
 ## Debugging a trigger that "isn't firing"
 
