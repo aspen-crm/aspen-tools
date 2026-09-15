@@ -24,8 +24,14 @@ trigger, a TS page:
 
 It carries the folder map (which directories are authored versus generated, and where server and UI
 code live) and the rules that are easy to get wrong: an object needs a layout, list view and tab in
-a collection before it is usable; nothing on the platform deletes; never `aspen init` or `aspen
-login` yourself.
+a collection before it is usable; nothing on the platform deletes, so retiring is `"active": false`
+and a deleted entry is rejected; one bad component fails the whole checkin batch; never `aspen init`
+or `aspen login` yourself.
+
+Four sibling notes files hold the parts that are read only when authoring that kind of thing, so
+the skill itself stays short: the `aspen_crm` shapes for a Rust trigger, the design-token inventory
+for a page, the metadata shapes that have no compiled example to copy (a dot-walked list view
+column, a custom-page tab), and the XQL rules for a query from either a page or a trigger.
 
 The skill is kept aligned with [`example-customer-repo/AGENTS.md`](../../../example-customer-repo/AGENTS.md),
 which is the same map and commands written for a git-checkout customer project.
@@ -96,6 +102,8 @@ skills/using-aspen/SKILL.md               # the one skill — the whole loop
 skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger
 skills/using-aspen/ui-design-tokens.md    # --ap-sem-* token inventory, read only when styling a page
 skills/using-aspen/ui-component-tokens.md # every --ap-comp-* name; grep it for one component
+skills/using-aspen/metadata-shapes.md     # shapes with no compiled example; read when step 1 finds nothing
+skills/using-aspen/query-notes.md         # XQL rules, counting, paging; read before writing a query
 start.md                                  # setup guide, bundled so a re-read after install is local
 test/                                     # node:test suite (session-start, both guards)
 ```
