@@ -36,6 +36,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "What objects exist? What are this object's fields / a picklist's values?" | `explore` |
 | Reading records (list, get one, search, related) or writing one (create/update) + proving it | `records` |
 | A natural-language question, or a group-by count/sum ("pipeline by stage") | `query-report` |
+| Merging duplicate contacts into a survivor, or unmerging one (contacts only) | `contact-merge` |
 
 ## Fan-out (subagent — parallel, read-only)
 
@@ -57,6 +58,9 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
   diff (update), get an explicit **yes**, then call with `confirmed=true`. Without it the
   server refuses (`CONFIRMATION_REQUIRED`). **There is no delete tool** — records cannot be
   removed through this lane; say so rather than implying one.
+- **A contact merge is not a records write.** `merged_into_p` and `contact_merge_p` reject
+  direct writes; `contact-merge` reaches the platform's merge/unmerge endpoints through a
+  bundled helper that holds the login for you. Contacts only — there is no account merge.
 - **A write is not done until you read it back.** The write tools return the re-read record;
   confirm the values landed (the evidence loop, in `records`).
 - **Every result carries `app_url` — hand it over.** The server returns a deep link on every
@@ -90,6 +94,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "I told them the record was created" | Without `app_url` they can't go look at it. Every result carries the link — end with it. |
 | "I'll build the record's URL from the instance host" | Don't assemble a link. `app_url` is in the result; a hand-made one lands on an in-app 404. |
 | "I'll delete that test record" | There is no delete tool in this lane. Neutralize by updating, or tell the user. |
+| "I'll set `merged_into_p` to merge these two contacts" | Rejected by the instance. Route to `contact-merge`, which drives the merge endpoints. |
 | "I'll parse the error text" | Route on the `code`; read `fix_hint`. |
 | "That number is 50000" | Numeric fields come back as JSON **strings** (`"50000.00"`). Parse before doing math. |
 | "I'll page through all objects" | `aspen_describe` with no object caps at ~100 (`truncated` flag). Scope to the object you need. |
