@@ -11,7 +11,7 @@
     {
       "name": "aspen-cowork",
       "source": "./plugins/aspen/cowork",
-      "description": "Work an Aspen CRM over the runtime MCP (.mcpb) — read, search, report, create, and update records. No CLI; the server confirm-gates writes."
+      "description": "Work an Aspen CRM over the runtime MCP (.mcpb) — read, search, report, create, and update records, and merge duplicate contacts. No CLI; the server confirm-gates writes."
     }
   ]
 }

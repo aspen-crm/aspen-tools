@@ -90,7 +90,7 @@ this repository directly rather than from a release:
 | Plugin | Lane | Needs |
 | --- | --- | --- |
 | [aspen-code](plugins/aspen/code) | Customize an instance: read the model, author `_c` components, compile, deploy, verify. | The `aspen` CLI, which comes with Aspen Builder. |
-| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create and update. | The Aspen Runtime MCP, above: as the `.mcpb` in Claude Desktop, or put in place by the plugin's own installer on Claude Code. |
+| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create, update, and merge duplicate contacts. | The Aspen Runtime MCP, above: as the `.mcpb` in Claude Desktop, or put in place by the plugin's own installer on Claude Code. |
 
 `aspen-cowork` teaches tools it does not carry, so it does nothing on its own —
 install the runtime MCP alongside it. On Claude Code the plugin starts the

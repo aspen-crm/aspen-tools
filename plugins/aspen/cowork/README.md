@@ -106,6 +106,7 @@ own prefix in front of the tools (`mcp__aspen-runtime-mcp__aspen_*` in Claude De
 | `explore` | `aspen_describe` (object catalog + tab collections → per-object fields plus the object's list views/tabs/layouts) and `aspen_get_picklist`; the "never guess a name" read path. |
 | `records` | Reads (`list`/`get`/`search`/`related`) and confirm-gated writes (`create`/`update`) with the read-back evidence loop, the record/list `app_url` handoff, and error-code routing. No delete. |
 | `query-report` | `aspen_query` (natural-language → plan, server-side) and `aspen_report` (group-by count/sum), under the read caps. |
+| `contact-merge` | Merge a duplicate `contact_p` into a survivor, or unmerge one, through the platform's merge/unmerge endpoints — which the runtime MCP does not wrap and the records tools cannot reach (`merged_into_p` and `contact_merge_p` reject direct writes). A bundled Node helper makes the call and resolves the login the way the launcher does, so Claude never holds the token. One pair per call, contacts only. Claude Code only: it needs a shell. |
 
 The router is `using-aspen-cowork`, not `using-aspen`, because the sibling
 [aspen-code](../code) plugin ships a router by that name for the CLI lane. The two route to
@@ -163,8 +164,11 @@ skills/using-aspen-cowork/SKILL.md   # the router: namespace grammar, non-negoti
 skills/explore/SKILL.md              # describe the model; never guess a name
 skills/records/SKILL.md              # reads + confirm-gated writes + the evidence loop
 skills/query-report/SKILL.md         # natural-language query and group-by report
+skills/contact-merge/SKILL.md        # merge / unmerge duplicate contacts via the platform endpoints
+skills/contact-merge/scripts/contact-merge.mjs  # the helper: resolves the login, posts one pair, prints JSON
 agents/schema-explorer.md            # read-only sweep -> a compact map
 test/runtime-mcp.test.mjs            # launcher + installer, end to end on a fake bundle
+test/contact-merge.test.mjs          # the merge helper, against a scratch config and a stub instance
 ```
 
 No `hooks/` directory, on purpose — see above. `.mcp.json` and `bin/` are not in the

@@ -1,8 +1,8 @@
 {
     "name": "aspen-cowork",
     "displayName": "Aspen Cowork",
-    "description": "Work an Aspen CRM from any host that loads the Aspen runtime MCP (.mcpb) — skills and a read-only explorer subagent for the Data + Describe tool surface: view, search, report on, create, and update records. No CLI. Paired with the aspen-runtime-mcp server; on Claude Code the plugin starts the server itself, from a copy its bin/install-runtime-mcp.sh puts in place.",
-    "version": "0.2.0",
+    "description": "Work an Aspen CRM from any host that loads the Aspen runtime MCP (.mcpb) — skills and a read-only explorer subagent for the Data + Describe tool surface: view, search, report on, create, and update records, and merge duplicate contacts. No CLI. Paired with the aspen-runtime-mcp server; on Claude Code the plugin starts the server itself, from a copy its bin/install-runtime-mcp.sh puts in place.",
+    "version": "0.3.0",
     "author": {
         "name": "Aspen CRM"
     },
