@@ -66,6 +66,17 @@ field set to the `file_id` (one confirmation covers both; show them together). I
 is optional, either order works; creating first and uploading with `attach` reads back the
 finished record in one result.
 
+**"Attach this to the opportunity / case / lead" with no file field on it:** the platform's
+own **`attachment_p`** is the record that carries a file *for* another record. Describe it
+fresh; on the instances seen it is `name_p` (required), **`content_p`** (the file field,
+required), `related_to_p` — a polyid to the parent, so set it **and** `related_toon_p` to one
+of its `allowed_objects` — `version_p` (required, a number sent as the string `"1"`),
+`description_p`, `type_p`. **Omit `original_version_p`** even though describe marks it
+required: the instance sets it to the new record itself, and sets `is_latest_p`. Because
+`content_p` is required, the order is upload first (no `attach`), then
+`aspen_records_create attachment_p` with `content_p: "<file_id>"`; the result's `app_url` is
+the attachment's page, and the file shows on the parent record.
+
 **Just an upload** (no target yet) is fine: call without `attach`, hand the user the
 `file_id`, and say it's the only handle — the file is a `file_p` record that **list and get
 cannot read** (the instance refuses `file_p` as an object), so the id lives in your report
@@ -114,3 +125,4 @@ There is **no download tool**. To see a file, the user opens the record in the a
 | "I'll `aspen_get file_p <id>` to check it" | `file_p` is refused as an object. The proof is `stored` in the upload result and the field on the record. |
 | "I'll read the PDF's text into a text field instead" | That's not attaching the file. Ask the user which they want; do not substitute. |
 | "It uploaded, so it's on the record" | Only if you passed `attach` — check `attached.record[<field>]`. Otherwise set the field. |
+| "The opportunity has no file field, so I can't attach anything" | `attachment_p` exists for exactly that: upload, then create an attachment related to the opportunity. |

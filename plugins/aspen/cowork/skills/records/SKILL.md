@@ -64,6 +64,9 @@ instance stored plus the attached record when there is one.
    - update: `aspen_records_update` with `object` + `id` (`id_p`) + the changed `fields`.
    The `yes` is what `confirmed=true` attests. Without it the server returns
    `CONFIRMATION_REQUIRED` and sends nothing.
+   **Every value in `fields` is a JSON string** — `"1"` not `1`, `"true"` not `true`, an id
+   as its text. The record API reads each field as text and refuses a JSON number outright
+   (`VALIDATION_FAILED: … invalid type: integer, expected a string`). `null` clears a field.
 4. **Read it back.** The tool returns the re-read record — assert the values landed. Only
    then report the write done. Numeric fields come back as JSON **strings** (`"50000.00"`);
    parse before comparing.
