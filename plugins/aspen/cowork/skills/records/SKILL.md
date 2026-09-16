@@ -45,9 +45,11 @@ For a natural-language question or a grouped count/sum, use `query-report`, not 
 
 ## Writes — describe, confirm, write, read back (the evidence loop)
 
-There are two write tools — `aspen_records_create` and `aspen_records_update` — and **no
-delete**. Both are **confirm-gated server-side**: they refuse unless called with
-`confirmed=true`, and they read the record back and return it.
+There are three write tools — `aspen_records_create`, `aspen_records_update`, and
+`aspen_files_upload` (a file onto a record; the `files` skill) — and **no delete**. All are
+**confirm-gated server-side**: they refuse unless called with `confirmed=true`, and they
+return a read-back — the record for the two records writes, and for an upload what the
+instance stored plus the attached record when there is one.
 
 1. **Describe fresh.** `aspen_describe <object>` immediately before writing — the model may
    have changed. Confirm every field name and `required` flag; validate any picklist value
@@ -85,6 +87,15 @@ Some fields (see `explore`) are backed by more than one column — set the whole
   lookup. Never set the **converted** amount (`subtype: converted`) — the instance computes it
   from the entered amount and the rate; writing it is rejected. Keep amounts within
   `min_value`/`max_value` (an over-limit value returns `VALIDATION_FAILED`).
+
+### A file field takes a file id
+
+A field of `type: id`, `subtype: file` holds an uploaded file by its **file id** — never a
+path, a URL, or a name. Get the id from `aspen_files_upload` (the `files` skill), which can
+also set the field for you in the same call (`attach`). Setting it here is right when the
+record is being created with a required file field: upload first, then create with
+`fields: {<file field>: "<file_id>"}`. The file itself is a `file_p` record that `list`/`get`
+cannot read; the id on the field is how it is reached.
 
 ## Errors — route on the `code`, read the `fix_hint`
 

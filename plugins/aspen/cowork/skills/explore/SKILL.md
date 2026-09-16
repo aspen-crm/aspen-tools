@@ -99,7 +99,14 @@ Two field types are backed by more than one column — describe tells you which:
   system-computed **converted** amount (`subtype: converted`, named by the entered field's
   **`converted_amt`**). `min_value`/`max_value` bound it. Amounts come back as JSON **strings**.
 
-Report the shape; the write contract for both lives in the `records` skill.
+A third shape is one column but points outside the record tables:
+
+- **File** (`type: id`, `subtype: file`) — a reference to an uploaded file (a `file_p`
+  record) by its file id. Describe shows the field and whether it is `required`; the file
+  itself is **not** listable or gettable (`file_p` is refused as an object), so a file is
+  reached only through the field that holds it. Uploading and attaching is the `files` skill.
+
+Report the shape; the write contract for all of them lives in the `records` and `files` skills.
 
 ## Rules
 
