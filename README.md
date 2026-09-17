@@ -35,7 +35,7 @@ directly.
 ## Aspen Runtime MCP
 
 A local MCP server that lets Claude work an instance's records: view, search,
-report, create and update, over the instance's own API. It is the runtime
+report, create, update and attach files, over the instance's own API. It is the runtime
 counterpart to Builder -- it changes records, not the model.
 
 It ships as an `.mcpb` bundle, which Claude Desktop installs in one click.

@@ -106,6 +106,7 @@ own prefix in front of the tools (`mcp__aspen-runtime-mcp__aspen_*` in Claude De
 | `explore` | `aspen_describe` (object catalog + tab collections → per-object fields plus the object's list views/tabs/layouts) and `aspen_get_picklist`; the "never guess a name" read path. |
 | `records` | Reads (`list`/`get`/`search`/`related`) and confirm-gated writes (`create`/`update`) with the read-back evidence loop, the record/list `app_url` handoff, and error-code routing. No delete. |
 | `query-report` | `aspen_query` (natural-language → plan, server-side) and `aspen_report` (group-by count/sum), under the read caps. |
+| `files` | Upload a file from the computer running the server and attach it to a record's file field (`type: id`, `subtype: file`) with `aspen_files_upload` — the confirm → upload → read-back loop, and the one host difference: in Cowork the path is the file's path on the user's computer, not the sandbox's. Never the app's upload form. |
 | `contact-merge` | Merge a duplicate `contact_p` into a survivor, or unmerge one, through the platform's merge/unmerge endpoints — which the runtime MCP does not wrap and the records tools cannot reach (`merged_into_p` and `contact_merge_p` reject direct writes). A bundled Node helper makes the call and resolves the login the way the launcher does, so Claude never holds the token. One pair per call, contacts only. Claude Code only: it needs a shell. |
 
 The router is `using-aspen-cowork`, not `using-aspen`, because the sibling
@@ -130,10 +131,10 @@ The sibling `aspen-code` plugin uses `PreToolUse` hooks to make confirm-before-w
 property of the system. The runtime lane does not need them, and shipping one would be worse
 than shipping none:
 
-- **Writes are confirm-gated in the server.** `aspen_records_create/update` reject a call
-  without `confirmed=true`, checked before any network call — the gate belongs to the server,
-  not to the host remembering to ask.
-- **Tools are annotated.** Reads are `readOnlyHint:true`, the two writes `readOnlyHint:false`
+- **Writes are confirm-gated in the server.** `aspen_records_create/update` and
+  `aspen_files_upload` reject a call without `confirmed=true`, checked before any network
+  call — the gate belongs to the server, not to the host remembering to ask.
+- **Tools are annotated.** Reads are `readOnlyHint:true`, the three writes `readOnlyHint:false`
   (update also `destructiveHint:true`), so a host that honors hints auto-approves reads and
   prompts on writes on its own.
 - **There is no CLI, no credential handling and no destructive recovery verb here** — the
@@ -144,10 +145,11 @@ hooks. If a real gap appears, guard it in the server.
 
 ## The tool surface it teaches
 
-Ten tools, namespaced `aspen_*` — reads: `describe`, `get_picklist`, `list`, `get`, `search`,
-`related`, `report`, `query`; writes: `records_create`, `records_update` (confirm-gated, no
-delete). The object is always a parameter, resolved against Describe, so a customer's `_c`
-objects work exactly like the standard `_p` ones.
+Eleven tools, namespaced `aspen_*` — reads: `describe`, `get_picklist`, `list`, `get`, `search`,
+`related`, `report`, `query`; writes: `records_create`, `records_update`, `files_upload`
+(confirm-gated, no delete; `files_upload` needs runtime MCP 0.1.17 or later). The object is
+always a parameter, resolved against Describe, so a customer's `_c` objects work exactly like
+the standard `_p` ones.
 
 The server is the authority on both the tool names and the error codes. A skill may only name
 a tool that exists and route on a code that exists; when the server changes, the skills follow
@@ -164,6 +166,7 @@ skills/using-aspen-cowork/SKILL.md   # the router: namespace grammar, non-negoti
 skills/explore/SKILL.md              # describe the model; never guess a name
 skills/records/SKILL.md              # reads + confirm-gated writes + the evidence loop
 skills/query-report/SKILL.md         # natural-language query and group-by report
+skills/files/SKILL.md                # upload a file and attach it to a record's file field
 skills/contact-merge/SKILL.md        # merge / unmerge duplicate contacts via the platform endpoints
 skills/contact-merge/scripts/contact-merge.mjs  # the helper: resolves the login, posts one pair, prints JSON
 agents/schema-explorer.md            # read-only sweep -> a compact map

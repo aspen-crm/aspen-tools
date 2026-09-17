@@ -1,7 +1,7 @@
 # Installing Aspen for Cowork — end-user guide
 
-Work your Aspen CRM from Claude: view, search, report on, create, and update records in
-plain language.
+Work your Aspen CRM from Claude: view, search, report on, create, and update records, and
+attach files to them, in plain language.
 
 **The quickest way through this page:** paste its URL into a Cowork conversation and say
 "read this and help me install". Claude will work the steps with you, one at a time, and
@@ -174,8 +174,13 @@ Two more things to confirm the plugin loaded:
 - Ask it to **create** a record — it should ask you to confirm before writing, every time.
   (The server enforces this itself; it cannot be talked out of it.)
 
-There is **no delete tool** in this lane. Claude can create and update records, and that is
-all — anything it makes while you're experimenting stays.
+There is **no delete tool** in this lane. Claude can create and update records and attach
+files to them, and that is all — anything it makes while you're experimenting stays.
+
+**Attaching a file** (runtime MCP 0.1.17 or later): the upload reads the file from *your*
+computer, where Claude Desktop runs — so when Claude asks where a file or folder is, give it
+the path as it is on your machine (`~/Documents/Contracts/msa.pdf`), even if Claude has been
+working with that folder in its own workspace.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: using-aspen-cowork
-description: Use when starting any task that reads or writes a customer's Aspen CRM through the runtime MCP (the .mcpb) — viewing, searching, listing, reporting on, creating, or updating records — routes each moment to the right skill before acting. This is the Data + Describe runtime lane; there is no CLI and no metadata authoring here.
+description: Use when starting any task that reads or writes a customer's Aspen CRM through the runtime MCP (the .mcpb) — viewing, searching, listing, reporting on, creating, or updating records, or attaching a file to one — routes each moment to the right skill before acting. This is the Data + Describe runtime lane; there is no CLI and no metadata authoring here.
 ---
 
 # Using Aspen (runtime lane)
@@ -37,6 +37,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | Reading records (list, get one, search, related) or writing one (create/update) + proving it | `records` |
 | A natural-language question, or a group-by count/sum ("pipeline by stage") | `query-report` |
 | Merging duplicate contacts into a survivor, or unmerging one (contacts only) | `contact-merge` |
+| Uploading or attaching a file (a PDF, image, document) to a record, or setting a file field | `files` |
 
 ## Fan-out (subagent — parallel, read-only)
 
@@ -63,6 +64,10 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
   bundled helper that holds the login for you. Contacts only — there is no account merge.
 - **A write is not done until you read it back.** The write tools return the re-read record;
   confirm the values landed (the evidence loop, in `records`).
+- **A file is uploaded, never pasted or driven through the app.** `aspen_files_upload` takes a
+  file from the computer running the server and returns a file id; a file field (`type: id`,
+  `subtype: file`) takes that id and nothing else. Never drive the app's upload form and never
+  put file contents in a text field — route to `files`.
 - **Every result carries `app_url` — hand it over.** The server returns a deep link on every
   read and every write: the record's own page (`get`, `create`, `update`, each `search` hit)
   or the app's list view with your filters and sort already applied (`list`, `related`,
@@ -95,6 +100,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "I'll build the record's URL from the instance host" | Don't assemble a link. `app_url` is in the result; a hand-made one lands on an in-app 404. |
 | "I'll delete that test record" | There is no delete tool in this lane. Neutralize by updating, or tell the user. |
 | "I'll set `merged_into_p` to merge these two contacts" | Rejected by the instance. Route to `contact-merge`, which drives the merge endpoints. |
+| "There's no upload tool — I'll attach the PDF through the web UI" | `aspen_files_upload` is the upload. Route to `files`; in Cowork the path is the file's path on the user's computer. |
 | "I'll parse the error text" | Route on the `code`; read `fix_hint`. |
 | "That number is 50000" | Numeric fields come back as JSON **strings** (`"50000.00"`). Parse before doing math. |
 | "I'll page through all objects" | `aspen_describe` with no object caps at ~100 (`truncated` flag). Scope to the object you need. |
