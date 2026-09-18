@@ -92,9 +92,12 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
   `{code, message, component, fix_hint}`; read `fix_hint` — it names the fix. Codes:
   `AUTH_REQUIRED`, `INSTANCE_UNREACHABLE`, `VALIDATION_FAILED`, `PICKLIST_UNKNOWN_VALUE`,
   `CONFIRMATION_REQUIRED`, `NOT_FOUND`, `RATE_LIMITED`, `USAGE`, `BAD_RESPONSE`, `UNEXPECTED`.
-- **Never handle the user's token.** The `.mcpb` holds the instance URL + API token in its
-  own config; you never read, print, or set it. If a call returns `AUTH_REQUIRED`, ask the
-  user to re-check the connector config — do not try to supply a credential yourself.
+- **Never handle the user's token.** You never read, print, or set it. Where it lives
+  depends on the host and you do not have to know: on `AUTH_REQUIRED`, **read `fix_hint` and
+  relay it** — the server knows whether this session's identity came from the connector's
+  own settings (Claude Desktop, Cowork — where the user has no CLI) or from an `aspen login`
+  (Claude Code), and names only the fix that host's user can carry out. Do not offer the
+  other one, and never supply a credential yourself.
 
 ## Red flags — STOP
 
