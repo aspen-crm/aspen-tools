@@ -24,6 +24,12 @@
 # ASPEN_API_TOKEN as a real (empty) credential and stops looking, which would
 # silently disable the CLI-login fallback for anyone whose shell exports the
 # variable unset.
+#
+# Bulk writes: this launcher is what turns them on. Claude Code has a shell and
+# a terminal-grade permission prompt, so it gets aspen_records_bulk_update (up
+# to 100 records of one object per confirmed call). The Cowork / Claude Desktop
+# bundle never runs through here and keeps writing one confirmed record at a
+# time. ASPEN_BULK_WRITES=0 in the shell turns it off for a session.
 set -eu
 
 config="${ASPEN_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/aspen}"
@@ -53,6 +59,9 @@ for name in ASPEN_API_TOKEN ASPEN_INSTANCE ASPEN_API_BASE; do
     unset "$name"
   fi
 done
+
+# On unless the shell said otherwise; an empty value counts as unset, as above.
+export ASPEN_BULK_WRITES="${ASPEN_BULK_WRITES:-1}"
 
 if [ ! -x "$bin" ]; then
   here="$(cd "$(dirname "$0")" && pwd)"

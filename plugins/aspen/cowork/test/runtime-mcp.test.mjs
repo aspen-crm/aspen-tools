@@ -24,6 +24,7 @@ echo "args=$*"
 echo "token=\${ASPEN_API_TOKEN-unset}"
 echo "instance=\${ASPEN_INSTANCE-unset}"
 echo "base=\${ASPEN_API_BASE-unset}"
+echo "bulk=\${ASPEN_BULK_WRITES-unset}"
 `;
 
 const scratch = () => mkdtempSync(join(tmpdir(), 'aspen-mcp-'));
@@ -131,7 +132,22 @@ test('launcher: empty identity variables are stripped, not passed as empty', () 
     ASPEN_CONFIG_DIR: config, ASPEN_API_TOKEN: '', ASPEN_INSTANCE: '', ASPEN_API_BASE: '',
   }));
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(report(r.stdout), { args: '--stdio', token: 'unset', instance: 'unset', base: 'unset' });
+  assert.deepEqual(report(r.stdout), { args: '--stdio', token: 'unset', instance: 'unset', base: 'unset', bulk: '1' });
+});
+
+test('launcher: bulk writes are on for Claude Code, and the shell can turn them off', () => {
+  const config = scratch();
+  fakeServerAt(join(config, 'mcp', 'aspen-runtime-mcp'));
+  let r = run(launcher, [], env({ ASPEN_CONFIG_DIR: config }));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(report(r.stdout).bulk, '1', 'on by default: this launcher is the Claude Code route');
+  r = run(launcher, [], env({ ASPEN_CONFIG_DIR: config, ASPEN_BULK_WRITES: '0' }));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(report(r.stdout).bulk, '0', 'the shell can turn it off');
+  // An empty value counts as unset, like the identity variables: the default applies.
+  r = run(launcher, [], env({ ASPEN_CONFIG_DIR: config, ASPEN_BULK_WRITES: '' }));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(report(r.stdout).bulk, '1');
 });
 
 test('launcher: shell values pass through, and reach the server exported', () => {
@@ -142,7 +158,7 @@ test('launcher: shell values pass through, and reach the server exported', () =>
   }));
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(report(r.stdout), {
-    args: '--stdio', token: 'secret-token:aspen_x', instance: 'https://h/d/i', base: 'unset',
+    args: '--stdio', token: 'secret-token:aspen_x', instance: 'https://h/d/i', base: 'unset', bulk: '1',
   });
 });
 
@@ -153,11 +169,11 @@ test('launcher: the env file fills in what the shell left unset, and the shell w
 
   let r = run(launcher, [], env({ ASPEN_CONFIG_DIR: config }));
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(report(r.stdout), { args: '--stdio', token: 'unset', instance: 'https://file/d/i', base: '/i/api/v24.3' });
+  assert.deepEqual(report(r.stdout), { args: '--stdio', token: 'unset', instance: 'https://file/d/i', base: '/i/api/v24.3', bulk: '1' });
 
   r = run(launcher, [], env({ ASPEN_CONFIG_DIR: config, ASPEN_INSTANCE: 'https://shell/d/i', ASPEN_API_BASE: '' }));
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(report(r.stdout), { args: '--stdio', token: 'unset', instance: 'https://shell/d/i', base: '/i/api/v24.3' });
+  assert.deepEqual(report(r.stdout), { args: '--stdio', token: 'unset', instance: 'https://shell/d/i', base: '/i/api/v24.3', bulk: '1' });
 });
 
 // --- installer ----------------------------------------------------------------
@@ -219,7 +235,7 @@ test('installer + launcher, end to end on a fake bundle', { skip: !haveZip && 'z
   const launched = run(launcher, [], e);
   assert.equal(launched.status, 0, launched.stderr);
   assert.deepEqual(report(launched.stdout), {
-    args: '--stdio', token: 'secret-token:aspen_kept', instance: 'https://h/d/j', base: '/i/api/v24.3',
+    args: '--stdio', token: 'secret-token:aspen_kept', instance: 'https://h/d/j', base: '/i/api/v24.3', bulk: '1',
   });
 });
 

@@ -57,6 +57,14 @@ plugin; if it shows as failed, the server is not installed, and the launcher's m
 names the installer. A build of your own can stand in for the installed one:
 `export ASPEN_RUNTIME_MCP=/path/to/aspen-runtime-mcp`.
 
+**Bulk updates come with this route.** The launcher starts the server with
+`ASPEN_BULK_WRITES=1`, which adds **`aspen_records_bulk_update`** — up to 100 records of one
+object per confirmed call — to the catalog. Claude Code has a shell and a terminal-grade
+permission prompt, so one confirmation over a shown batch is a sound gate there; the Desktop
+/ Cowork route below never sets the switch and keeps writing one confirmed record at a time.
+`export ASPEN_BULK_WRITES=0` in the shell you start Claude Code from turns it off. Needs
+runtime MCP 0.1.19 or later.
+
 Registered the server by hand before this plugin carried it (`claude mcp add …`)? Remove
 that entry, or every tool appears twice.
 
@@ -64,12 +72,12 @@ that entry, or every tool appears twice.
 Take `server\aspen-runtime-mcp.exe` out of the
 [Windows bundle](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb)
 (it is a zip) and register it directly:
-`claude mcp add --scope user aspen-runtime-mcp -- C:\path\to\aspen-runtime-mcp.exe --stdio`.
+`claude mcp add --scope user -e ASPEN_BULK_WRITES=1 aspen-runtime-mcp -- C:\path\to\aspen-runtime-mcp.exe --stdio`.
 
 **Without this plugin** the installed server registers the same way:
 `claude mcp add --scope user aspen-runtime-mcp -- ~/.config/aspen/mcp/aspen-runtime-mcp --stdio`,
-plus `-e ASPEN_INSTANCE=…` unless the CLI is logged in. Only the launcher reads the `env`
-file.
+plus `-e ASPEN_INSTANCE=…` unless the CLI is logged in, and `-e ASPEN_BULK_WRITES=1` for the
+bulk update. Only the launcher reads the `env` file.
 
 ### Claude Desktop and Cowork
 
@@ -104,7 +112,7 @@ own prefix in front of the tools (`mcp__aspen-runtime-mcp__aspen_*` in Claude De
 | --- | --- |
 | `using-aspen-cowork` | The router: maps each moment of the runtime loop to a skill; carries the namespace grammar and the non-negotiables. |
 | `explore` | `aspen_describe` (object catalog + tab collections → per-object fields plus the object's list views/tabs/layouts) and `aspen_get_picklist`; the "never guess a name" read path. |
-| `records` | Reads (`list`/`get`/`search`/`related`) and confirm-gated writes (`create`/`update`) with the read-back evidence loop, the record/list `app_url` handoff, and error-code routing. No delete. |
+| `records` | Reads (`list`/`get`/`search`/`related`) and confirm-gated writes (`create`/`update`) with the read-back evidence loop, the record/list `app_url` handoff, and error-code routing — including the Claude Code-only **bulk update** (`aspen_records_bulk_update`: up to 100 rows, one confirmation, per-row results). No delete. |
 | `query-report` | `aspen_query` (natural-language → plan, server-side) and `aspen_report` (group-by count/sum), under the read caps. |
 | `files` | Upload a file from the computer running the server and attach it to a record's file field (`type: id`, `subtype: file`) with `aspen_files_upload` — the confirm → upload → read-back loop, and the one host difference: in Cowork the path is the file's path on the user's computer, not the sandbox's. Never the app's upload form. |
 | `contact-merge` | Merge a duplicate `contact_p` into a survivor, or unmerge one, through the platform's merge/unmerge endpoints — which the runtime MCP does not wrap and the records tools cannot reach (`merged_into_p` and `contact_merge_p` reject direct writes). A bundled Node helper makes the call and resolves the login the way the launcher does, so Claude never holds the token. One pair per call, contacts only. Claude Code only: it needs a shell. |
@@ -131,12 +139,18 @@ The sibling `aspen-code` plugin uses `PreToolUse` hooks to make confirm-before-w
 property of the system. The runtime lane does not need them, and shipping one would be worse
 than shipping none:
 
-- **Writes are confirm-gated in the server.** `aspen_records_create/update` and
-  `aspen_files_upload` reject a call without `confirmed=true`, checked before any network
-  call — the gate belongs to the server, not to the host remembering to ask.
-- **Tools are annotated.** Reads are `readOnlyHint:true`, the three writes `readOnlyHint:false`
-  (update also `destructiveHint:true`), so a host that honors hints auto-approves reads and
-  prompts on writes on its own.
+- **Writes are confirm-gated in the server.** `aspen_records_create/update`,
+  `aspen_records_bulk_update` and `aspen_files_upload` reject a call without
+  `confirmed=true`, checked before any network call — the gate belongs to the server, not to
+  the host remembering to ask.
+- **Tools are annotated.** Reads are `readOnlyHint:true`, the writes `readOnlyHint:false`
+  (the two updates also `destructiveHint:true`), so a host that honors hints auto-approves
+  reads and prompts on writes on its own.
+- **The bulk update is a host opt-in, in the server.** It is in the catalog only when the
+  server was launched with `ASPEN_BULK_WRITES=1`, which this plugin's Claude Code launcher
+  sets and the Cowork zip cannot (it carries no launcher). Elsewhere the server omits the
+  tool from `tools/list` and refuses it by name — the skill never has to know which host it
+  is on, it reads its tool list.
 - **There is no CLI, no credential handling and no destructive recovery verb here** — the
   surfaces `aspen-code`'s hooks guard do not exist in this lane.
 
@@ -145,9 +159,11 @@ hooks. If a real gap appears, guard it in the server.
 
 ## The tool surface it teaches
 
-Eleven tools, namespaced `aspen_*` — reads: `describe`, `get_picklist`, `list`, `get`, `search`,
-`related`, `report`, `query`; writes: `records_create`, `records_update`, `files_upload`
-(confirm-gated, no delete; `files_upload` needs runtime MCP 0.1.17 or later). The object is
+Eleven tools everywhere, twelve on Claude Code, namespaced `aspen_*` — reads: `describe`,
+`get_picklist`, `list`, `get`, `search`, `related`, `report`, `query`; writes:
+`records_create`, `records_update`, `files_upload`, and on Claude Code `records_bulk_update`
+(confirm-gated, no delete; `files_upload` needs runtime MCP 0.1.17 or later,
+`records_bulk_update` 0.1.19 plus the launcher's `ASPEN_BULK_WRITES=1`). The object is
 always a parameter, resolved against Describe, so a customer's `_c` objects work exactly like
 the standard `_p` ones.
 
@@ -160,7 +176,7 @@ it, never the other way round.
 ```
 .claude-plugin/plugin.json           # plugin manifest (name: aspen-cowork)
 .mcp.json                            # Claude Code only: runs bin/aspen-runtime-mcp.sh as the server
-bin/aspen-runtime-mcp.sh             # launcher: finds the installed server, settles identity, execs it
+bin/aspen-runtime-mcp.sh             # launcher: finds the installed server, settles identity, turns on bulk writes, execs it
 bin/install-runtime-mcp.sh           # unpacks the .mcpb into ~/.config/aspen/mcp for Claude Code
 skills/using-aspen-cowork/SKILL.md   # the router: namespace grammar, non-negotiables, routes
 skills/explore/SKILL.md              # describe the model; never guess a name

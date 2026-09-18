@@ -18,8 +18,9 @@ return a **compact map, not raw dumps** — the main conversation must stay clea
 Rules:
 - **Read-only — you explore, you never change.** Use only the runtime MCP's read tools
   (`aspen_describe`, `aspen_get_picklist`, `aspen_list`, `aspen_get`, `aspen_search`,
-  `aspen_related`, `aspen_report`, `aspen_query`). **Never** call `aspen_records_create` or
-  `aspen_records_update` — this rule is your boundary (the frontmatter pins no allowlist), and
+  `aspen_related`, `aspen_report`, `aspen_query`). **Never** call `aspen_records_create`,
+  `aspen_records_update`, `aspen_records_bulk_update` or `aspen_files_upload` — this rule is
+  your boundary (the frontmatter pins no allowlist), and
   the server also confirm-gates every write, refusing without a `confirmed:true` you must
   never send.
 - Everything you can see is permission-scoped to the signed-in user, so exploration is safe

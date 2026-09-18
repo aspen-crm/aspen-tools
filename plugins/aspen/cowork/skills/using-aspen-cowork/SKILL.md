@@ -35,6 +35,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 |--------|-------|
 | "What objects exist? What are this object's fields / a picklist's values?" | `explore` |
 | Reading records (list, get one, search, related) or writing one (create/update) + proving it | `records` |
+| Changing **many** records of one object at once — the same edit across a set, or a table of per-record edits (Claude Code: one confirmed call; elsewhere one record at a time) | `records` (bulk update) |
 | A natural-language question, or a group-by count/sum ("pipeline by stage") | `query-report` |
 | Merging duplicate contacts into a survivor, or unmerging one (contacts only) | `contact-merge` |
 | Uploading or attaching a file (a PDF, image, document) to a record, or setting a file field | `files` |
@@ -58,7 +59,10 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 - **Writes are confirm-gated by the server.** Show the user the exact values (create) or the
   diff (update), get an explicit **yes**, then call with `confirmed=true`. Without it the
   server refuses (`CONFIRMATION_REQUIRED`). **There is no delete tool** — records cannot be
-  removed through this lane; say so rather than implying one.
+  removed through this lane; say so rather than implying one. A **bulk update**
+  (`aspen_records_bulk_update`, in the tool list on Claude Code only) is confirmed **once for
+  the batch** — every row shown, or the rule + the exact count + a sample — and read **per
+  row**: `failed > 0` beside `updated > 0` is a partial write, and you say so.
 - **A contact merge is not a records write.** `merged_into_p` and `contact_merge_p` reject
   direct writes; `contact-merge` reaches the platform's merge/unmerge endpoints through a
   bundled helper that holds the login for you. Contacts only — there is no account merge.
@@ -99,6 +103,8 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "I told them the record was created" | Without `app_url` they can't go look at it. Every result carries the link — end with it. |
 | "I'll build the record's URL from the instance host" | Don't assemble a link. `app_url` is in the result; a hand-made one lands on an in-app 404. |
 | "I'll delete that test record" | There is no delete tool in this lane. Neutralize by updating, or tell the user. |
+| "I'll call `aspen_records_update` 40 times" | If `aspen_records_bulk_update` is in your tool list (Claude Code), that is **one** call of ≤100 rows with one confirmation. Only when it is absent do you go one at a time. |
+| "The bulk call returned, so all 40 changed" | Read `updated` / `failed` and each row's `error`. Rows are independent; report the partial result and retry only the rejected rows. |
 | "I'll set `merged_into_p` to merge these two contacts" | Rejected by the instance. Route to `contact-merge`, which drives the merge endpoints. |
 | "There's no upload tool — I'll attach the PDF through the web UI" | `aspen_files_upload` is the upload. Route to `files`; in Cowork the path is the file's path on the user's computer. |
 | "I'll parse the error text" | Route on the `code`; read `fix_hint`. |
