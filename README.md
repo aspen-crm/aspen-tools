@@ -101,8 +101,10 @@ where the plugin looks (macOS and Linux):
 curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/plugins/aspen/cowork/bin/install-runtime-mcp.sh | sh -s -- --instance https://<host>/<domain>/<instance>
 ```
 
-The token never passes through the script. `aspen login` covers it for anyone
-with the CLI; everyone else exports `ASPEN_API_TOKEN` in their shell. The
+The token never passes through the script. `aspen login --instance <URL>
+--api-key <KEY>` covers it for anyone with the CLI, and that credential does not
+expire — a plain OAuth `aspen login` lasts about an hour and the server cannot
+refresh it. Everyone else exports `ASPEN_API_TOKEN` in their shell. The
 plugin's [README](plugins/aspen/cowork/README.md#claude-code) has the rest,
 Windows included.
 

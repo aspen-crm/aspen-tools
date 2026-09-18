@@ -178,9 +178,14 @@ if grep -q '^ASPEN_INSTANCE=' "$dir/env" 2>/dev/null; then
 else
   echo "No instance recorded. Do one of:"
 fi
-echo "  - run 'aspen login --instance <URL>' once: the server reuses the CLI's login"
-echo "  - export ASPEN_INSTANCE and ASPEN_API_TOKEN in the shell you start Claude Code from"
-echo "  - add ASPEN_API_TOKEN='secret-token:aspen_...' to $dir/env (mode 600)"
+echo "  - run 'aspen login --instance <URL> --api-key <KEY>' once, with a personal API"
+echo "    token minted in your instance: the server reuses the CLI's login, and that"
+echo "    credential does not expire. Best for a session left running."
+echo "  - run 'aspen login --instance <URL>' (OAuth): also reused, but the token lasts"
+echo "    about an hour and only the CLI can refresh it, so a long session stops working"
+echo "  - last resort: export ASPEN_INSTANCE and ASPEN_API_TOKEN in the shell you start"
+echo "    Claude Code from, or add them to $dir/env (mode 600). These override the CLI's"
+echo "    login, so 'aspen logout' and a re-login elsewhere stop taking effect."
 echo
 echo "Then start a new Claude Code session. With the aspen-cowork plugin installed the"
 echo "server starts on its own; /mcp lists it as aspen-runtime-mcp. Without the plugin:"
