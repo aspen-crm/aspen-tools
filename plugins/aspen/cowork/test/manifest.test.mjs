@@ -6,7 +6,7 @@
 // generates a one-plugin marketplace from plugin.json — the packaged zip's.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -42,12 +42,28 @@ test('every marketplace entry fits too', () => {
 // The zip is the delivery for Cowork, and the packager writes its own
 // marketplace.json from plugin.json — so a description that passes above can
 // still ship broken if that generation ever diverges. Build one and look.
-test('the packaged zip carries manifests within the limit', () => {
+test('the packaged zip carries manifests within the limit', (t) => {
+  // package-plugin.sh validates the staged plugin with `claude plugin validate`, so
+  // this test needs the CLI. CI installs it; a contributor without it gets a skip
+  // rather than a confusing "validation failed". Never skip in CI, where the install
+  // step means a missing CLI is a broken workflow, not a missing local tool.
+  const haveClaude = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+  if (!haveClaude && !process.env.CI) {
+    t.skip('no `claude` on PATH — install the Claude Code CLI to run the packaging test');
+    return;
+  }
   const out = mkdtempSync(join(tmpdir(), 'cowork-pkg-'));
+  // Run the script itself, NOT `sh <script>`: its shebang is bash and it needs
+  // `set -o pipefail`, which dash refuses ("Illegal option -o pipefail"). On macOS
+  // `sh` is bash and this passed locally while every Ubuntu CI run failed. The
+  // runbook invokes it as `./scripts/package-plugin.sh` too, so this is also the
+  // real invocation rather than one only the test uses.
+  // The out dir is the second ARGUMENT — there is no DIST environment variable, so
+  // passing one wrote the zip into the repo's own dist/ and read it back from there.
   const packaged = execFileSync(
-    'sh',
-    [join(repo, 'scripts', 'package-plugin.sh'), join('plugins', 'aspen', 'cowork')],
-    { cwd: repo, encoding: 'utf8', env: { ...process.env, DIST: out } },
+    join(repo, 'scripts', 'package-plugin.sh'),
+    [join('plugins', 'aspen', 'cowork'), out],
+    { cwd: repo, encoding: 'utf8' },
   );
   const zip = packaged.split('\n')[0].split('->').pop().trim();
 

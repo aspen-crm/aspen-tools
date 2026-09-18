@@ -37,13 +37,20 @@ before re-running with `--execute` — the helper has no gate of its own.
 1. **Describe first.** Field names, types, required flags, picklist values and length
    limits come from `aspen_describe` / `aspen_get_picklist` (the `explore` skill), never
    from a guess and never from a value you saw in a record. A 4-character value in a
-   128-character field is not a 4-character field.
+   128-character field is not a 4-character field. The same describe's `ui.layout_p` carries
+   **`placed_fields`** — check the columns you are about to load against it. A field no
+   layout places stores fine and is **invisible on the record page**, which across a
+   10,000-row load is 10,000 records the user can't see the new data on. Name it in the
+   dry-run confirmation (step 4), once for the job; the rule is in `records`
+   ("will they see it?").
 2. **Count, then read.** `count` tells you the size of the job before you fetch anything.
    `query` pages for you; do not put `LIMIT`/`OFFSET` in your XQL (the helper refuses it).
 3. **Build the file.** A JSON array of records. `update` and `delete` need `id_p` on every
    row; `delete` also accepts a bare array of id strings. Write the file yourself — the
    customer-specific mapping is the part no helper can own.
-4. **Dry run, show, confirm.** Report counts and a sample, not the whole array.
+4. **Dry run, show, confirm.** Report counts and a sample, not the whole array — plus any
+   field in the load that no layout places, so the user decides before 10,000 rows land
+   somewhere they'll never look.
 5. **`--execute`, then read back.** A returned `overview` is not proof. Re-`query` the
    records and check the values landed. Partial success is normal and exits 1.
 

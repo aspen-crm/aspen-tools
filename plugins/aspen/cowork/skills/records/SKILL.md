@@ -57,8 +57,12 @@ instance stored plus the attached record when there is one.
    describe — **never** against how long some existing record's value looks. A field that
    currently holds short values still accepts up to its `max_length` (over it returns
    `VALIDATION_FAILED`).
+   **The same call carries the layout.** Check every field you are about to write against the
+   `ui.layout_p` entries' `placed_fields` — see *Will they see it?* below. This costs no extra
+   call: the describe you already made for validation answers it.
 2. **Confirm with the user.** Show the exact object + field values (create), or the `id_p` +
-   the diff (update), and get an explicit **yes** in the conversation.
+   the diff (update), and get an explicit **yes** in the conversation. **Any field not placed
+   on a layout is named in that same message, before the yes** — not after the write.
 3. **Write** with `confirmed=true`:
    - create: `aspen_records_create` with `object` + a `fields` map;
    - update: `aspen_records_update` with `object` + `id` (`id_p`) + the changed `fields`.
@@ -75,6 +79,49 @@ instance stored plus the attached record when there is one.
    (`id_p` `abc-123`) — <app_url>". A create the user can't open is half done: they asked for
    a record, and the next thing they want is to look at it. Take the URL from the result;
    never assemble one from the instance host (a hand-made path renders an in-app 404).
+
+### Will they see it? Check the layout before you propose the write
+
+A record **stores** every field the object defines. The record **page** shows only the fields
+a `layout_p` places. A write to an unplaced field succeeds, reads back correctly, and is
+**invisible in the app** — the user asked you to add a note, you reported it done, and they
+open the account and find nothing. A correct write, a failed answer.
+
+So `aspen_describe` is not only field validation. Its `ui.layout_p` entries carry
+**`placed_fields`** (what the detail sections put on the record page), `read_only_fields`, and
+`sections` (each related list's `related_object`). Read them in the same breath as the field
+names — the `explore` skill has the full shape.
+
+**Before proposing a write, for each field you intend to set:**
+
+| What the layout says | What you do |
+|---|---|
+| In `placed_fields` | Normal. Write it; say nothing about layouts. |
+| In `read_only_fields` | Write it, and say it: "this shows on the page but isn't editable there." |
+| **On no layout of this object** | **Say so before the yes**, and let the user decide. |
+| Object has record types (`object_type` on the layouts) and it is placed on some, not all | Name which types show it — the record's own type decides. |
+| `layout_p` is in `unavailable` / `page_truncated`, or a `custom_code` section could render it, or the entry has no `placed_fields` key | **Unknown, not missing.** Don't warn and don't claim placement — say you couldn't confirm, if it matters. |
+
+Naming an unplaced field is one sentence in the confirmation, not a refusal and not a lecture:
+
+> `internal_notes_c` isn't on the Account layout, so the note will be stored but won't appear
+> on the account page — you'd reach it from a report, a list view, or by asking me. Write it
+> there anyway?
+
+Then do what they say. **The write is theirs to make** — an unplaced field is a real place to
+put data (a report, a list view, an integration, an API reader all see it), and adding it to
+the layout is the pro-code lane, not this one. You warn; you don't block, and you don't offer
+to edit the layout.
+
+**"Is there a section for X?"** — same block, different key. A request to attach related
+records (notes, activities, addresses) to a parent is answered by the layout's `sections`: a
+`related_list` whose `related_object` is `X`. No such section means the records will exist and
+`aspen_related` will read them, but the parent's page has nowhere to show them. Say that
+before creating them.
+
+One thing to be exact about: a related list's **`columns`** are the *child's* columns, never
+the parent's placed fields. Reading one as the other turns "invisible on the page" into
+"looks fine".
 
 ### Polyid and currency fields write as a set
 
@@ -116,7 +163,9 @@ one call.
 1. **Build the row set from a read, not from memory.** `aspen_list` (or `query-report`) with
    the user's filters gives you the `id_p`s and the current values; keep its `app_url` — it is
    the list the user will want to look at afterwards.
-2. **Describe fresh**, as for any write; validate a picklist value once for the batch.
+2. **Describe fresh**, as for any write; validate a picklist value once for the batch, and
+   check the changed fields against the layout's `placed_fields` **once** — the finding is the
+   same for every row, so it belongs in the one confirmation, not repeated per row.
 3. **Confirm once, for the whole batch.** Show every row (id, a display value, the diff) or —
    past a dozen rows — the rule that selected them, the exact count, the change, and a sample
    of rows. Say plainly "this changes N records". Get an explicit **yes**. Over 100 rows: say
