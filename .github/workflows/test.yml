@@ -26,6 +26,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # The packaging test builds the real zip, and package-plugin.sh validates what
+      # is about to ship with `claude plugin validate`. Without the CLI that test
+      # cannot run, and it is the one that catches a manifest a host would refuse
+      # to load -- which is how a 519-character description shipped in 0.6.0.
+      # `plugin validate` is offline and needs no credentials.
+      - name: Install the Claude Code CLI (for `claude plugin validate`)
+        run: npm install -g @anthropic-ai/claude-code
       - name: Run the launcher and installer tests
         working-directory: plugins/aspen/cowork
         run: node --test "test/*.test.mjs"
