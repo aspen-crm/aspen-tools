@@ -48,7 +48,7 @@ surface, keyed by component type:
 |---|---|---|
 | `list_view_p` | the object's saved list views | `tab`, `query-filter` (an XQL string), `label` |
 | `tab_p` | its tabs in the app nav | `tab-type`, `default-list-view`, `active` |
-| `layout_p` | its record-detail layouts | `label` |
+| `layout_p` | its record-detail layouts | `label`, `object_type`, **`placed_fields`**, `read_only_fields`, `sections` |
 | `search_config_p` | how it's searched | `label` |
 | `object_type_p` | its record types | `label`, `active` |
 | `picklist_filter_p` | picklist narrowing on its fields | `label` |
@@ -56,6 +56,46 @@ surface, keyed by component type:
 Attributes arrive kebab-cased with a snake_case alias, so `query-filter` and `query_filter`
 are the same value. Use it to answer "what views exist on this object?", "which list view
 does this tab open?", or "what filter is that view already applying?".
+
+### A layout says which fields the user actually sees
+
+A record **stores** every field the object defines. A record **page** shows only what a
+layout places. Those are different sets, and the gap is the one way a correct write still
+fails the user: the value lands, reads back, and is nowhere on the screen.
+
+Each `layout_p` entry answers it:
+
+- **`placed_fields`** — the fields this layout's **detail** sections put on the record page.
+  A field not in it is stored but not shown on that page.
+- **`read_only_fields`** — the subset placed but **not editable in the app**. Still visible;
+  the user just can't change it there. That is a caveat, not an absence.
+- **`sections`** — each section with its `section_type` and what it surfaces:
+  - `detail` → its `fields` (where a value would appear);
+  - `related_list` → **`related_object`** (the child object) + **`related_field`** (the field
+    on the child pointing back) + optional `query_filter`, and `columns` — the columns of the
+    **child's** rows, *not* fields of this record. Never read `columns` as placed fields.
+  - `people_role` → `rel_type`; `attachment_list` → attachments; `custom_code` →
+    `section_ui_code`, a custom page whose contents describe cannot see.
+- **`object_type`** — the record type this layout serves, when it serves one. An object with
+  record types has a layout **per type**, so "is it placed?" is answered per layout, and
+  which one a record uses depends on its object type.
+
+Answering "is there a section for X on this object?" is the `sections` list: a related list
+for `X` means `related_object == X`. No section naming `X` means the app has nowhere to show
+`X` records from this page — even though the records exist and `aspen_related` can read them.
+
+Four cases where the honest answer is **unknown**, not *no* — never report a field
+"missing from the layout" from any of them:
+
+- `layout_p` in **`unavailable`** — the route didn't serve; you did not see the layouts.
+- `layout_p` in **`page_truncated`** — a layout of this object may be missing from the list.
+- A `custom_code` section — a custom page can render anything, including a field no detail
+  section places. Placement is then a floor, not a ceiling.
+- An entry with **no `placed_fields` key at all** — the layout came back without sections, or
+  the server predates 0.1.22 and carries no placement for any layout. Absent is not empty: say
+  you couldn't tell, never that the layout places nothing.
+
+The write-time rule built on this lives in `records` ("will they see it?").
 
 Two limits to read honestly:
 
@@ -118,6 +158,9 @@ Report the shape; the write contract for all of them lives in the `records` and 
   is customer free-text that may describe intended or unbuilt behavior (e.g. a lifecycle
   "state"). Never infer a capability, workflow, or state from it — rely on the actual fields,
   picklists, and tools. The structure is the truth; the prose may run ahead of it.
+- **Stored is not shown.** A field in `describe` is storable; a field in a layout's
+  `placed_fields` is visible on the record page. When you report an object's fields to
+  someone about to write, say which of the two you are reporting.
 - **Report the shape, don't judge it.** Fields, types (text, number, picklist, reference /
   polymorphic, system/audit, …), and required flags are facts to relay so the caller can read
   or write records — not a design to critique. Authoring or changing the model is a different

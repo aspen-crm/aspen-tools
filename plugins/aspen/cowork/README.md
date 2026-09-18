@@ -171,7 +171,10 @@ Eleven tools everywhere, twelve on Claude Code, namespaced `aspen_*` — reads: 
 `get_picklist`, `list`, `get`, `search`, `related`, `report`, `query`; writes:
 `records_create`, `records_update`, `files_upload`, and on Claude Code `records_bulk_update`
 (confirm-gated, no delete; `files_upload` needs runtime MCP 0.1.17 or later,
-`records_bulk_update` 0.1.19 plus the launcher's `ASPEN_BULK_WRITES=1`). The object is
+`records_bulk_update` 0.1.19 plus the launcher's `ASPEN_BULK_WRITES=1`, and a layout's
+`placed_fields` — what the skills check before proposing a write — 0.1.22). On an older
+server the layouts arrive without placement, and the skills report *unknown* rather than
+warning wrongly. The object is
 always a parameter, resolved against Describe, so a customer's `_c` objects work exactly like
 the standard `_p` ones.
 

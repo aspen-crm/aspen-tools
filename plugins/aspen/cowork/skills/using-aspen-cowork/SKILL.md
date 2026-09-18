@@ -69,6 +69,18 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 - **A contact merge is not a records write.** `merged_into_p` and `contact_merge_p` reject
   direct writes; `contact-merge` reaches the platform's merge/unmerge endpoints through a
   bundled helper that holds the login for you. Contacts only — there is no account merge.
+- **A stored field is not a visible field — check the layout before you propose a write.**
+  A record holds every field the object defines; the record page shows only what a `layout_p`
+  places. So a write to an unplaced field succeeds, reads back, and is **invisible in the
+  app** — the user adds a note and finds nothing on the account. The `aspen_describe` you
+  already make before every write carries the answer in its `ui.layout_p` entries
+  (`placed_fields`, `read_only_fields`, and `sections` for a related list's
+  `related_object`), so it costs no extra call. Name an unplaced field **in the confirmation,
+  before the yes** — one sentence — then write what the user says. You **warn, you don't
+  block**: unplaced data is still real, and adding the field to the layout is the pro-code
+  lane. When the layout is `unavailable`, `page_truncated`, or a `custom_code` section could
+  render it, the answer is *unknown* — say that, don't claim it's missing. Rule in `records`,
+  payload shape in `explore`.
 - **A write is not done until you read it back.** The write tools return the re-read record;
   confirm the values landed (the evidence loop, in `records`).
 - **A file is uploaded, never pasted or driven through the app.** `aspen_files_upload` takes a
@@ -105,6 +117,8 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 |---------|---------|
 | "I'll guess the field / object name" | It carries a namespace suffix. `aspen_describe` returns the real names in one call; a bare name is `NOT_FOUND`. |
 | "I'll write straight away" | Re-describe fresh, show the values, get a yes, then `confirmed=true`. The server refuses otherwise. |
+| "The field exists in describe, so I'll write to it" | Existing ≠ **visible**. Check the layout's `placed_fields` in the same describe; a field no layout places stores the value where the user will never see it. Say so before the yes. |
+| "It isn't on the layout — I'll refuse / I'll add it to the layout" | Neither. You name it in one sentence and let the user decide; authoring the layout is the pro-code lane, not this one. |
 | "The write returned, so it worked" | Read it back — the write tool returns the re-read record. Confirm the values. |
 | "I told them the record was created" | Without `app_url` they can't go look at it. Every result carries the link — end with it. |
 | "I'll build the record's URL from the instance host" | Don't assemble a link. `app_url` is in the result; a hand-made one lands on an in-app 404. |
