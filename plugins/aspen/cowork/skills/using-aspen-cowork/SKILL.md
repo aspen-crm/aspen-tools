@@ -39,6 +39,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | A natural-language question, or a group-by count/sum ("pipeline by stage") | `query-report` |
 | Merging duplicate contacts into a survivor, or unmerging one (contacts only) | `contact-merge` |
 | Uploading or attaching a file (a PDF, image, document) to a record, or setting a file field | `files` |
+| More rows than `aspen_records_bulk_update` takes (>100), creating many records, deleting any, or a file-driven load | `bulk-data` |
 
 ## Fan-out (subagent — parallel, read-only)
 
@@ -58,8 +59,10 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
   or flag it as odd. Judging or authoring the model is the pro-code `_c` lane, not this one.
 - **Writes are confirm-gated by the server.** Show the user the exact values (create) or the
   diff (update), get an explicit **yes**, then call with `confirmed=true`. Without it the
-  server refuses (`CONFIRMATION_REQUIRED`). **There is no delete tool** — records cannot be
-  removed through this lane; say so rather than implying one. A **bulk update**
+  server refuses (`CONFIRMATION_REQUIRED`). **There is no delete tool** — no MCP tool removes
+  a record, so neutralize by updating rather than implying a delete. A genuine bulk delete is
+  the `bulk-data` skill's helper, which is a hard delete with no undo: route there, say so
+  plainly, and get an explicit yes. A **bulk update**
   (`aspen_records_bulk_update`, in the tool list on Claude Code only) is confirmed **once for
   the batch** — every row shown, or the rule + the exact count + a sample — and read **per
   row**: `failed > 0` beside `updated > 0` is a partial write, and you say so.
@@ -102,7 +105,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "The write returned, so it worked" | Read it back — the write tool returns the re-read record. Confirm the values. |
 | "I told them the record was created" | Without `app_url` they can't go look at it. Every result carries the link — end with it. |
 | "I'll build the record's URL from the instance host" | Don't assemble a link. `app_url` is in the result; a hand-made one lands on an in-app 404. |
-| "I'll delete that test record" | There is no delete tool in this lane. Neutralize by updating, or tell the user. |
+| "I'll delete that test record" | No MCP tool deletes. Neutralize by updating, or route to `bulk-data` — a hard delete, no undo, explicit yes first. |
 | "I'll call `aspen_records_update` 40 times" | If `aspen_records_bulk_update` is in your tool list (Claude Code), that is **one** call of ≤100 rows with one confirmation. Only when it is absent do you go one at a time. |
 | "The bulk call returned, so all 40 changed" | Read `updated` / `failed` and each row's `error`. Rows are independent; report the partial result and retry only the rejected rows. |
 | "I'll set `merged_into_p` to merge these two contacts" | Rejected by the instance. Route to `contact-merge`, which drives the merge endpoints. |

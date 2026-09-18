@@ -1,7 +1,9 @@
 {
   "name": "aspen",
   "description": "Tools for building on the Aspen Platform.",
-  "owner": { "name": "Aspen CRM" },
+  "owner": {
+    "name": "Aspen CRM"
+  },
   "plugins": [
     {
       "name": "aspen-code",
@@ -11,7 +13,7 @@
     {
       "name": "aspen-cowork",
       "source": "./plugins/aspen/cowork",
-      "description": "Work an Aspen CRM over the runtime MCP (.mcpb) — read, search, report, create, and update records (in bulk from Claude Code), attach files to them, and merge duplicate contacts. No CLI; the server confirm-gates writes."
+      "description": "Work an Aspen CRM over the runtime MCP (.mcpb) \u2014 read, search, report, create, and update records, attach files, merge duplicate contacts, and run bulk loads/deletes via the batch data API. No CLI; the server confirm-gates writes."
     }
   ]
 }
