@@ -43,11 +43,19 @@ one-line installer unpacks the same bundle to a fixed place instead.
 
 3. **The token.** The installer never asks for it. One of:
 
-   - `aspen login --instance <URL>`, once. The server reuses the CLI's stored login, and
-     then `--instance` above was optional too.
-   - `export ASPEN_API_TOKEN=…` (and `ASPEN_INSTANCE`) in the shell you start Claude Code
-     from.
-   - A line `ASPEN_API_TOKEN='secret-token:aspen_…'` in `~/.config/aspen/mcp/env`.
+   - **`aspen login --instance <URL> --api-key <KEY>`, once**, with a personal API token
+     minted in your instance. The server reuses the CLI's stored login (so `--instance`
+     above was optional too), and this credential **does not expire** — the right choice
+     for a session you leave running. Because it lives in the CLI's store, `aspen logout`
+     removes it and a re-login elsewhere replaces it, both effective on the next call.
+   - `aspen login --instance <URL>` (OAuth) is reused the same way, but issues a token
+     that lasts about an hour. **The server never refreshes it** — only the CLI does, and
+     it has no cheap refresh command — so a long session stops with `AUTH_REQUIRED` until
+     you log in again.
+   - Last resort: `export ASPEN_API_TOKEN=…` (and `ASPEN_INSTANCE`) in the shell you start
+     Claude Code from, or a line `ASPEN_API_TOKEN='secret-token:aspen_…'` in
+     `~/.config/aspen/mcp/env`. These **override** the CLI's login, so `aspen logout` and a
+     re-login elsewhere stop taking effect and only a restart changes them.
 
    Shell values win over the file, and an empty value counts as unset — a stray
    `export ASPEN_API_TOKEN=` does not block the CLI-login fallback.

@@ -95,7 +95,7 @@ user unmerges something a sync created.
 | `FAILURE` · `INVALID_STATE` (unmerge) | the survivor has since been merged, or the pointer no longer matches the event. Show the user the current `merged_into_p`; ask. |
 | `REJECTED` (HTTP 400/422) | the request shape was refused — read `detail`. If it says more than one row or `merge_source`, the helper is being misused; report it. |
 | `NOT_AVAILABLE` (HTTP 404) | this instance's build has no merge endpoints. Stop; the user merges in the app. |
-| `AUTH_REQUIRED` | expired or missing login. Ask the user to run `aspen login --instance <URL>` (or set `ASPEN_API_TOKEN`/`ASPEN_INSTANCE`). **Never read, print or set the token yourself.** |
+| `AUTH_REQUIRED` | expired or missing login. Ask the user to run `aspen login --instance <URL> --api-key <KEY>` — a permanent key, unlike the ~1h OAuth login the server cannot refresh. **Never read, print or set the token yourself.** |
 | `NO_IDENTITY` (exit 3) | nothing to sign in with — the `detail` names the fix. Relay it verbatim. |
 | `TRANSPORT` / `USAGE` | network or your arguments. Fix and retry once; then surface it. |
 
