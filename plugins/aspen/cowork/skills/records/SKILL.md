@@ -149,7 +149,7 @@ speaks for itself.
 | `PICKLIST_UNKNOWN_VALUE` | value not in the picklist. `aspen_get_picklist` for the allowed set, or ask the user. |
 | `VALIDATION_FAILED` | instance rejected a field/type/required-miss. Read the message, fix the one field, re-describe, retry. |
 | `CONFIRMATION_REQUIRED` | you called a write without `confirmed=true`. Show the diff, get a yes, retry with it. |
-| `AUTH_REQUIRED` / `INSTANCE_UNREACHABLE` | token/instance config on the `.mcpb`, not your problem to fix — ask the user to re-check the connector. |
+| `AUTH_REQUIRED` / `INSTANCE_UNREACHABLE` | identity/instance config, not your problem to fix — relay `fix_hint`, which names the fix for this host (connector settings, or `aspen login`). Never guess which. |
 | `RATE_LIMITED` | back off, retry after a short delay. |
 | `USAGE` "… is not enabled on this server" | you called `aspen_records_bulk_update` on a host without it (Cowork / Desktop). Update one record at a time; do not ask the user to change the server. |
 | `USAGE` | your tool arguments don't match the schema (for a bulk update: over 100 rows, a repeated id, an empty `fields`). Fix and retry. |

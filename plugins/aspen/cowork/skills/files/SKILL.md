@@ -94,7 +94,7 @@ and in whichever field it is set on, nowhere else you can look it up.
 | `CONFIRMATION_REQUIRED` | you called without `confirmed=true`. Show the table, get a yes, retry with it. |
 | `NOT_FOUND` on the attach target | the object/record isn't visible to the user, or the name is bare/guessed. `aspen_describe` / `aspen_get` it; same "already uploaded" rule as above. |
 | `INSTANCE_UNREACHABLE` after a long wait | the upload has its own 300s ceiling; a very large file over a slow link can hit it. Retry once; then the app. |
-| `AUTH_REQUIRED` | the connector's token — the user re-checks the `.mcpb` config. Never handle the token. |
+| `AUTH_REQUIRED` | the session's token — relay `fix_hint`, which names where this host keeps it. Never handle the token. |
 
 There is **no download tool**. To see a file, the user opens the record in the app
 (`app_url`); the field renders it.
