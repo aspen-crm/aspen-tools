@@ -175,7 +175,9 @@ Two more things to confirm the plugin loaded:
   (The server enforces this itself; it cannot be talked out of it.)
 
 There is **no delete tool** in this lane. Claude can create and update records and attach
-files to them, and that is all — anything it makes while you're experimenting stays.
+files to them, and that is all — anything it makes while you're experimenting stays. Updates
+go one record at a time here, each confirmed; changing many records in one confirmed call is
+a Claude Code capability, not a Cowork one.
 
 **Attaching a file** (runtime MCP 0.1.17 or later): the upload reads the file from *your*
 computer, where Claude Desktop runs — so when Claude asks where a file or folder is, give it

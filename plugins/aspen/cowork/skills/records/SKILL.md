@@ -1,6 +1,6 @@
 ---
 name: records
-description: Use when reading or writing record data on an Aspen instance through the runtime MCP — find/list records, get one by id, search across objects, list related records, or create/update a record and prove it. Drives aspen_list/get/search/related and aspen_records_create/update. Writes are confirm-gated; there is no delete.
+description: Use when reading or writing record data on an Aspen instance through the runtime MCP — find/list records, get one by id, search across objects, list related records, create/update a record and prove it, or change many records of one object in one confirmed call (Claude Code only). Drives aspen_list/get/search/related, aspen_records_create/update and aspen_records_bulk_update. Writes are confirm-gated; there is no delete.
 ---
 
 # Records (read and write)
@@ -100,6 +100,47 @@ record is being created with a required file field: upload first, then create wi
 `fields: {<file field>: "<file_id>"}`. The file itself is a `file_p` record that `list`/`get`
 cannot read; the id on the field is how it is reached.
 
+## Bulk update — many records, one confirmation (Claude Code only)
+
+`aspen_records_bulk_update` changes up to **100 records of one object in one call**: one
+PATCH to the instance, one confirmation from the user. It is in your tool list **only on
+Claude Code** — the plugin's launcher starts the server with `ASPEN_BULK_WRITES=1`. On Cowork
+/ Claude Desktop the tool is absent: update one record at a time with `aspen_records_update`,
+confirming each, and do not send the user off to enable anything.
+
+Reach for it when the user wants the same change across many records ("mark these 40
+opportunities Closed Lost", "set the owner on every account in region X") or hands you a
+table of per-record changes. Never loop `aspen_records_update` over a set you could send in
+one call.
+
+1. **Build the row set from a read, not from memory.** `aspen_list` (or `query-report`) with
+   the user's filters gives you the `id_p`s and the current values; keep its `app_url` — it is
+   the list the user will want to look at afterwards.
+2. **Describe fresh**, as for any write; validate a picklist value once for the batch.
+3. **Confirm once, for the whole batch.** Show every row (id, a display value, the diff) or —
+   past a dozen rows — the rule that selected them, the exact count, the change, and a sample
+   of rows. Say plainly "this changes N records". Get an explicit **yes**. Over 100 rows: say
+   so, split into batches of at most 100, and confirm each (one yes covers them all only if
+   you stated the total and the batching up front).
+4. **Write** with `confirmed=true`: `object` + `records`, each row `{id, fields}` — every
+   value a JSON string, a polyid or currency as its set, exactly as for a single update. The
+   server refuses more than 100 rows and a repeated id (`USAGE`) before anything is sent.
+5. **Read the per-row results.** The result is `{requested, updated, failed, results[]}`.
+   Rows are independent: the instance applies the ones it accepts and rejects the others, so
+   `failed > 0` beside `updated > 0` is a **partial** write, not a failed one. Each landed row
+   carries its read-back `record` and `app_url`; each rejected row carries its structured
+   `error` (`code`, `message`, `component`, `fix_hint`) and its `app_url`.
+6. **Report honestly.** "Updated 38 of 40. Two rejected: `<id>` — <message>; `<id>` —
+   <message>." Fix the rejected rows (re-describe, correct the field the error names) and
+   retry **only those rows**, with a fresh confirmation for them. Never re-send rows that
+   landed.
+7. **Give them the link.** End with the list `app_url` from step 1 (the set they asked about)
+   and, for a small batch, the per-row links.
+
+`NOT_FOUND`, `USAGE` and `CONFIRMATION_REQUIRED` refuse the whole batch before anything is
+written. Only a result with `results[]` means the instance was reached — and then each row
+speaks for itself.
+
 ## Errors — route on the `code`, read the `fix_hint`
 
 | code | what it means / do |
@@ -110,5 +151,6 @@ cannot read; the id on the field is how it is reached.
 | `CONFIRMATION_REQUIRED` | you called a write without `confirmed=true`. Show the diff, get a yes, retry with it. |
 | `AUTH_REQUIRED` / `INSTANCE_UNREACHABLE` | token/instance config on the `.mcpb`, not your problem to fix — ask the user to re-check the connector. |
 | `RATE_LIMITED` | back off, retry after a short delay. |
-| `USAGE` | your tool arguments don't match the schema. Fix and retry. |
+| `USAGE` "… is not enabled on this server" | you called `aspen_records_bulk_update` on a host without it (Cowork / Desktop). Update one record at a time; do not ask the user to change the server. |
+| `USAGE` | your tool arguments don't match the schema (for a bulk update: over 100 rows, a repeated id, an empty `fields`). Fix and retry. |
 | `BAD_RESPONSE` / `UNEXPECTED` | surface it; retry once, then hand off via the deep link. Do not guess. |
