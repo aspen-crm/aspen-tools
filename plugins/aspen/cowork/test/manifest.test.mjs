@@ -44,10 +44,17 @@ test('every marketplace entry fits too', () => {
 // still ship broken if that generation ever diverges. Build one and look.
 test('the packaged zip carries manifests within the limit', () => {
   const out = mkdtempSync(join(tmpdir(), 'cowork-pkg-'));
+  // Run the script itself, NOT `sh <script>`: its shebang is bash and it needs
+  // `set -o pipefail`, which dash refuses ("Illegal option -o pipefail"). On macOS
+  // `sh` is bash and this passed locally while every Ubuntu CI run failed. The
+  // runbook invokes it as `./scripts/package-plugin.sh` too, so this is also the
+  // real invocation rather than one only the test uses.
+  // The out dir is the second ARGUMENT — there is no DIST environment variable, so
+  // passing one wrote the zip into the repo's own dist/ and read it back from there.
   const packaged = execFileSync(
-    'sh',
-    [join(repo, 'scripts', 'package-plugin.sh'), join('plugins', 'aspen', 'cowork')],
-    { cwd: repo, encoding: 'utf8', env: { ...process.env, DIST: out } },
+    join(repo, 'scripts', 'package-plugin.sh'),
+    [join('plugins', 'aspen', 'cowork'), out],
+    { cwd: repo, encoding: 'utf8' },
   );
   const zip = packaged.split('\n')[0].split('->').pop().trim();
 
