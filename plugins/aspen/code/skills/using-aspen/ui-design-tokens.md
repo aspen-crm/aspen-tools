@@ -23,10 +23,14 @@ build`, deploy, verify) is the same as for everything else and stays in `SKILL.m
   for everything; reach for a component's tokens only to match one Aspen component pixel-for-pixel,
   and then grep that file for `--ap-comp-<component>-` rather than reading it — it is 2000 lines.
   Still copy, never guess: the same silent-failure rule applies.
-- **Six per-role font-family tokens show up in the component file's "Resolves to" column and are
-  internal**: `--ap-sem-font-family-body-bold`, `-body-large`, `-body-small`, `-caption`,
-  `-heading-2`, `-label`. Never reference them. `--ap-sem-font-family-body` is the one public
+- **Eleven per-role font-family tokens exist and are internal**: `--ap-sem-font-family-body-bold`,
+  `-body-large`, `-body-small`, `-caption`, `-display`, `-footnote`, `-heading-1`, `-heading-2`,
+  `-heading-3`, `-heading-4`, `-label`. They resolve — six of them show up in the component file's
+  "Resolves to" column — but never reference them. `--ap-sem-font-family-body` is the one public
   family token, and it covers every role.
+- **There is no monospace token.** The system publishes one family and it is Geist. A code block
+  or an id column takes its own `ui-monospace, SFMono-Regular, Menlo, monospace` stack; that is
+  the one font-family hardcode the guard does not flag.
 - A customer page that hardcodes `#d7dee2` borders and `system-ui` fonts is the pattern this
   replaces, not one to copy — it renders wrong in dark mode and doesn't tighten on a phone.
 
@@ -63,7 +67,13 @@ Rules that matter:
 - **Nothing to install.** The tokens are available at runtime wherever your custom UI renders.
   You do not import or depend on any package to use them.
 - **Never hardcode a hex color, size, or shadow.** Use the token. The hex values in this file are
-  the light-theme reference only.
+  the light-theme reference only. This is enforced: a hardcode on a property the system publishes
+  a token for — color, spacing, radius, border width, the type scale, elevation — is denied by a
+  hook when you write it, and by `scripts/lint-ui-tokens.mjs` in CI. What the system publishes no
+  token for is **not** covered and needs no ceremony: page dimensions (`width`, `height`,
+  `min-width`), grid tracks, `background-size`, positional offsets, and any `calc()` composed off
+  a variable. For the rare governed value that still has no right token, keep it and write
+  `aspen-token-exempt: <reason>` in a comment on that line or the line above.
 - **Light/dark is automatic.** Every color token carries a light and a dark value; the right one
   applies based on the user's theme. Use the token and both themes look correct for free.
 - **Spacing and typography are responsive.** Several spacing and type tokens shrink automatically
@@ -72,8 +82,17 @@ Rules that matter:
 - **Only `var(--ap-*)` reaches your code.** Aspen's own utility classes (for example a Tailwind
   `p-4`) and its component CSS classes are NOT available inside your custom UI. Style your own
   markup with these tokens.
+  - Why the tokens get through when the classes do not: custom UI renders in a **shadow root on
+    the platform document**, so custom properties inherit from `:root` while the platform's
+    stylesheets stay outside the tree. (Only the JavaScript is iframe-isolated.) The platform's
+    **resets do not reach you either** — the guest starts at `box-sizing: content-box`, so set
+    `box-sizing: border-box` on your own subtree. The platform's custom-UI e2e suite asserts all
+    of this on every surface: `definePage` and the record-detail sections, in light and dark, at
+    desktop and phone widths.
 - **Names are not validated.** A misspelled token name silently does nothing — no error, no
-  warning. Copy names exactly.
+  warning. Copy names exactly, and write the light value as a fallback
+  (`var(--ap-sem-color-text-primary, #11171d)`) so a typo degrades to the right color instead of
+  to nothing. Fallbacks are encouraged, not a deviation.
 - **Prefer semantic tokens (`--ap-sem-*`).** They are the design vocabulary. Component tokens
   (`--ap-comp-*`, see the end) exist only when you need to match one specific Aspen component
   pixel-for-pixel.
