@@ -141,12 +141,28 @@ metacode/
      `/objects/:objectName/:recordId` needs `config.tabName`, or the platform errors "No active
      tab found". Data comes from the instance's query endpoints via `@aspen-crm/sdk/request`;
      `query-notes.md` beside this file has the XQL rules and the paging/counting pattern — read it
-     before writing the first query. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing
-     to import for the look — style your own markup with Aspen's `--ap-sem-*` CSS variables, never
-     a hex value or px size (light/dark and phone widths then come for free). This skill's
-     `ui-design-tokens.md` is the inventory: every semantic token by name, with the per-component
-     `--ap-comp-*` names in `ui-component-tokens.md` beside it (grep it for one component; never
-     read it whole). Read them when you're styling, not before.
+     before writing the first query.
+     - **Styling: read `ui-design-tokens.md` before the first line of markup, not after.** Which
+       token a thing takes is structural, and retrofitting tokens onto a page built from hex and
+       px is a rewrite. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing to
+       import for the look — style your own markup with Aspen's `--ap-sem-*` CSS variables, never
+       a hex value or px size. That file is the inventory: every semantic token by name, with the
+       per-component `--ap-comp-*` names in `ui-component-tokens.md` beside it (grep it for one
+       component; never read it whole).
+     - **The tokens do reach you, and nothing else does.** Only the JavaScript runs in that hidden
+       iframe; the DOM renders in a **shadow root on the platform document**, so every `--ap-*`
+       custom property inherits from `:root` — semantic, component, the dark value and the
+       responsive steps alike. The platform's own CSS does not come with it: no utility classes,
+       and **no resets**, so the guest starts at `box-sizing: content-box`. Set
+       `box-sizing: border-box` on your own subtree yourself.
+     - **Write the light value as a fallback** — `var(--ap-sem-color-text-primary, #11171d)`. A
+       misspelled token is not an error anywhere: it resolves to nothing, the build passes, and the
+       element silently keeps whatever it inherited. The fallback is the only thing standing
+       between a typo and an invisible one.
+     - A hardcode or an unknown token name in `metacode/ui/` is **denied by a hook** with the token
+       family to use instead. When a value genuinely has no token — a page dimension, a grid track,
+       a mono stack — keep it and write `aspen-token-exempt: <reason>` in a comment on that line or
+       the line above. Widths, heights and `calc()` offsets from a variable are not flagged at all.
 
 3. **Validate offline — before anything touches the instance.** The instance's own validator
    runs locally in 0.2s and reports the same errors `checkin-prep` would, with the same text:
