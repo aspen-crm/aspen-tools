@@ -31,5 +31,5 @@ The objects and fields you'll work with:
 
 Author the trigger's Rust in `metacode/server/server_main_c/src/lib.rs` and register it in
 `metacode/server/server_main_c/aspen.server.json`. This is an authoring exercise on a local
-checkout — there's no live instance to deploy to, so don't run the `aspen` CLI or try to deploy;
-just write the code and explain your key decisions.
+checkout — there's no live instance to deploy to, so don't run the `aspen` CLI, don't compile or run
+cargo, and don't try to deploy; just write the code and explain your key decisions.
