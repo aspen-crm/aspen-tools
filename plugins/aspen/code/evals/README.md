@@ -40,3 +40,10 @@ The run needs an OS sandbox to confine the granted shell tool — on Linux, `bub
 Useful flags: `--case '<glob>'` or `--tag <tag>` to run a subset, `--runs 1` for a quick pass,
 `--ablation none` to skip the baseline arm, `--json results.json` / `--report report.html` to
 capture output. Results land in `evals/results/` (gitignored).
+
+## In CI
+
+`.github/workflows/evals.yml` runs this suite and fails if any case scores below a threshold.
+It makes real model calls, so it's manual (`workflow_dispatch` from the Actions tab), pins the
+models, and archives `results.json` + `report.html` as artifacts. It needs an `ANTHROPIC_API_KEY`
+repo secret. The fast, free unit tests in `test/` still run on every PR via `test.yml`.
