@@ -1,0 +1,79 @@
+name: evals
+
+# Runs the aspen-code plugin's eval suite (`claude plugin eval`) and gates on the scored
+# results. Unlike test.yml (fast, free, every PR), this makes REAL model calls that cost money
+# and need credentials, so it is manual by design — trigger it from the Actions tab when you
+# change the plugin or want a fresh score. To run it on a cadence instead, add a `schedule:`.
+#
+# Requirements:
+#   - repo secret ANTHROPIC_API_KEY (or another credential Claude Code accepts). Without it the
+#     run exits 2 (credential rejected) and the job fails.
+#   - the granted shell tool (Bash) needs an OS sandbox, so the job installs bubblewrap + socat.
+
+on:
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: 'Fail the job if any case scores below this (0..1)'
+        default: '0.7'
+      max_cost_usd:
+        description: 'Abort with partial results if the run would exceed this cost'
+        default: '25'
+
+# One eval run at a time; a second dispatch cancels the older one rather than double-spending.
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    name: aspen-code evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The cases grant Bash/Write/Edit so the agent can author files; Claude Code refuses to
+      # run a granted shell tool without a sandbox backend to confine it.
+      - name: Install sandbox backend
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap socat
+
+      - name: Install the Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      # Pinned models keep scores comparable over time. --ablation none scores only the
+      # with-plugin arm (the CI gate) and halves the cost; run it locally with the default
+      # ablation when you want the no-plugin delta. Results are archived below regardless of
+      # the exit code.
+      - name: Run eval suite
+        working-directory: plugins/aspen/code
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude plugin eval . \
+            --trust-plugin \
+            --scaffold \
+            --allow-tools Read Glob Grep Bash Write Edit \
+            --ablation none \
+            --runs 3 \
+            --threshold "${{ github.event.inputs.threshold }}" \
+            --model claude-sonnet-5 \
+            --judge-model claude-haiku-4-5 \
+            --no-publish \
+            --max-cost-usd "${{ github.event.inputs.max_cost_usd }}" \
+            --json results.json \
+            --report report.html
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aspen-code-eval-results
+          path: |
+            plugins/aspen/code/results.json
+            plugins/aspen/code/report.html
+          if-no-files-found: warn
