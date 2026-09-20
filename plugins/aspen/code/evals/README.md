@@ -22,15 +22,20 @@ measures.
 
 ## Run it
 
-The cases author files, so they need the write tools granted (an operator grant, off by default):
+The trigger cases author code and scaffold a starter crate, so they need the write tools granted
+and `--scaffold` (both off by default):
 
 ```sh
 cd plugins/aspen/code
 claude plugin eval . \
   --allow-tools Read Glob Grep Bash Write Edit \
+  --scaffold \
   --judge-model claude-sonnet-5 \
   --trust-plugin
 ```
+
+The run needs an OS sandbox to confine the granted shell tool — on Linux, `bubblewrap` and `socat`
+(`apt install bubblewrap socat`).
 
 Useful flags: `--case '<glob>'` or `--tag <tag>` to run a subset, `--runs 1` for a quick pass,
 `--ablation none` to skip the baseline arm, `--json results.json` / `--report report.html` to
