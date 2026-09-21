@@ -224,6 +224,83 @@ export function findHardcodedValues (source) {
   return findings
 }
 
+// ---- rebuilding a component Aspen already publishes ---------------------------------
+//
+// The third failure, and the one the first two are blind to. A page can name only real
+// tokens, hardcode nothing, pass every check here -- and still look wrong, because it
+// built a `<table>` out of the semantic layer while `--ap-comp-table-*` and
+// `--ap-comp-cell-*` sat there publishing the exact cell padding, hover and border it
+// re-derived by hand. It renders next to Aspen's own list views, where a near-miss reads
+// as a bug rather than a style.
+//
+// Keyed on the CSS RULE, not the file. The first attempt asked "does this file render a
+// table and reference no table tokens", which is the wrong question in any codebase that
+// separates markup from styles -- and this one does. It flagged the DOM helper that calls
+// `el('button')` and holds no CSS, a types module, and the grid whose table tokens live
+// one import away in `lib/styles.ts`; 14 findings, and it still missed the table that
+// prompted it. A rule that styles `th`/`td` is where the decision actually gets made, and
+// it is in one place by construction.
+//
+// Small on purpose: only components whose selector is an HTML element. Tag, card, banner
+// and modal are divs -- nothing to key on, and guessing costs more than it catches.
+const COMPONENT_RULES = [
+  { component: 'table', prefixes: ['--ap-comp-table-', '--ap-comp-cell-'], elements: ['table', 'thead', 'tbody', 'tr', 'td', 'th'] },
+  { component: 'button', prefixes: ['--ap-comp-button-'], elements: ['button'] },
+  { component: 'select', prefixes: ['--ap-comp-select-'], elements: ['select'] },
+  { component: 'textarea', prefixes: ['--ap-comp-textarea-'], elements: ['textarea'] }
+]
+
+// One marker for the whole file: the finding is about how a component is styled, and
+// pinning it to a line inside a multi-line rule would be arbitrary.
+const COMPONENT_EXEMPT = /aspen-component-exempt/
+
+// `selector { declarations }`, over the CSS that lives in template literals here. Nested
+// at-rules are not unpacked -- a media query's inner rules read as their own blocks,
+// which is all this needs.
+const CSS_RULE = /([^{}@;]+)\{([^{}]*)\}/g
+
+// A bare element in a selector, so `.ec-table th` counts as a `th` and `.ec-table` does
+// not count as a `table`.
+const stylesElement = (selector, element) =>
+  new RegExp(`(^|[\\s>+~,])${element}([\\s>+~,:\\[.]|$)`, 'i').test(selector)
+
+export function findComponentMismatches (source) {
+  if (COMPONENT_EXEMPT.test(source)) return []
+  const scannable = stripBlockComments(source)
+  const findings = []
+
+  // Two questions, deliberately at different scopes. Does the file STYLE this component's
+  // elements -- a CSS rule, not just markup, which is what keeps the DOM helper that calls
+  // `el('button')` out of it. And does the file reach for the component's tokens ANYWHERE.
+  //
+  // The second is file-wide because a real stylesheet spreads one component over many
+  // rules: the grid paints its cells from `--ap-comp-cell-*` under `.ps-cell`, and one
+  // sibling rule accents a `th` with `--ap-sem-color-brand-primary` for today's column.
+  // Demanding a component token in every rule that names a `th` flagged all three of the
+  // hand-tuned stylesheets it was built to approve of.
+  for (const rule of COMPONENT_RULES) {
+    if (rule.prefixes.some((prefix) => scannable.includes(prefix))) continue
+
+    for (const match of scannable.matchAll(CSS_RULE)) {
+      const [, selector, declarations] = match
+      // Only a rule that reaches for the design system at all. `td { vertical-align: top }`
+      // is layout plumbing and has no token to prefer.
+      if (!declarations.includes('--ap-sem-')) continue
+      if (!rule.elements.some((element) => stylesElement(selector, element))) continue
+
+      findings.push({
+        component: rule.component,
+        prefixes: rule.prefixes,
+        line: scannable.slice(0, match.index).split('\n').length,
+        selector: selector.trim().replace(/\s+/g, ' ').slice(0, 60)
+      })
+      break
+    }
+  }
+
+  return findings
+}
+
 export function findUnknownTokens (source, known) {
   const findings = []
   source.split('\n').forEach((line, index) => {
@@ -270,7 +347,11 @@ function distance (a, b, ceiling) {
 
 // ---- the decision -------------------------------------------------------------------
 
-export function decide (filePath, content, known = loadTokenNames()) {
+// `whole` says the content is an entire file rather than an Edit's replacement string.
+// The component check needs that distinction and the other two do not: it asks whether a
+// file styles its table anywhere, and a fragment that adds three `<td>`s carries none of
+// the file's CSS, so judging one would flag every edit to a table that is already right.
+export function decide (filePath, content, known = loadTokenNames(), whole = true) {
   const path = String(filePath ?? '')
   if (!UI_SOURCE.test(path)) return null
   const source = String(content ?? '')
@@ -278,7 +359,8 @@ export function decide (filePath, content, known = loadTokenNames()) {
 
   const unknown = findUnknownTokens(source, known)
   const hardcoded = findHardcodedValues(source)
-  if (!unknown.length && !hardcoded.length) return null
+  const mismatched = whole ? findComponentMismatches(source) : []
+  if (!unknown.length && !hardcoded.length && !mismatched.length) return null
 
   const parts = []
 
@@ -304,6 +386,23 @@ export function decide (filePath, content, known = loadTokenNames()) {
     )
   }
 
+  if (mismatched.length) {
+    parts.push(
+      'This file rebuilds a component Aspen already publishes, out of the semantic layer, ' +
+      'and never touches that component\'s own tokens. It renders beside Aspen\'s real ones, ' +
+      'where a near-miss reads as a bug — the component tokens already carry the padding, ' +
+      'hover, border and frame values being re-derived here:\n' +
+      mismatched.map(({ component, prefixes }) =>
+        `  renders a \`${component}\` but references no ${prefixes.map((p) => `\`${p}*\``).join(' or ')} token` +
+        ` — grep \`ui-component-tokens.md\` for ${prefixes.map((p) => `\`${p}\``).join(' and ')}`
+      ).join('\n') +
+      '\n\nStart from the component\'s tokens for the parts it publishes, and compose from ' +
+      '`--ap-sem-*` only for what it does not (a magnitude bar in a cell, say). If this is ' +
+      'deliberately not that component — a layout table, a control that has to look ' +
+      'different — put `aspen-component-exempt: <reason>` in a comment anywhere in the file.'
+    )
+  }
+
   parts.push(
     'Names are in `ui-design-tokens.md` beside the skill (grep `ui-component-tokens.md` ' +
     'for one component\'s `--ap-comp-*`). Copy them exactly. Writing the light value as a ' +
@@ -322,6 +421,10 @@ export const deny = (reason) => JSON.stringify({
     permissionDecisionReason: reason
   }
 })
+
+// Only a Write hands over the finished file. An Edit's `new_string` is a fragment, so the
+// file-level component check has to sit out -- see `whole` on decide().
+export const isWholeFile = (toolInput) => typeof toolInput?.content === 'string'
 
 // Write carries the whole file; Edit carries only the replacement, which is the right
 // thing to scan -- it is what this turn is adding.
@@ -345,7 +448,8 @@ async function readStdin () {
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   try {
     const payload = await readStdin()
-    const reason = decide(payload?.tool_input?.file_path, contentOf(payload?.tool_input))
+    const input = payload?.tool_input
+    const reason = decide(input?.file_path, contentOf(input), loadTokenNames(), isWholeFile(input))
     if (reason) process.stdout.write(deny(reason))
   } catch { /* a guard that crashes must not take the session with it */ }
   process.exit(0)

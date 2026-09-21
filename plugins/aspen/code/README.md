@@ -113,7 +113,7 @@ hooks/hooks.json                          # SessionStart + PreToolUse wiring
 hooks/session-start.mjs                   # inject the CLI's commands; point at the skill
 hooks/guard-destructive.mjs               # PreToolUse (Bash): ask before clearing shared instance state
 hooks/guard-metadata-writes.mjs           # PreToolUse (Write/Edit): deny writes outside metadata/
-hooks/guard-ui-tokens.mjs                 # PreToolUse (Write/Edit): deny hardcoded styling + unknown --ap-* names
+hooks/guard-ui-tokens.mjs                 # PreToolUse (Write/Edit): deny hardcoded styling, unknown --ap-* names, component rebuilds
 scripts/lint-ui-tokens.mjs                # the same two checks over a whole tree, for CI
 skills/using-aspen/SKILL.md               # the one skill — the whole loop
 skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger

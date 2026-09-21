@@ -223,3 +223,104 @@ test('a malformed payload is allowed through rather than wedging the session', (
   const stdout = execFileSync('node', [SCRIPT], { input: 'not json', encoding: 'utf8' })
   assert.equal(stdout, '')
 })
+
+// ---- rebuilding a component Aspen already publishes --------------------------------
+
+import { findComponentMismatches } from '../hooks/guard-ui-tokens.mjs'
+
+// The regression. This is the CSS a session actually shipped into a record section on
+// veeva.com_niraj: a real `<table>` whose cell padding, border and header type were all
+// re-derived from the semantic layer while `--ap-comp-cell-content-padding-x`,
+// `-border-bottom-color` and the 65 `--ap-comp-table-*` names sat unused. Every token
+// real, nothing hardcoded -- so the other two checks passed it, and it still renders as a
+// near-miss beside Aspen's own list views.
+const REBUILT_TABLE = css(`
+.ec-table { width: 100%; border-collapse: collapse; }
+.ec-table th, .ec-table td {
+    text-align: left; vertical-align: top; white-space: nowrap;
+    padding: var(--ap-sem-spacing-inner-xs, 8px) var(--ap-sem-spacing-inner-sm, 12px);
+    border-bottom: var(--ap-sem-border-width-default, 1px) solid var(--ap-sem-color-border-subtle, #e1e3e6);
+}
+.ec-table th {
+    color: var(--ap-sem-color-text-secondary, #3b424a);
+    border-bottom-color: var(--ap-sem-color-border-default, #cbced2);
+}
+.ec-table tbody tr:hover { background: var(--ap-sem-color-surface-hover, #eef0f3); }
+`)
+
+test('a table rebuilt from the semantic layer is caught', () => {
+  const [finding] = findComponentMismatches(REBUILT_TABLE)
+  assert.ok(finding, 'the rebuilt table should be flagged')
+  assert.equal(finding.component, 'table')
+  assert.deepEqual(finding.prefixes, ['--ap-comp-table-', '--ap-comp-cell-'])
+})
+
+test('the message names the component and where to find its tokens', () => {
+  const reason = decide(UI, REBUILT_TABLE, KNOWN)
+  assert.match(reason, /renders a `table`/)
+  assert.match(reason, /--ap-comp-cell-/)
+  assert.match(reason, /ui-component-tokens\.md/)
+  assert.match(reason, /aspen-component-exempt/)
+})
+
+test('button, select and textarea are covered too', () => {
+  for (const [element, prefix] of [['button', '--ap-comp-button-'], ['select', '--ap-comp-select-'], ['textarea', '--ap-comp-textarea-']]) {
+    const source = css(`${element} { color: var(--ap-sem-color-text-primary); }`)
+    const [finding] = findComponentMismatches(source)
+    assert.ok(finding, `a styled ${element} should be flagged`)
+    assert.ok(finding.prefixes.includes(prefix))
+  }
+})
+
+// ---- what the component check must NOT flag ----------------------------------------
+//
+// These three shapes are all present in the hand-tuned stylesheets on veeva.com_niraj,
+// and an earlier cut of this check flagged every one of them.
+
+test('a file that reaches for the component tokens anywhere is on the system', () => {
+  // The grid paints cells from `--ap-comp-cell-*` under a class, then accents one `th`
+  // with a semantic brand colour for today's column. That sibling rule is not a rebuild.
+  const source = css(`
+.ps-cell {
+    background: var(--ap-comp-cell-bg-default, #fff);
+    border-bottom: var(--ap-comp-cell-border-bottom-width, 1px) solid var(--ap-comp-cell-border-bottom-color, #e1e3e6);
+}
+.ps-table thead th.is-today { box-shadow: inset 2px 0 0 var(--ap-sem-color-brand-primary, #e3722d); }
+`)
+  assert.deepEqual(findComponentMismatches(source), [])
+})
+
+test('markup with no stylesheet is not a styling decision', () => {
+  // A DOM helper calls `el('button')` and holds no CSS; the styles live an import away.
+  const source = "export const button = (label) => el('button', 'ps-btn', label)\n"
+  assert.deepEqual(findComponentMismatches(source), [])
+})
+
+test('a rule that touches no token has nothing to prefer', () => {
+  assert.deepEqual(findComponentMismatches(css('td { vertical-align: top; white-space: nowrap; }')), [])
+})
+
+test('a class that merely contains an element name is not that element', () => {
+  // `.ec-table` is a class. Only a bare `table` in the selector counts.
+  const source = css('.ec-table { gap: var(--ap-sem-spacing-inner-md); }')
+  assert.deepEqual(findComponentMismatches(source), [])
+})
+
+test('an exemption anywhere in the file stands the component rule down', () => {
+  const source = '/* aspen-component-exempt: a layout grid, not a data table */\n' + REBUILT_TABLE
+  assert.deepEqual(findComponentMismatches(source), [])
+})
+
+// ---- scope -------------------------------------------------------------------------
+
+test("an Edit's fragment is not judged on the component rule", () => {
+  // Only a Write hands over the finished file. A fragment adding three `<td>`s carries
+  // none of the file's CSS, so judging one would flag every edit to a correct table.
+  assert.equal(decide(UI, REBUILT_TABLE, KNOWN, false), null)
+  assert.ok(decide(UI, REBUILT_TABLE, KNOWN, true))
+})
+
+test('a hardcode in an Edit fragment is still caught', () => {
+  // The other two checks are line-scoped and stay on for a fragment.
+  assert.ok(decide(UI, css('.x { padding: 16px; }'), KNOWN, false))
+})

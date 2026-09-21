@@ -16,7 +16,8 @@ import { join, relative, extname } from 'node:path'
 import {
   loadTokenNames,
   findHardcodedValues,
-  findUnknownTokens
+  findUnknownTokens,
+  findComponentMismatches
 } from '../hooks/guard-ui-tokens.mjs'
 
 const EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.css', '.scss'])
@@ -46,8 +47,9 @@ for (const path of walk(root)) {
   const source = readFileSync(path, 'utf8')
   const unknown = findUnknownTokens(source, known)
   const hardcoded = findHardcodedValues(source)
-  if (!unknown.length && !hardcoded.length) continue
-  results.push({ file: relative(root, path), unknown, hardcoded })
+  const mismatched = findComponentMismatches(source)
+  if (!unknown.length && !hardcoded.length && !mismatched.length) continue
+  results.push({ file: relative(root, path), unknown, hardcoded, mismatched })
 }
 
 if (asJson) {
@@ -55,7 +57,7 @@ if (asJson) {
 } else if (!results.length) {
   console.log('ui-tokens: clean.')
 } else {
-  for (const { file, unknown, hardcoded } of results) {
+  for (const { file, unknown, hardcoded, mismatched } of results) {
     console.log(`\n${file}`)
     for (const { line, name, nearest } of unknown) {
       console.log(`  ${line}: unknown token \`${name}\`` + (nearest ? ` — did you mean \`${nearest}\`?` : '') +
@@ -64,13 +66,21 @@ if (asJson) {
     for (const { line, property, value, family } of hardcoded) {
       console.log(`  ${line}: \`${property}: ${value}\` → use \`${family}\``)
     }
+    for (const { component, prefixes } of mismatched) {
+      console.log(
+        `  rebuilds a \`${component}\` from the semantic layer; no ` +
+        prefixes.map((prefix) => `\`${prefix}*\``).join(' or ') + ' token referenced'
+      )
+    }
   }
-  const counted = results.reduce((sum, r) => sum + r.unknown.length + r.hardcoded.length, 0)
+  const counted = results.reduce(
+    (sum, r) => sum + r.unknown.length + r.hardcoded.length + r.mismatched.length, 0)
   console.log(
     `\n${counted} finding(s) in ${results.length} file(s). Token names are in the ` +
     'aspen-code skill\'s ui-design-tokens.md / ui-component-tokens.md. A `var(--token, ' +
     'fallback)` fallback is fine. For a value the system has no token for, add ' +
-    '`aspen-token-exempt: <reason>` in a comment on that line or the line above.'
+    '`aspen-token-exempt: <reason>` in a comment on that line or the line above, or ' +
+    '`aspen-component-exempt: <reason>` anywhere in the file for a component finding.'
   )
 }
 

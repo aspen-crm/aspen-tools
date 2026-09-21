@@ -19,10 +19,12 @@ build`, deploy, verify) is the same as for everything else and stays in `SKILL.m
   cannot tell a real name from a typo, and neither can the browser: a misspelled `var(--ap-…)` is
   silently unset. Copy names from here, exactly.
 - **`--ap-comp-*` names live in `ui-component-tokens.md`** — all 1631 of them, across 77
-  components (the 50 named at the end of this file plus their internal parts). Prefer `--ap-sem-*`
-  for everything; reach for a component's tokens only to match one Aspen component pixel-for-pixel,
-  and then grep that file for `--ap-comp-<component>-` rather than reading it — it is 2000 lines.
-  Still copy, never guess: the same silent-failure rule applies.
+  components (the 50 named at the end of this file plus their internal parts). Grep that file for
+  `--ap-comp-<component>-` rather than reading it — it is 2000 lines. Still copy, never guess: the
+  same silent-failure rule applies.
+- **Ask first whether Aspen already ships the thing you are building.** If it does — a table, a
+  select, a tag, a modal — start from that component's own tokens. If it does not, compose from
+  the semantic layer. That order matters more than it sounds: see the next rule.
 - **Eleven per-role font-family tokens exist and are internal**: `--ap-sem-font-family-body-bold`,
   `-body-large`, `-body-small`, `-caption`, `-display`, `-footnote`, `-heading-1`, `-heading-2`,
   `-heading-3`, `-heading-4`, `-label`. They resolve — six of them show up in the component file's
@@ -93,9 +95,24 @@ Rules that matter:
   warning. Copy names exactly, and write the light value as a fallback
   (`var(--ap-sem-color-text-primary, #11171d)`) so a typo degrades to the right color instead of
   to nothing. Fallbacks are encouraged, not a deviation.
-- **Prefer semantic tokens (`--ap-sem-*`).** They are the design vocabulary. Component tokens
-  (`--ap-comp-*`, see the end) exist only when you need to match one specific Aspen component
-  pixel-for-pixel.
+- **Rebuilding an Aspen component? Take its tokens. Building something new? Compose from the
+  semantic layer.** The semantic tokens are the design vocabulary and cover most of a page, so
+  they are the right default for anything Aspen does not already publish — a magnitude bar in a
+  cell, a Gantt strip, a chart legend.
+  - But a `<table>` in a record section renders inches from Aspen's own list views, and there
+    "close enough" reads as a bug, not a style. `--ap-comp-cell-content-padding-x/y`,
+    `--ap-comp-cell-border-bottom-color`, `--ap-comp-cell-bg-hover` and the 65
+    `--ap-comp-table-*` names already hold those values. Re-deriving them from
+    `--ap-sem-spacing-inner-*` and `--ap-sem-color-border-subtle` lands near them and not on
+    them, and nothing fails to tell you.
+  - This is not the pixel-perfect edge case it was once described as. Whenever you are rebuilding
+    something the platform ships, matching it exactly IS the requirement, and the component's
+    tokens are the short way there — fewer decisions, not more.
+  - A guard denies a stylesheet that styles a `table`, `button`, `select` or `textarea` from the
+    semantic layer alone. Mixing is expected and fine: paint the cells from the cell tokens, then
+    accent one header with `--ap-sem-color-brand-primary` if that is what the design wants. If
+    you are deliberately not building that component — a layout table, a control that has to look
+    different — put `aspen-component-exempt: <reason>` in a comment anywhere in the file.
 
 ---
 
@@ -320,12 +337,18 @@ Use for `box-shadow`. Shadows are stronger in dark mode automatically.
 
 ---
 
-## Component tokens (`--ap-comp-*`) — advanced
+## Component tokens (`--ap-comp-*`)
 
-Every Aspen component publishes its own tokens, each aliasing a semantic token above. Reach for
-these only when you are recreating a specific Aspen component and need it to match exactly (for
-example `--ap-comp-button-radius`, `--ap-comp-button-primary-bg-default`). For everything else,
-compose from the semantic tokens — they are simpler and stay consistent across components.
+Every Aspen component publishes its own tokens, each aliasing a semantic token above. **These are
+not the advanced case — they are the right starting point whenever you are rebuilding a component
+Aspen already ships** (for example `--ap-comp-button-radius`,
+`--ap-comp-button-primary-bg-default`). The alias means you gain the match for free and lose
+nothing: a component token follows the same theme and the same responsive steps as the semantic
+token behind it.
+
+Compose from the semantic tokens for what has no Aspen counterpart. That is most of a page, which
+is why the semantic layer is still the bulk of any stylesheet — but it is a different question
+from "how should my table look".
 
 Pattern: `--ap-comp-<component>-<property>[-<variant>][-<state>]`.
 
