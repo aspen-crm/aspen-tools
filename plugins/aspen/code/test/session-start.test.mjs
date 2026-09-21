@@ -83,8 +83,13 @@ test('from ~/Aspen with instance folders, it lists them and says to reopen', () 
   const root = join(home, 'Aspen')
   mkdirSync(join(root, 'veeva.com-treehouse', 'metacode'), { recursive: true })
   mkdirSync(join(root, 'veeva.com-oak', 'metacode'), { recursive: true })
-  // context() reads $HOME via os.homedir(); run the script with HOME overridden instead.
-  const out = execFileSync('node', [SCRIPT], { cwd: root, encoding: 'utf8', env: { ...process.env, HOME: home } })
+  // context() reads the home dir via os.homedir(), so run the script with it overridden.
+  // Both names are needed: os.homedir() consults HOME on POSIX but USERPROFILE on Windows,
+  // and setting only HOME there leaves it pointing at the real profile -- the fixture root
+  // then is not ~/Aspen, context() correctly returns '', and the test fails for a reason
+  // that has nothing to do with what it is checking.
+  const env = { ...process.env, HOME: home, USERPROFILE: home }
+  const out = execFileSync('node', [SCRIPT], { cwd: root, encoding: 'utf8', env })
   assert.match(out, /reopen/)
   assert.match(out, /veeva\.com-treehouse/)
   assert.match(out, /veeva\.com-oak/)
