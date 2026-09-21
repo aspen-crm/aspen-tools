@@ -7,8 +7,17 @@ on:
 
 jobs:
   plugin:
-    name: aspen-code plugin
-    runs-on: ubuntu-latest
+    # Windows is not redundant here. Every hook decides "am I being run, or imported?"
+    # by comparing import.meta.url to argv[1], and the two line up only on an
+    # unremarkable POSIX path -- so all four hooks were silent no-ops on Windows for
+    # the whole 2.5.0/2.6.0 token-guard line, and a Linux-only matrix could not see it.
+    # A hook that no-ops exits 0 and looks exactly like "allowed", so nothing else will.
+    name: aspen-code plugin (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

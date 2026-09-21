@@ -23,13 +23,22 @@ function instanceFolder ({ withCli = true } = {}) {
     // Prints a recognizable line per help invocation.
     writeFileSync(cli, '#!/bin/sh\necho "HELP $*"\n')
     chmodSync(cli, 0o755)
+    // On Windows nothing interprets that shebang: execFileSync needs a real executable,
+    // and a .cmd stub would need `shell: true`, which production deliberately does not
+    // pass. The file still counts as "the CLI is present" there, which is all the other
+    // tests need; only the one asserting on help OUTPUT is skipped. See STUB_RUNS.
   } else {
     mkdirSync(join(dir, '.aspen'), { recursive: true })
   }
   return dir
 }
 
-test('in an instance folder with the CLI, it points at the skill and injects both help outputs', () => {
+// The fixture CLI is a POSIX shebang script; only a POSIX host can actually run it. A real
+// Windows instance folder holds `.aspen/bin/aspen.exe`, a compiled binary execFileSync runs
+// fine, so this is a fixture limit, not a gap in what ships.
+const STUB_RUNS = process.platform !== 'win32'
+
+test('in an instance folder with the CLI, it points at the skill and injects both help outputs', { skip: STUB_RUNS ? false : 'the shebang stub CLI cannot execute on Windows' }, () => {
   const out = context(instanceFolder())
   assert.match(out, /invoke the `using-aspen` skill/)
   assert.match(out, /\.aspen\/bin\/aspen/)

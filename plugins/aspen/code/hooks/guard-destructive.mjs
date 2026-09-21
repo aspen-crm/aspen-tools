@@ -16,6 +16,9 @@
 // The skills say to confirm before these commands. That makes it a property of the
 // model's diligence; this makes it a property of the system.
 
+import { realpathSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
 // Match on what a command MEANS, not on one spelling of it.
 //
 // Order matters. Line continuations go first: a backslash-newline is nothing at all to
@@ -76,7 +79,19 @@ async function readStdin () {
 }
 
 // Only run as a CLI, so importing this module from tests has no side effects.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+// "Am I being run, or imported?" -- Node percent-encodes a module's own URL and resolves it
+// through symlinks; argv[1] is the raw path it was invoked with. Comparing the two as strings
+// holds only for an unremarkable POSIX path -- it is false for every Windows path, any path
+// with a space, and any symlinked dir -- and a false here is a silent no-op, exit 0 and no
+// output, which the host cannot tell apart from "allowed".
+function invokedDirectly () {
+  const argv = process.argv[1]
+  if (!argv) return false
+  if (import.meta.url === pathToFileURL(argv).href) return true
+  try { return import.meta.url === pathToFileURL(realpathSync(argv)).href } catch { return false }
+}
+
+if (invokedDirectly()) {
   try {
     const payload = await readStdin()
     const reason = decide(payload?.tool_input?.command)

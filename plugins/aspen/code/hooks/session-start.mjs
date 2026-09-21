@@ -22,6 +22,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, realpathSync, statSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { homedir } from 'node:os'
+import { pathToFileURL } from 'node:url'
 
 const ASPEN_HOME = 'Aspen'
 const isDir = (p) => { try { return statSync(p).isDirectory() } catch { return false } }
@@ -106,4 +107,16 @@ function main () {
   process.exit(0)
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) main()
+// "Am I being run, or imported?" -- Node percent-encodes a module's own URL and resolves it
+// through symlinks; argv[1] is the raw path it was invoked with. Comparing the two as strings
+// holds only for an unremarkable POSIX path -- it is false for every Windows path, any path
+// with a space, and any symlinked dir -- and a false here is a silent no-op, exit 0 and no
+// output, which the host cannot tell apart from "allowed".
+function invokedDirectly () {
+  const argv = process.argv[1]
+  if (!argv) return false
+  if (import.meta.url === pathToFileURL(argv).href) return true
+  try { return import.meta.url === pathToFileURL(realpathSync(argv)).href } catch { return false }
+}
+
+if (invokedDirectly()) main()

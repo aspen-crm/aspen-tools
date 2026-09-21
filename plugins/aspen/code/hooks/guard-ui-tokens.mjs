@@ -22,9 +22,9 @@
 // pages do need a value the system has no token for, and a rule with no way to say so
 // gets switched off. This one makes deviation cost one comment and leave a reason behind.
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
@@ -445,7 +445,19 @@ async function readStdin () {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}') } catch { return {} }
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+// "Am I being run, or imported?" -- Node percent-encodes a module's own URL and resolves it
+// through symlinks; argv[1] is the raw path it was invoked with. Comparing the two as strings
+// holds only for an unremarkable POSIX path -- it is false for every Windows path, any path
+// with a space, and any symlinked dir -- and a false here is a silent no-op, exit 0 and no
+// output, which the host cannot tell apart from "allowed".
+function invokedDirectly () {
+  const argv = process.argv[1]
+  if (!argv) return false
+  if (import.meta.url === pathToFileURL(argv).href) return true
+  try { return import.meta.url === pathToFileURL(realpathSync(argv)).href } catch { return false }
+}
+
+if (invokedDirectly()) {
   try {
     const payload = await readStdin()
     const input = payload?.tool_input
