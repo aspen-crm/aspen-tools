@@ -159,10 +159,18 @@ metacode/
        misspelled token is not an error anywhere: it resolves to nothing, the build passes, and the
        element silently keeps whatever it inherited. The fallback is the only thing standing
        between a typo and an invisible one.
-     - A hardcode or an unknown token name in `metacode/ui/` is **denied by a hook** with the token
-       family to use instead. When a value genuinely has no token — a page dimension, a grid track,
-       a mono stack — keep it and write `aspen-token-exempt: <reason>` in a comment on that line or
-       the line above. Widths, heights and `calc()` offsets from a variable are not flagged at all.
+     - **If Aspen already ships the thing you are building, start from that component's tokens.**
+       A `<table>` in a record section sits inches from Aspen's own list views, and
+       `--ap-comp-cell-*` and the 65 `--ap-comp-table-*` names already hold the cell padding,
+       hover and border that the semantic layer only gets you close to. Compose from `--ap-sem-*`
+       for what has no Aspen counterpart — which is most of a page, but not your table. Mixing the
+       two is normal.
+     - A hardcode, an unknown token name, or a `table`/`button`/`select`/`textarea` styled from the
+       semantic layer alone is **denied by a hook**, with the token family to use instead. When a
+       value genuinely has no token — a page dimension, a grid track, a mono stack — keep it and
+       write `aspen-token-exempt: <reason>` on that line or the line above; for a component you are
+       deliberately not rebuilding, `aspen-component-exempt: <reason>` anywhere in the file. Widths,
+       heights and `calc()` offsets from a variable are not flagged at all.
 
 3. **Validate offline — before anything touches the instance.** The instance's own validator
    runs locally in 0.2s and reports the same errors `checkin-prep` would, with the same text:

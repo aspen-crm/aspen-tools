@@ -1,7 +1,7 @@
 {
     "name": "aspen-code",
     "displayName": "Aspen Code",
-    "description": "Customize an Aspen instance with the aspen CLI: one skill (using-aspen) that is the whole loop \u2014 copy a real shape from metacode/compiled/, author into metacode/metadata/, validate offline with the instance's own ac binary, compile, deploy, verify \u2014 plus a server skeleton, trigger patterns, a session-start hook, and three guards: ask before clearing the shared dev set, deny writes into the generated tiers, deny custom UI that hardcodes what a design token covers.",
+    "description": "Customize an Aspen instance with the aspen CLI: one skill (using-aspen) that is the whole loop \u2014 copy a real shape from metacode/compiled/, author into metacode/metadata/, validate offline with the instance's own ac binary, compile, deploy, verify \u2014 plus a server skeleton, trigger patterns, and guards: ask before clearing the shared dev set, deny writes into the generated tiers, deny custom UI that ignores the design tokens or rebuilds an Aspen component from the semantic layer.",
     "version": "2.6.0",
     "author": {
         "name": "Aspen CRM"
