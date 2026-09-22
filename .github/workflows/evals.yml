@@ -51,7 +51,6 @@ jobs:
       ANTHROPIC_FEDERATION_RULE_ID: fdrl_01RWZuAtGxepcPXvJqZkdjCY
       ANTHROPIC_ORGANIZATION_ID: 73face42-4a2d-4a3b-a21f-a4de065f4734
       ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01SKZduRzigjmW9ttz4jpx4g
-      ANTHROPIC_IDENTITY_TOKEN_FILE: /tmp/anthropic-identity-token
       ANTHROPIC_WORKSPACE_ID: wrkspc_016F52qyVdnbpXLXt3X9CSrD
 
     steps:
@@ -69,25 +68,39 @@ jobs:
       - name: Install the Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
-      # A GitHub OIDC token expires in ~5 minutes and its `jti` makes it single-use, but the CLI
-      # re-reads this file every time it refreshes its Anthropic access token -- and a full eval
-      # run is far longer than either lifetime. So mint one now and keep a loop minting more for
-      # the rest of the job. The write-then-rename keeps the CLI from ever reading a half-written
-      # file, and the loop's failures are tolerated: the next tick is 3 minutes away.
-      - name: Mint and refresh the GitHub OIDC token
+      # One exchange for the whole job, not one per process.
+      #
+      # `claude plugin eval` runs every case in its own `claude` process -- ten cases times three
+      # runs is thirty of them -- and each would federate for itself if handed the federation env
+      # vars. A GitHub OIDC assertion carries a `jti` and can be exchanged exactly once, so the
+      # second process onward dies on a replayed-assertion 401 (opaque; the Console's WIF
+      # authentication history names it `jti_reused`). Refreshing the assertion on a timer does
+      # not fix that: any two processes that start inside one refresh window still share a `jti`.
+      #
+      # So exchange the assertion here, once, and hand every process the same bearer token.
+      # ANTHROPIC_AUTH_TOKEN sits above federation in the credential precedence order, so no
+      # process attempts an exchange of its own. The token must outlive the whole suite: the
+      # rule's `token_lifetime_seconds` is what bounds that, and this step prints what it got so
+      # a too-short lifetime shows up here rather than as a mid-suite failure.
+      - name: Exchange the OIDC token for an Anthropic token
         run: |
-          cat > /tmp/mint-jwt.sh <<'SCRIPT'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
-            | jq -er .value > "$ANTHROPIC_IDENTITY_TOKEN_FILE.tmp"
-          mv "$ANTHROPIC_IDENTITY_TOKEN_FILE.tmp" "$ANTHROPIC_IDENTITY_TOKEN_FILE"
-          SCRIPT
-          chmod +x /tmp/mint-jwt.sh
-          /tmp/mint-jwt.sh
-          nohup bash -c 'while sleep 180; do /tmp/mint-jwt.sh || true; done' \
-            > /tmp/mint-jwt.log 2>&1 &
+          jwt=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" | jq -er .value)
+          body=$(jq -n \
+            --arg a "$jwt" \
+            --arg r "$ANTHROPIC_FEDERATION_RULE_ID" \
+            --arg o "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg s "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+            --arg w "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer", assertion:$a,
+              federation_rule_id:$r, organization_id:$o,
+              service_account_id:$s, workspace_id:$w}')
+          resp=$(curl -sS --fail-with-body https://api.anthropic.com/v1/oauth/token \
+            -H 'content-type: application/json' -d "$body")
+          token=$(jq -er .access_token <<<"$resp")
+          echo "::add-mask::$token"
+          echo "ANTHROPIC_AUTH_TOKEN=$token" >> "$GITHUB_ENV"
+          echo "exchanged ok: ${token:0:12}... valid $(jq -r .expires_in <<<"$resp")s, scope $(jq -r .scope <<<"$resp")"
 
       # Pinned models keep scores comparable over time. --ablation none scores only the
       # with-plugin arm (the CI gate) and halves the cost; run it locally with the default

@@ -75,7 +75,12 @@ workload -> GitHub Actions) and its three non-secret ids in the workflow's `env:
 things that bite: this repo has GitHub's immutable subject claims enabled, so the rule's
 `subject_prefix` has to be the id-qualified `repo:aspen-crm@304632899/aspen-tools@1363100859:ref:refs/heads/*`
 rather than the `repo:owner/repo:...` form the docs show, and a mismatch denies with an opaque
-401 whose real reason appears only in the Console's WIF authentication history; a set `ANTHROPIC_API_KEY` -- including the empty string an unpopulated
+401 whose real reason appears only in the Console's WIF authentication history; the suite runs
+each case in its own `claude` process, so the job exchanges the assertion once and passes the
+bearer token down rather than letting thirty processes each federate -- an OIDC assertion is
+single-use, so the second one onward would fail with `jti_reused`, and the rule's
+`token_lifetime_seconds` therefore has to exceed the whole suite's runtime (a full run is ~15
+minutes); a set `ANTHROPIC_API_KEY` -- including the empty string an unpopulated
 `secrets.*` expands to -- outranks the federation vars, and a GitHub OIDC token lasts ~5 minutes
 and is single-use, which is shorter than a full eval run, so the workflow keeps a background loop
 minting fresh ones for the CLI to pick up on each token refresh.
