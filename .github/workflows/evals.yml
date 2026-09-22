@@ -44,11 +44,11 @@ jobs:
     # Deliberately absent: ANTHROPIC_API_KEY. A set key -- even an empty one, which is what an
     # unpopulated `secrets.*` expands to -- outranks the federation vars and breaks the exchange.
     env:
-      ANTHROPIC_FEDERATION_RULE_ID: fdrl_REPLACE_ME
-      ANTHROPIC_ORGANIZATION_ID: 00000000-0000-0000-0000-000000000000
-      ANTHROPIC_SERVICE_ACCOUNT_ID: svac_REPLACE_ME
+      ANTHROPIC_FEDERATION_RULE_ID: fdrl_01RWZuAtGxepcPXvJqZkdjCY
+      ANTHROPIC_ORGANIZATION_ID: 73face42-4a2d-4a3b-a21f-a4de065f4734
+      ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01SKZduRzigjmW9ttz4jpx4g
       ANTHROPIC_IDENTITY_TOKEN_FILE: /tmp/anthropic-identity-token
-      # ANTHROPIC_WORKSPACE_ID: wrkspc_...  # only if the rule covers more than one workspace
+      ANTHROPIC_WORKSPACE_ID: wrkspc_016F52qyVdnbpXLXt3X9CSrD
 
     steps:
       - uses: actions/checkout@v4
