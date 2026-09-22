@@ -11,6 +11,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -34,12 +35,15 @@ const unquote = (value) => value.replace(/^\s*['"]|['"]\s*$/g, '').trim()
 // nesting under `focus:` / `target:`. A YAML dependency would be a heavier promise than the
 // thing being checked.
 function frontmatter (text) {
-  const match = text.match(/^---\n([\s\S]*?)\n---/)
+  // \r? everywhere: a Windows checkout has CRLF line endings (core.autocrlf), and a regex
+  // anchored on a bare \n matches nothing -- which reads as "this file has no frontmatter"
+  // for every case at once. That is what CI caught on the first push of this file.
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/)
   if (!match) return null
   const flat = {}
   const nested = {}
   let parent = null
-  for (const line of match[1].split('\n')) {
+  for (const line of match[1].split(/\r?\n/)) {
     if (!line.trim() || line.trim().startsWith('#')) continue
     const indented = /^\s/.test(line)
     const pair = line.match(/^\s*([A-Za-z_]+):\s*(.*)$/)
@@ -94,8 +98,24 @@ for (const name of caseDirs) {
     if (!script) return
     const path = join(dir, script[1])
     assert.ok(existsSync(path), `${name} names ${script[1]}, which is not there`)
-    // The runner executes it as the operator; a non-executable fixture fails the whole case.
-    assert.ok(statSync(path).mode & 0o111, `${script[1]} is not executable`)
+
+    // The runner executes it, so a fixture without its exec bit fails the whole case. Ask GIT
+    // for the mode, not the filesystem: Windows has no POSIX mode bits (statSync always reports
+    // 0), and git's index is the thing that actually matters anyway -- it is what a Linux runner
+    // checks out. 100755 is executable, 100644 is not.
+    let indexed = ''
+    try {
+      indexed = execFileSync('git', ['ls-files', '-s', '--', path], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    } catch { /* no git, or not a checkout */ }
+
+    if (indexed) {
+      assert.match(indexed, /^100755 /,
+        `${script[1]} is committed without its exec bit (git mode ${indexed.split(' ')[0]})`)
+    } else if (process.platform !== 'win32') {
+      // Outside a git checkout -- an exported tarball, say -- fall back to the filesystem.
+      // Skipped on Windows, which has no POSIX mode bits to read.
+      assert.ok(statSync(path).mode & 0o111, `${script[1]} is not executable`)
+    }
   })
 
   test(`${name}: every grader is a supported type with its required fields`, () => {
@@ -113,7 +133,7 @@ for (const name of caseDirs) {
 
       // An llm grader's rubric is its body. An empty body scores nothing.
       if (flat.type === 'llm') {
-        const body = text.replace(/^---\n[\s\S]*?\n---/, '').trim()
+        const body = text.replace(/^---\r?\n[\s\S]*?\r?\n---/, '').trim()
         assert.ok(body.length > 80, `${where}: llm grader has no real rubric`)
       }
 
