@@ -71,8 +71,11 @@ models, and archives `results.json` + `report.html` as artifacts.
 It holds no API key. The job authenticates with Workload Identity Federation: GitHub mints a
 short-lived OIDC token for the run and the CLI exchanges it for an Anthropic access token, so the
 only setup is the federation rule (Claude Console -> Settings -> Workload identity -> Connect
-workload -> GitHub Actions) and its three non-secret ids in the workflow's `env:` block. Two
-things that bite: a set `ANTHROPIC_API_KEY` -- including the empty string an unpopulated
+workload -> GitHub Actions) and its three non-secret ids in the workflow's `env:` block. Three
+things that bite: this repo has GitHub's immutable subject claims enabled, so the rule's
+`subject_prefix` has to be the id-qualified `repo:aspen-crm@304632899/aspen-tools@1363100859:ref:refs/heads/*`
+rather than the `repo:owner/repo:...` form the docs show, and a mismatch denies with an opaque
+401 whose real reason appears only in the Console's WIF authentication history; a set `ANTHROPIC_API_KEY` -- including the empty string an unpopulated
 `secrets.*` expands to -- outranks the federation vars, and a GitHub OIDC token lasts ~5 minutes
 and is single-use, which is shorter than a full eval run, so the workflow keeps a background loop
 minting fresh ones for the CLI to pick up on each token refresh.

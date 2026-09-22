@@ -41,6 +41,10 @@ jobs:
 
     # The federation rule these must name is pinned to this repo's branch refs, so a fork or a
     # pull_request run carries a different `sub` and cannot mint a token. None of it is secret.
+    # If the rule is ever recreated: this repo has GitHub's immutable subject claims turned on,
+    # so its `sub` is id-qualified -- `repo:aspen-crm@304632899/aspen-tools@1363100859:ref:...`,
+    # not the `repo:aspen-crm/aspen-tools:ref:...` every example shows. A rule written in the
+    # documented shape matches nothing and denies with an opaque 401 on every branch.
     # Deliberately absent: ANTHROPIC_API_KEY. A set key -- even an empty one, which is what an
     # unpopulated `secrets.*` expands to -- outranks the federation vars and breaks the exchange.
     env:
