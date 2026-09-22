@@ -1,0 +1,32 @@
+{
+  "_comment": "An example pack: all three question types against one state. Copy it, then rewrite the criteria in the customer's own words -- the labels are the part that has to match how this business actually sorts its leads, and they are what you tune. The field names in state_fields must exist on the object (aspen_describe, never a guess) and must be selected by the --xql.",
+  "model": "jev-latest",
+  "state_fields": ["name_p", "title_c", "company_c", "industry_c", "notes_c", "source_c"],
+  "questions": {
+    "priority": {
+      "type": "choice",
+      "instructions": "How should sales prioritise following up with this lead?",
+      "criteria": {
+        "hot": "A decision maker at a company in our market with a stated, near-term need — follow up today.",
+        "warm": "A plausible fit showing some interest, but no stated timeline or budget — follow up this week.",
+        "cold": "No evident fit, need, or authority — leave in the nurture pool.",
+        "unclear": "The record does not carry enough to tell — the notes are empty or say nothing about fit or intent."
+      }
+    },
+    "fit": {
+      "type": "score",
+      "instructions": "Rate how closely this lead matches our ideal customer profile: a mid-market or enterprise life-sciences company buying for a commercial team.",
+      "criteria": [
+        "No match — wrong industry, or an individual rather than a company.",
+        "Weak — right industry, but the size or the buying team is wrong.",
+        "Partial — right industry and size, unclear buying team.",
+        "Strong — right industry, size and buying team.",
+        "Exact — right on every axis, and the notes name a commercial use case."
+      ]
+    },
+    "is_spam": {
+      "type": "noul",
+      "instructions": "Is this lead junk — a test record, a bot submission, or an obvious vendor pitch rather than a real prospect?"
+    }
+  }
+}

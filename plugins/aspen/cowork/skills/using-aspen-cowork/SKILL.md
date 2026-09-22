@@ -40,6 +40,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | Merging duplicate contacts into a survivor, or unmerging one (contacts only) | `contact-merge` |
 | Uploading or attaching a file (a PDF, image, document) to a record, or setting a file field | `files` |
 | More rows than `aspen_records_bulk_update` takes (>100), creating many records, deleting any, or a file-driven load | `bulk-data` |
+| Labelling, triaging or scoring records by **judgement** rather than a filter — lead priority, case urgency, junk detection (needs a shell) | `classify-records` |
 
 ## Fan-out (subagent — parallel, read-only)
 
@@ -127,6 +128,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "The bulk call returned, so all 40 changed" | Read `updated` / `failed` and each row's `error`. Rows are independent; report the partial result and retry only the rejected rows. |
 | "I'll set `merged_into_p` to merge these two contacts" | Rejected by the instance. Route to `contact-merge`, which drives the merge endpoints. |
 | "There's no upload tool — I'll attach the PDF through the web UI" | `aspen_files_upload` is the upload. Route to `files`; in Cowork the path is the file's path on the user's computer. |
+| "I'll read 300 records and label them myself" | That is not consistent and you cannot show your working. Route to `classify-records`: one typed question, a confidence on every row, and the low ones go to a person. |
 | "I'll parse the error text" | Route on the `code`; read `fix_hint`. |
 | "That number is 50000" | Numeric fields come back as JSON **strings** (`"50000.00"`). Parse before doing math. |
 | "I'll page through all objects" | `aspen_describe` with no object caps at ~100 (`truncated` flag). Scope to the object you need. |

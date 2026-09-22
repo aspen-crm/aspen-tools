@@ -124,6 +124,8 @@ own prefix in front of the tools (`mcp__aspen-runtime-mcp__aspen_*` in Claude De
 | `query-report` | `aspen_query` (natural-language → plan, server-side) and `aspen_report` (group-by count/sum), under the read caps. |
 | `files` | Upload a file from the computer running the server and attach it to a record's file field (`type: id`, `subtype: file`) with `aspen_files_upload` — the confirm → upload → read-back loop, and the one host difference: in Cowork the path is the file's path on the user's computer, not the sandbox's. Never the app's upload form. |
 | `contact-merge` | Merge a duplicate `contact_p` into a survivor, or unmerge one, through the platform's merge/unmerge endpoints — which the runtime MCP does not wrap and the records tools cannot reach (`merged_into_p` and `contact_merge_p` reject direct writes). A bundled Node helper makes the call and resolves the login the way the launcher does, so Claude never holds the token. One pair per call, contacts only. Claude Code only: it needs a shell. |
+| `bulk-data` | The jobs the record tools cannot carry: more than ~100 rows, creating many records, deleting any record, or a file-driven load. A bundled Node helper drives the platform's batch data API — paged reads, batched writes, dry run unless `--execute`. Claude Code only: it needs a shell. |
+| `classify-records` | Label, triage or score records by **judgement** rather than a filter — lead priority, case urgency, ICP fit, junk detection. A bundled Node helper asks one typed question per judgement (choice / score / noul) and returns a confidence per row. The backend is a flag: [TypeSafe's Jev](https://docs.typesafe.ai/introduction) by default (calibrated confidence), or Anthropic / OpenAI / Gemini, which answer the same pack — with the confidence derived from logprobs, or absent entirely on Anthropic, in which case every row is held for review. Read-only against the instance: the low-confidence rows go to a person and any write goes back through `records` or `bulk-data`. Dry run unless `--execute`, because classifying sends record data to a third party. Needs a shell — and works in a host with no Aspen MCP at all (Codex, Gemini CLI), since it reaches the instance over the same batch API. |
 
 The router is `using-aspen-cowork`, not `using-aspen`, because the sibling
 [aspen-code](../code) plugin ships a router by that name for the CLI lane. The two route to
@@ -196,9 +198,18 @@ skills/query-report/SKILL.md         # natural-language query and group-by repor
 skills/files/SKILL.md                # upload a file and attach it to a record's file field
 skills/contact-merge/SKILL.md        # merge / unmerge duplicate contacts via the platform endpoints
 skills/contact-merge/scripts/contact-merge.mjs  # the helper: resolves the login, posts one pair, prints JSON
+skills/bulk-data/SKILL.md            # loads, backfills and deletes over the batch data API
+skills/bulk-data/scripts/aspen-data.mjs         # the helper: paged query, batched create/update/delete, dry run by default
+skills/classify-records/SKILL.md     # label/triage/score records with TypeSafe's Jev, gated on confidence
+skills/classify-records/scripts/jev.mjs         # the helper: rows -> typed questions -> labels + an optional update plan
+skills/classify-records/scripts/providers.mjs   # one adapter per backend (jev, anthropic, openai, gemini)
+skills/classify-records/questions/lead-triage.json  # an example question pack: one choice, one score, one noul
 agents/schema-explorer.md            # read-only sweep -> a compact map
 test/runtime-mcp.test.mjs            # launcher + installer, end to end on a fake bundle
 test/contact-merge.test.mjs          # the merge helper, against a scratch config and a stub instance
+test/bulk-data.test.mjs              # the batch helper, against a scratch config and a stubbed fetch
+test/classify-records.test.mjs       # the classifier runner, against a stubbed fetch and an in-memory filesystem
+test/classify-providers.test.mjs     # the provider adapters: rendered pack, schema, confidence
 ```
 
 No `hooks/` directory, on purpose — see above. `.mcp.json` and `bin/` are not in the
