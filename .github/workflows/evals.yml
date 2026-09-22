@@ -2,12 +2,15 @@ name: evals
 
 # Runs the aspen-code plugin's eval suite (`claude plugin eval`) and gates on the scored
 # results. Unlike test.yml (fast, free, every PR), this makes REAL model calls that cost money
-# and need credentials, so it is manual by design — trigger it from the Actions tab when you
+# and need credentials, so it is manual by design -- trigger it from the Actions tab when you
 # change the plugin or want a fresh score. To run it on a cadence instead, add a `schedule:`.
 #
 # Requirements:
-#   - repo secret ANTHROPIC_API_KEY (or another credential Claude Code accepts). Without it the
-#     run exits 2 (credential rejected) and the job fails.
+#   - the three `fdrl_`/`svac_`/org-id values in the job's `env:` block below, from the
+#     Workload Identity Federation rule (Claude Console -> Settings -> Workload identity ->
+#     Connect workload -> GitHub Actions). There is NO api-key secret: the job authenticates
+#     with a short-lived OIDC token GitHub mints for this run. Without a matching rule the
+#     exchange returns an opaque 401 and the run exits 2 (credential rejected).
 #   - the granted shell tool (Bash) needs an OS sandbox, so the job installs bubblewrap + socat.
 
 on:
@@ -30,6 +33,26 @@ jobs:
     name: aspen-code evals
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    # id-token is what lets this job ask GitHub for the OIDC JWT; without it the mint step 404s.
+    permissions:
+      id-token: write
+      contents: read
+
+    # The federation rule these must name is pinned to this repo's branch refs, so a fork or a
+    # pull_request run carries a different `sub` and cannot mint a token. None of it is secret.
+    # If the rule is ever recreated: this repo has GitHub's immutable subject claims turned on,
+    # so its `sub` is id-qualified -- `repo:aspen-crm@304632899/aspen-tools@1363100859:ref:...`,
+    # not the `repo:aspen-crm/aspen-tools:ref:...` every example shows. A rule written in the
+    # documented shape matches nothing and denies with an opaque 401 on every branch.
+    # Deliberately absent: ANTHROPIC_API_KEY. A set key -- even an empty one, which is what an
+    # unpopulated `secrets.*` expands to -- outranks the federation vars and breaks the exchange.
+    env:
+      ANTHROPIC_FEDERATION_RULE_ID: fdrl_01RWZuAtGxepcPXvJqZkdjCY
+      ANTHROPIC_ORGANIZATION_ID: 73face42-4a2d-4a3b-a21f-a4de065f4734
+      ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01SKZduRzigjmW9ttz4jpx4g
+      ANTHROPIC_WORKSPACE_ID: wrkspc_016F52qyVdnbpXLXt3X9CSrD
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,14 +68,46 @@ jobs:
       - name: Install the Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      # One exchange for the whole job, not one per process.
+      #
+      # `claude plugin eval` runs every case in its own `claude` process -- ten cases times three
+      # runs is thirty of them -- and each would federate for itself if handed the federation env
+      # vars. A GitHub OIDC assertion carries a `jti` and can be exchanged exactly once, so the
+      # second process onward dies on a replayed-assertion 401 (opaque; the Console's WIF
+      # authentication history names it `jti_reused`). Refreshing the assertion on a timer does
+      # not fix that: any two processes that start inside one refresh window still share a `jti`.
+      #
+      # So exchange the assertion here, once, and hand every process the same bearer token.
+      # ANTHROPIC_AUTH_TOKEN sits above federation in the credential precedence order, so no
+      # process attempts an exchange of its own. The token must outlive the whole suite: the
+      # rule's `token_lifetime_seconds` is what bounds that, and this step prints what it got so
+      # a too-short lifetime shows up here rather than as a mid-suite failure.
+      - name: Exchange the OIDC token for an Anthropic token
+        run: |
+          jwt=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" | jq -er .value)
+          body=$(jq -n \
+            --arg a "$jwt" \
+            --arg r "$ANTHROPIC_FEDERATION_RULE_ID" \
+            --arg o "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg s "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+            --arg w "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer", assertion:$a,
+              federation_rule_id:$r, organization_id:$o,
+              service_account_id:$s, workspace_id:$w}')
+          resp=$(curl -sS --fail-with-body https://api.anthropic.com/v1/oauth/token \
+            -H 'content-type: application/json' -d "$body")
+          token=$(jq -er .access_token <<<"$resp")
+          echo "::add-mask::$token"
+          echo "ANTHROPIC_AUTH_TOKEN=$token" >> "$GITHUB_ENV"
+          echo "exchanged ok: ${token:0:12}... valid $(jq -r .expires_in <<<"$resp")s, scope $(jq -r .scope <<<"$resp")"
+
       # Pinned models keep scores comparable over time. --ablation none scores only the
       # with-plugin arm (the CI gate) and halves the cost; run it locally with the default
       # ablation when you want the no-plugin delta. Results are archived below regardless of
       # the exit code.
       - name: Run eval suite
         working-directory: plugins/aspen/code
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           claude plugin eval . \
             --trust-plugin \
