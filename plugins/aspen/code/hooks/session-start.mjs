@@ -56,6 +56,27 @@ export const missing = (cwd) => OPTIONAL
   .filter((o) => !existsSync(join(cwd, o.path)) && !existsSync(join(cwd, `${o.path}.exe`)))
   .map((o) => o.label)
 
+// One line on how big this instance already is. An instance grows past the point where anyone
+// can hold it in their head, and every session after that adds to it without ever being told.
+// Counting is cheap (a readdir per tier) and it is the one number that changes what a builder
+// should do next -- so it goes in front of them before the first task, not in a report nobody
+// runs. `lean-data-model` is what acts on it.
+export function footprint (cwd) {
+  const count = (tier, ctype, filter = () => true) => {
+    try {
+      return readdirSync(join(cwd, 'metacode', tier, ctype))
+        .filter((f) => f.endsWith('.json') && filter(f)).length
+    } catch { return 0 }
+  }
+  const custom = (f) => f.includes('_c')
+  const objects = Math.max(count('metadata', 'object_p', custom), count('active', 'object_p', custom))
+  const tabs = Math.max(count('metadata', 'tab_p'), count('active', 'tab_p'))
+  if (!objects && !tabs) return ''
+  return `This instance already holds ${objects} custom object${objects === 1 ? '' : 's'} and ` +
+    `${tabs} tab${tabs === 1 ? '' : 's'}. Nothing on this platform deletes, so anything added ` +
+    'here is permanent — invoke `lean-data-model` before creating an object, picklist or tab.'
+}
+
 const help = (cli, args) => {
   try {
     // Plain form, not `--agent yes`: the agent form truncates the move subcommand list,
@@ -88,6 +109,10 @@ export function context (cwd) {
       if (top) lines.push('', '```', '$ aspen --help', top, '```')
       if (move) lines.push('', '```', '$ aspen move --help', move, '```')
     }
+  }
+  const size = footprint(cwd)
+  if (size) {
+    lines.push('', size)
   }
   const absent = missing(cwd)
   if (absent.length) {

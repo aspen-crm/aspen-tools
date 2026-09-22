@@ -45,6 +45,23 @@ metacode/
 
 ## The loop
 
+0. **Earn it, then place it.** Before the first file, two questions, in this order.
+
+   **Should it exist?** If the request creates an object, field, picklist, record type, tab or
+   tab collection, invoke **`lean-data-model`** first. A business noun usually already has a
+   platform object — deal is `opportunity_p`, company is `account_p`, ticket is `case_p` — and a
+   second home for one concept splits every report, list view, trigger and integration. Nothing
+   here deletes, so this question is only cheap now.
+
+   **Which tier?** Then invoke **`model-first`** and fill in its placement table:
+   every thing the request asks for, the tier it belongs in (1 metadata, 2 Rust trigger, 3
+   TypeScript page), and why not the tier above. The request will not say which tier it wants —
+   people name the screen they imagine, not the component they need — and a derived number, a
+   status set or a validation rule answered in TypeScript is the one mistake this loop cannot
+   undo later. **Nothing on this platform deletes**, and a value the page computes is invisible to
+   lists, reports, triggers and the runtime MCP. Skip this only when the tier is already settled:
+   editing a field you authored last turn, fixing a trigger's logic, restyling a page that exists.
+
 1. **Find the shape.** `ls metacode/compiled/<ctype>/` to see what exists, then `cat` one that is
    like what you want. That file is a working example — copy it, do not invent attribute names or
    enum values. Filtering a big one down to the part you need: `jq`, not a Python heredoc — one

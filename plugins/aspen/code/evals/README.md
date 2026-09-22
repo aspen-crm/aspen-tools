@@ -19,6 +19,27 @@ measures.
 | `bulk-crud-batching` | Batch reads and writes across the whole trigger batch; one round trip, not N |
 | `metadata-layout-first` | Reach for a metadata layout/list view/tab before building any custom UI |
 | `custom-ui-design-tokens` | When a custom page is genuinely needed, style it with the Aspen design tokens |
+| `derived-value-in-model` | A budget figure becomes a stored field plus a trigger, not page arithmetic |
+| `status-flow-is-lifecycle` | A stage order becomes `lifecycle_p`, not a hand-rolled transition check |
+| `validation-not-in-page` | A save-time rule lands in a before-trigger, because every other write path bypasses the page |
+| `reuse-platform-object` | "A deal object" is `opportunity_p`, which the instance already has |
+| `no-cpq-graph` | A small quoting need stays two objects, not Salesforce's seven |
+| `field-not-object` | A yes/no attribute is a checkbox, not a picklist and not an object |
+
+Cases four to six are the `model-first` cases, and their prompts are deliberately **ambiguous
+about the tier**. They are written the way the request actually arrives — naming the screen the person
+imagines, or the page they already use — and never asking "should this be metadata or UI?". Two
+of them go further and stack the deck the wrong way: `derived-value-in-model` ships a working UI
+codefile in its fixture, and `validation-not-in-page` ships a quote editor with a `validateLine`
+helper sitting one import from the page the prompt names. What the case measures is how quickly
+the run reaches the right tier anyway.
+
+The last three are the `lean-data-model` cases, and they are ambiguous in the other direction:
+each is phrased as a request to **build something**, with no hint that the thing might already
+exist or be too big. `reuse-platform-object` is not a constructed prompt at all — it is the
+verbatim ask that produced a duplicate `deal_c` on a real 46-object instance, whose fields were
+62% a rename of `opportunity_p`'s. The agent noticed the duplication and said so in its closing
+summary, after building all six components. These cases measure whether the check happens first.
 
 ## Run it
 

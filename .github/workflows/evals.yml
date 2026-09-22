@@ -18,7 +18,7 @@ on:
         default: '0.7'
       max_cost_usd:
         description: 'Abort with partial results if the run would exceed this cost'
-        default: '25'
+        default: '60'
 
 # One eval run at a time; a second dispatch cancels the older one rather than double-spending.
 concurrency:

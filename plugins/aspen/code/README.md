@@ -4,15 +4,67 @@ Customizing an [Aspen Platform](https://github.com/aspen-crm) instance with the 
 is the build half of the Aspen tools; the collaboration half ships separately as
 [aspen-cowork](../cowork).
 
-Deliberately small. Its whole job is to remove decisions from the session — one skill that is the
-entire procedure, a session-start hook that hands the model the CLI's own commands so it never
-stops to discover them, and two safety guards. No metadata index, no subagents, nothing to route
-between.
+Deliberately small. Its whole job is to remove decisions from the session — two gates before the
+first file, one skill that is the entire procedure for building it, a session-start hook that
+hands the model the CLI's own commands so it never stops to discover them, and five safety
+guards. No metadata index, no subagents, nothing to route between.
 
-## The one skill
+The two gates answer different questions, in order. **`lean-data-model`** asks whether a
+component should exist at all. **`model-first`** asks which tier it belongs in. Both run before
+anything is authored, because **nothing on this platform deletes** — a component that turns out
+to be a mistake is retired with `"active": false` and stays in the model forever.
+
+## The first gate: `lean-data-model`
+
+Asked to "create a new deal object to capture sales opportunities", an agent on a real instance
+produced a correct, well-formed `deal_c` — object, two picklists, layout, list view, tab, and a
+nav entry beside Opportunities. Every component was properly authored. The instance already had
+`opportunity_p`, and 62% of `deal_c`'s field names were a rename of its. The agent *noticed*, and
+said so in its closing summary, after building all six.
+
+That ordering is the failure. The knowledge was there; nothing made it arrive first.
+
+`lean-data-model` is six questions asked before authoring: which platform object already holds
+this, is it a field rather than an object, is it a checkbox rather than a picklist, who opens it
+weekly and in what role, does the nav need a tab or does a related list do, and are you copying
+Salesforce. It ships `platform-objects.md`, the catalogue of ~48 platform objects with the words
+people actually use for them.
+
+`hooks/guard-footprint.mjs` backs it, asking on a new object that duplicates one that exists, an
+object past 25 fields, a picklist of 2 items or fewer, a nav past 15 tabs, and a new object while
+a deployed one is still missing its layout, list view or tab.
+
+The overlap check is the interesting one, and it is tuned rather than guessed. Comparing raw
+field names fired on 26% of the objects on a real 46-object instance, almost all of them
+four-field objects whose name, owner, status and dates matched everything. Ignoring the field
+names every object carries, and refusing to compare an object with fewer than six distinctive
+fields, takes that to 15% — and what survives is the genuine quote/order/line duplication that
+instance really has. `scripts/footprint.mjs` runs the same checks over a whole tree for CI and
+for arriving on an instance someone else built.
+
+## The second gate: `model-first`
+
+An Aspen instance has three tiers — metadata, Rust trigger, TypeScript page — and a request never
+says which one it wants. People name the screen they imagine, not the component they need, so a
+derived number, a status flow or a validation rule gets answered in TypeScript over a model that
+does not hold it. The screen looks right, review passes, and the value is then invisible to list
+views, reports, triggers and the runtime MCP. Nothing on this platform deletes, so that is
+permanent.
+
+`model-first` runs before the first file. It walks a six-question ladder and produces a
+**placement table** — one row per thing the request asks for, with the tier, the component, and
+why not the tier above. Every tier-3 row has to carry a reason; a row with an empty reason is not
+built. Tier 3 is often the right answer, and the skill says so: an editable grid, a chart, a
+timeline and a multi-object workspace all earn a page. What they do not earn is a page instead of
+a model.
+
+It ships `placement-table.md` beside it — the format plus seven worked rows from real instances,
+three of them placements that shipped the wrong way first.
+
+## The loop: `using-aspen`
 
 `using-aspen` is the whole loop, and it applies to any change — a picklist, a field, a Rust
-trigger, a TS page:
+trigger, a TS page. Step 0 is `model-first`; the rest is:
 
 1. **Find the shape** — `ls`/`cat` a real component of the type under `metacode/compiled/`.
 2. **Author** — copy that shape into `metacode/metadata/<ctype>/<name>.json`, or write the Rust/TS
@@ -68,6 +120,22 @@ continuations, case, and an absolute path to the binary all resolve to the same 
 `permissionDecision: "ask"`, so a host that does not understand the field degrades to *allowed*,
 never *blocked* — the hook cannot wedge a recovery path.
 
+`hooks/guard-footprint.mjs` (a `PreToolUse` hook on `Write`/`Edit`/`MultiEdit`) asks before a
+component that should probably not exist — see the first gate above for the checks and how the
+thresholds were calibrated. Like the surface guard it fires only on a new component file or a
+threshold newly crossed, and it asks rather than denies, because every finding is a judgement
+about intent and a second object is sometimes genuinely right.
+
+`hooks/guard-custom-ui-surface.mjs` (a `PreToolUse` hook on `Write`/`Edit`/`MultiEdit`) asks
+before a **new** custom UI surface lands — a route or layout section in `aspen.client.json`, a
+`custom_page` tab, a `custom_code` layout section. Whether a page is the right tier is a
+judgement about what the model already holds, not a pattern in a diff, so this asks rather than
+denies, and names what is new. It fires once, on the write that first declares the surface: it
+diffs the surfaces in the incoming file against the copy on disk, replaying an `Edit` against
+that copy rather than scanning a fragment. Later edits to a surface that already exists are
+silent, because the decision is already made and a guard that re-asks is a guard people switch
+off. A component at `"active": false` is not a surface.
+
 `hooks/guard-metadata-writes.mjs` (a `PreToolUse` hook on `Write`/`Edit`) denies — there is nothing
 to ask about — a write into `metacode/platform/`, `metacode/compiled/`, or `metacode/active/`. Those
 tiers don't error on a stray write, they silently discard it, so without this a session can "author"
@@ -114,8 +182,15 @@ hooks/session-start.mjs                   # inject the CLI's commands; point at 
 hooks/guard-destructive.mjs               # PreToolUse (Bash): ask before clearing shared instance state
 hooks/guard-metadata-writes.mjs           # PreToolUse (Write/Edit): deny writes outside metadata/
 hooks/guard-ui-tokens.mjs                 # PreToolUse (Write/Edit): deny hardcoded styling, unknown --ap-* names, component rebuilds
+hooks/guard-custom-ui-surface.mjs         # PreToolUse (Write/Edit): ask before a new route, custom_page tab or custom_code section
+hooks/guard-footprint.mjs                 # PreToolUse (Write/Edit): ask before a duplicate object, wide object, thin picklist, long nav
 scripts/lint-ui-tokens.mjs                # the same two checks over a whole tree, for CI
-skills/using-aspen/SKILL.md               # the one skill — the whole loop
+scripts/footprint.mjs                     # the same footprint checks over a whole tree, for CI
+skills/lean-data-model/SKILL.md           # gate 1 — should this component exist at all
+skills/lean-data-model/platform-objects.md  # the ~48 platform objects and the words for them
+skills/model-first/SKILL.md               # gate 2 — which tier each piece belongs in
+skills/model-first/placement-table.md     # the table's format and seven worked rows
+skills/using-aspen/SKILL.md               # the loop — step 0 runs both gates
 skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger
 skills/using-aspen/trigger-patterns.rs    # six handlers that fired in production; copy the nearest
 skills/using-aspen/server-skeleton/       # toolchain pin + server_main_c crate; identical to example-customer-repo
@@ -124,5 +199,5 @@ skills/using-aspen/ui-component-tokens.md # every --ap-comp-* name; grep it for 
 skills/using-aspen/metadata-shapes.md     # shapes with no compiled example; read when step 1 finds nothing
 skills/using-aspen/query-notes.md         # XQL rules, counting, paging; read before writing a query
 start.md                                  # setup guide, bundled so a re-read after install is local
-test/                                     # node:test suite (session-start, both guards, skeleton identity)
+test/                                     # node:test suite (session-start, four guards, eval hygiene, skeleton identity)
 ```
