@@ -2,12 +2,15 @@ name: evals
 
 # Runs the aspen-code plugin's eval suite (`claude plugin eval`) and gates on the scored
 # results. Unlike test.yml (fast, free, every PR), this makes REAL model calls that cost money
-# and need credentials, so it is manual by design — trigger it from the Actions tab when you
+# and need credentials, so it is manual by design -- trigger it from the Actions tab when you
 # change the plugin or want a fresh score. To run it on a cadence instead, add a `schedule:`.
 #
 # Requirements:
-#   - repo secret ANTHROPIC_API_KEY (or another credential Claude Code accepts). Without it the
-#     run exits 2 (credential rejected) and the job fails.
+#   - the three `fdrl_`/`svac_`/org-id values in the job's `env:` block below, from the
+#     Workload Identity Federation rule (Claude Console -> Settings -> Workload identity ->
+#     Connect workload -> GitHub Actions). There is NO api-key secret: the job authenticates
+#     with a short-lived OIDC token GitHub mints for this run. Without a matching rule the
+#     exchange returns an opaque 401 and the run exits 2 (credential rejected).
 #   - the granted shell tool (Bash) needs an OS sandbox, so the job installs bubblewrap + socat.
 
 on:
@@ -30,6 +33,23 @@ jobs:
     name: aspen-code evals
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    # id-token is what lets this job ask GitHub for the OIDC JWT; without it the mint step 404s.
+    permissions:
+      id-token: write
+      contents: read
+
+    # The federation rule these must name is pinned to this repo's branch refs, so a fork or a
+    # pull_request run carries a different `sub` and cannot mint a token. None of it is secret.
+    # Deliberately absent: ANTHROPIC_API_KEY. A set key -- even an empty one, which is what an
+    # unpopulated `secrets.*` expands to -- outranks the federation vars and breaks the exchange.
+    env:
+      ANTHROPIC_FEDERATION_RULE_ID: fdrl_REPLACE_ME
+      ANTHROPIC_ORGANIZATION_ID: 00000000-0000-0000-0000-000000000000
+      ANTHROPIC_SERVICE_ACCOUNT_ID: svac_REPLACE_ME
+      ANTHROPIC_IDENTITY_TOKEN_FILE: /tmp/anthropic-identity-token
+      # ANTHROPIC_WORKSPACE_ID: wrkspc_...  # only if the rule covers more than one workspace
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,14 +65,32 @@ jobs:
       - name: Install the Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      # A GitHub OIDC token expires in ~5 minutes and its `jti` makes it single-use, but the CLI
+      # re-reads this file every time it refreshes its Anthropic access token -- and a full eval
+      # run is far longer than either lifetime. So mint one now and keep a loop minting more for
+      # the rest of the job. The write-then-rename keeps the CLI from ever reading a half-written
+      # file, and the loop's failures are tolerated: the next tick is 3 minutes away.
+      - name: Mint and refresh the GitHub OIDC token
+        run: |
+          cat > /tmp/mint-jwt.sh <<'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -er .value > "$ANTHROPIC_IDENTITY_TOKEN_FILE.tmp"
+          mv "$ANTHROPIC_IDENTITY_TOKEN_FILE.tmp" "$ANTHROPIC_IDENTITY_TOKEN_FILE"
+          SCRIPT
+          chmod +x /tmp/mint-jwt.sh
+          /tmp/mint-jwt.sh
+          nohup bash -c 'while sleep 180; do /tmp/mint-jwt.sh || true; done' \
+            > /tmp/mint-jwt.log 2>&1 &
+
       # Pinned models keep scores comparable over time. --ablation none scores only the
       # with-plugin arm (the CI gate) and halves the cost; run it locally with the default
       # ablation when you want the no-plugin delta. Results are archived below regardless of
       # the exit code.
       - name: Run eval suite
         working-directory: plugins/aspen/code
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           claude plugin eval . \
             --trust-plugin \

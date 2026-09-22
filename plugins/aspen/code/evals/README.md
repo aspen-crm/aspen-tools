@@ -66,5 +66,15 @@ capture output. Results land in `evals/results/` (gitignored).
 
 `.github/workflows/evals.yml` runs this suite and fails if any case scores below a threshold.
 It makes real model calls, so it's manual (`workflow_dispatch` from the Actions tab), pins the
-models, and archives `results.json` + `report.html` as artifacts. It needs an `ANTHROPIC_API_KEY`
-repo secret. The fast, free unit tests in `test/` still run on every PR via `test.yml`.
+models, and archives `results.json` + `report.html` as artifacts.
+
+It holds no API key. The job authenticates with Workload Identity Federation: GitHub mints a
+short-lived OIDC token for the run and the CLI exchanges it for an Anthropic access token, so the
+only setup is the federation rule (Claude Console -> Settings -> Workload identity -> Connect
+workload -> GitHub Actions) and its three non-secret ids in the workflow's `env:` block. Two
+things that bite: a set `ANTHROPIC_API_KEY` -- including the empty string an unpopulated
+`secrets.*` expands to -- outranks the federation vars, and a GitHub OIDC token lasts ~5 minutes
+and is single-use, which is shorter than a full eval run, so the workflow keeps a background loop
+minting fresh ones for the CLI to pick up on each token refresh.
+
+The fast, free unit tests in `test/` still run on every PR via `test.yml`.
