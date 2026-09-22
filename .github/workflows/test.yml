@@ -27,6 +27,12 @@ jobs:
         working-directory: plugins/aspen/code
         run: node --test "test/*.test.mjs"
 
+      # The reference repo is what a customer copies. If it ever trips the footprint guard,
+      # the thing we hand people is the thing the plugin tells them not to do.
+      - name: Check the example repo's own footprint
+        working-directory: plugins/aspen/code
+        run: node scripts/footprint.mjs ../../../example-customer-repo/metacode
+
   cowork:
     name: aspen-cowork plugin
     runs-on: ubuntu-latest

@@ -40,15 +40,42 @@ const CASES = [
     // that and returns an empty set, and a hardcoded hex is flagged without it.
     payload: { tool_input: { file_path: '/x/metacode/ui/panel.css', content: 'a { color: #ff0000 }' } },
     decision: 'deny'
+  },
+  {
+    hook: 'guard-custom-ui-surface.mjs',
+    // Nothing is on disk at that path in the temp dir, so every surface in the payload reads
+    // as new -- which is what this hook is for. It needs no files alongside it.
+    payload: {
+      tool_input: {
+        file_path: '/x/metacode/metadata/tab_p/budget_c.tab_c.json',
+        content: '{"ctype":"tab_p","name":"budget_c.tab_c","tab-type":"custom_page"}'
+      }
+    },
+    decision: 'ask'
+  },
+  {
+    hook: 'guard-footprint.mjs',
+    // It imports afterText from guard-custom-ui-surface.mjs, so the copy in the temp dir has
+    // to bring its sibling -- see `also` below. Nothing is on disk at the path, so the object
+    // reads as new, and `deal` hits the synonym table without needing a platform tier present.
+    also: ['guard-custom-ui-surface.mjs'],
+    payload: {
+      tool_input: {
+        file_path: '/x/metacode/metadata/object_p/deal_c.json',
+        content: '{"ctype":"object_p","name":"deal_c","fields":[{"name":"amount_c"},{"name":"stage_c"}]}'
+      }
+    },
+    decision: 'ask'
   }
 ]
 
-for (const { hook, payload, decision } of CASES) {
+for (const { hook, payload, decision, also } of CASES) {
   test(`${hook} still runs its body from a path with a space`, () => {
     const dir = mkdtempSync(join(tmpdir(), 'aspen hooks '))
     try {
       const copy = join(dir, hook)
       copyFileSync(join(HOOKS, hook), copy)
+      for (const sibling of also ?? []) copyFileSync(join(HOOKS, sibling), join(dir, sibling))
       const stdout = execFileSync('node', [copy], {
         input: JSON.stringify(payload),
         encoding: 'utf8'
