@@ -13,12 +13,15 @@ re-derive it between steps.
 
 The session is rooted in the instance folder Aspen Builder created — `~/Aspen/<domain>-<instance>`.
 It holds `metacode/` and the CLI at `.aspen/bin/aspen` (not on `PATH` — run it by that path;
-everywhere below `aspen` means `.aspen/bin/aspen`). If the session is rooted anywhere else, stop
-and ask the human to reopen Claude Code in the instance folder — the CLI and the paths below only
-line up from there.
+everywhere below `aspen` means `.aspen/bin/aspen`). Run commands with this instance folder as their working directory. If it is not known, locate
+the Builder-created folder or ask which instance the user intends. Do not initialize another
+project to make the paths line up. A Codex worktree may not contain Builder's ignored `.aspen/`
+cache; use the original instance folder for CLI operations when that is the selected instance.
 
-The session-start note already listed the CLI's commands (`aspen --help`, `aspen move --help`).
-Use those. **Do not re-read help during a task.**
+Use the CLI commands from the session-start note when present. If hooks are disabled or not
+trusted, run `.aspen/bin/aspen --help` and `.aspen/bin/aspen move --help` once from the instance
+folder. Re-read help only when a command mismatch requires it. Resolve bundled references and
+scripts from the absolute directory containing this `SKILL.md`.
 
 ## The layout
 
@@ -32,8 +35,7 @@ metacode/
 
 - `active/` is a **downloaded snapshot of what's currently on the instance**, kept in sync from
   it — not a place anything you write survives, by design, whatever tool does the writing.
-  A write to `platform/`, `compiled/`, or `active/` is blocked before it happens — not just
-  discouraged. Those tiers don't error on a stray write, they silently discard it, so a hook
+  A write to `platform/`, `compiled/`, or `active/` is blocked by the enabled, trusted file-edit hook. Those tiers don't error on a stray write, they silently discard it, so a hook
   denies it up front and names the `metadata/` path to use instead.
 
 - `compiled/<ctype>/<name>.json` is the **resolved truth** — platform defaults filled in. It is the
@@ -183,7 +185,7 @@ metacode/
        for what has no Aspen counterpart — which is most of a page, but not your table. Mixing the
        two is normal.
      - A hardcode, an unknown token name, or a `table`/`button`/`select`/`textarea` styled from the
-       semantic layer alone is **denied by a hook**, with the token family to use instead. When a
+       semantic layer alone is **denied by the enabled, trusted hook**, with the token family to use instead. When a
        value genuinely has no token — a page dimension, a grid track, a mono stack — keep it and
        write `aspen-token-exempt: <reason>` on that line or the line above; for a component you are
        deliberately not rebuilding, `aspen-component-exempt: <reason>` anywhere in the file. Widths,
@@ -230,7 +232,15 @@ metacode/
    1. `aspen move clear-package` — drops this package from the dev set. Usually enough.
    2. Only if it refuses with "invoke the checkin-clear action": `aspen move checkin-clear` —
       halts the stuck checkin and clears the shared sets.
-   Both change shared state, so both are confirmed with the human first (a guard hook asks too).
+   Both change shared state, so obtain explicit authorization for the exact recovery operation.
+   Claude Code can prompt through its hook. Codex blocks the direct command because its hook
+   runtime does not support `ask`; after authorization, use the bundled helper:
+   ```sh
+   node "<absolute using-aspen skill directory>/scripts/recover.mjs" --confirmed clear-package .aspen/bin/aspen
+   ```
+   Use `checkin-clear` in place of `clear-package` only when that wider recovery is authorized.
+   `--confirmed` asserts existing user authorization; it does not obtain it. Resolve the skill
+   directory from the loaded skill location, and run from the instance folder.
    Starting with `clear-package` means the wider one runs only when the instance itself says so.
 
 6. **Verify.** A green checkin proves it compiled, not that it works. Read the compiled file back,
@@ -259,7 +269,7 @@ metacode/
   before the human starts. Retiring is `"active": false` (author step above); a deleted JSON entry
   is rejected at checkin, not honored.
 - **The instance is shared.** `aspen move checkin-clear` and `clear-package` clear state every
-  builder on the instance shares — confirm before running them. (A guard hook also stops and asks.)
+  builder on the instance shares — confirm before running them. (Codex uses the confirmed recovery helper in step 5.)
   When a save is refused, use the recovery order in step 5: `clear-package` first, `checkin-clear`
   only when the instance says so.
 - **Never run `aspen init`** (Builder owns the folder) or `aspen login` yourself (it is a browser

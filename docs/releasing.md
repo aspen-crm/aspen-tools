@@ -3,6 +3,21 @@
 Every tool in this repository is released independently. There is no
 repo-wide version, and no release ever covers two tools at once.
 
+## Codex plugin archives
+
+Keep each plugin's `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` versions
+in sync. The shared skills and hooks have one source. Build a Codex archive with:
+
+```sh
+./scripts/package-plugin.sh plugins/aspen/code dist codex
+./scripts/package-plugin.sh plugins/aspen/cowork dist codex
+```
+
+The resulting `*-codex.zip` retains the Node MCP launcher and Codex manifest. The default
+packaging target remains `cowork`, which strips MCP launch wiring and the Codex manifest.
+The CI Codex job validates the archives and reads both plugins through the native loader.
+Builds do not publish, install plugins, configure credentials, or trust hooks.
+
 ## Tags are prefixed by tool
 
 A release tag names the tool, then its version:

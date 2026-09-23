@@ -1,0 +1,30 @@
+{
+  "name": "aspen-code",
+  "version": "2.8.0",
+  "author": {
+    "name": "Aspen CRM"
+  },
+  "repository": "https://github.com/aspen-crm/aspen-tools",
+  "keywords": [
+    "aspen",
+    "veeva",
+    "onboarding",
+    "crm"
+  ],
+  "description": "Build Aspen metadata, Rust triggers and custom UI with the Aspen CLI, shared skills and host-aware guards.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Aspen Code",
+    "shortDescription": "Build Aspen metadata, Rust triggers and custom UI with the Aspen CLI, shared skills and host-aware guards.",
+    "longDescription": "Build Aspen metadata, Rust triggers and custom UI with the Aspen CLI, shared skills and host-aware guards.",
+    "developerName": "Aspen CRM",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Help me customize my Aspen instance"
+    ]
+  }
+}

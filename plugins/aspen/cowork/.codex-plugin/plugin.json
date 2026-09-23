@@ -1,0 +1,59 @@
+{
+  "name": "aspen-cowork",
+  "version": "0.8.0",
+  "author": {
+    "name": "Aspen CRM"
+  },
+  "repository": "https://github.com/aspen-crm/aspen-tools",
+  "keywords": [
+    "aspen",
+    "crm",
+    "runtime",
+    "mcp",
+    "cowork",
+    "records",
+    "files",
+    "bulk"
+  ],
+  "description": "Explore and update Aspen CRM records through the runtime MCP, including reports, file uploads, contact merges and bulk data jobs.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Aspen Runtime",
+    "shortDescription": "Explore and update Aspen CRM records through the runtime MCP, including reports, file uploads, contact merges and bulk data jobs.",
+    "longDescription": "Explore and update Aspen CRM records through the runtime MCP, including reports, file uploads, contact merges and bulk data jobs.",
+    "developerName": "Aspen CRM",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Explore my Aspen CRM and summarize open work"
+    ]
+  },
+  "mcpServers": {
+    "aspen-runtime-mcp": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/aspen-runtime-mcp.mjs"
+      ],
+      "env_vars": [
+        "ASPEN_RUNTIME_MCP",
+        "ASPEN_CONFIG_DIR",
+        "XDG_CONFIG_HOME",
+        "ASPEN_API_TOKEN",
+        "ASPEN_INSTANCE",
+        "ASPEN_DEFAULT_INSTANCE",
+        "ASPEN_API_BASE",
+        "ASPEN_BULK_WRITES",
+        "ASPEN_NLQ_PROVIDER",
+        "ASPEN_NLQ_MODEL",
+        "ASPEN_NLQ_VERTEX_PROJECT",
+        "ASPEN_NLQ_VERTEX_LOCATION",
+        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_BASE_URL"
+      ],
+      "tool_timeout_sec": 360
+    }
+  }
+}

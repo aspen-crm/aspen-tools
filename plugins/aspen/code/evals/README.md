@@ -1,5 +1,20 @@
 # aspen-code eval suite
 
+## Codex
+
+From the repository root, run `node scripts/eval-codex.mjs --run /tmp/aspen-codex-evals`
+to evaluate three planning cases with the CLI's default model and your Codex login. This makes model calls;
+it is separate from the free CI suite. It reuses the existing user prompts and offline
+fixtures and reads the shared skills explicitly. It does not install plugins or connect
+to Aspen. Native plugin discovery is tested separately by `scripts/test-codex.mjs`.
+
+The grader checks the structured recommendation: two fields for NDA status/date, reuse of
+`opportunity_p`, and `lifecycle_p` for enforced stages. It never requires Claude's `Skill`
+tool. Answers and pass/fail results go to the supplied output directory. This is a narrow
+planning regression suite, not a substitute for reviewing generated implementations.
+
+## Claude
+
 Behavioral evals for the `aspen-code` plugin, run with `claude plugin eval`. Each case is a
 realistic builder request; the graders check the decisions and code the plugin's `using-aspen`
 skill is meant to produce. Every case runs a with-plugin arm and a no-plugin baseline arm, so the

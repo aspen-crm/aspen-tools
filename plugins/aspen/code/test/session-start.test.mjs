@@ -78,7 +78,7 @@ test('a Windows validator (ac.exe) counts as present', () => {
   assert.ok(!missing(dir).some((l) => l.includes('./ac')))
 })
 
-test('from ~/Aspen with instance folders, it lists them and says to reopen', () => {
+test('from ~/Aspen with instance folders, it lists the available command working directories', () => {
   const home = mkdtempSync(join(tmpdir(), 'home-'))
   const root = join(home, 'Aspen')
   mkdirSync(join(root, 'veeva.com-treehouse', 'metacode'), { recursive: true })
@@ -90,7 +90,7 @@ test('from ~/Aspen with instance folders, it lists them and says to reopen', () 
   // that has nothing to do with what it is checking.
   const env = { ...process.env, HOME: home, USERPROFILE: home }
   const out = execFileSync('node', [SCRIPT], { cwd: root, encoding: 'utf8', env })
-  assert.match(out, /reopen/)
+  assert.match(out, /working directory/)
   assert.match(out, /veeva\.com-treehouse/)
   assert.match(out, /veeva\.com-oak/)
 })

@@ -20,11 +20,12 @@ aspen_records_create/update … fields={file_c: "<file_id>"}         # a file fi
 ## Where the file has to be — the one thing that differs by host
 
 The upload reads the file **from the computer running the MCP server**, at an **absolute
-path there**. The server never sees your sandbox.
+path there**. A path must exist on that same host; do not assume a remote sandbox shares its filesystem.
 
 | Host | Where the server runs | What `path` is |
 |---|---|---|
-| Claude Code | this machine | any absolute path here — including a file you just wrote |
+| Codex or Claude Code, local | this machine | any absolute path here — including a file you just wrote |
+| Codex, remote execution | check where the MCP process runs | use a path visible to that process; a remote task path may not exist on the local MCP host |
 | Claude Desktop | this machine | a path the user gives you (`~/Downloads/msa.pdf` — `~` is their home) |
 | Cowork (desktop app) | Claude Desktop, on the **user's** computer | the file's path **on their computer**. Your working folder is one of *their* folders mounted into your sandbox — a file you see at `/sessions/…/mnt/<Folder>/x.pdf` is `<their path to Folder>/x.pdf` on their machine. **Ask them where `<Folder>` lives** if you don't know; never pass the `/sessions/…` path |
 | Cowork on the web | nowhere local | no upload is possible. The user attaches the file in the app; you can still create the record and hand over its `app_url` |

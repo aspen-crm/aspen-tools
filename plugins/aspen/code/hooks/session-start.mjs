@@ -96,7 +96,7 @@ export function context (cwd) {
     if (!instances.length) return ''
     return 'No Aspen metadata here. Builder keeps each instance in its own folder under ' +
       `\`~/${ASPEN_HOME}\`: ${instances.map((n) => `\`${n}\``).join(', ')}. Aspen work happens with ` +
-      'Claude Code rooted in one of those — ask the human to reopen it there rather than working here.'
+      'the coding session targeting one of those instance folders; use it as the command working directory.'
   }
 
   const cli = cliPath(cwd)

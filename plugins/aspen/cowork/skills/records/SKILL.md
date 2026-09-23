@@ -1,6 +1,6 @@
 ---
 name: records
-description: Use when reading or writing record data on an Aspen instance through the runtime MCP — find/list records, get one by id, search across objects, list related records, create/update a record and prove it, or change many records of one object in one confirmed call (Claude Code only). Drives aspen_list/get/search/related, aspen_records_create/update and aspen_records_bulk_update. Writes are confirm-gated; there is no delete.
+description: Use when reading or writing record data on an Aspen instance through the runtime MCP — find/list records, get one by id, search across objects, list related records, create/update a record and prove it, or change many records of one object in one confirmed call (when the bulk-update tool is available). Drives aspen_list/get/search/related, aspen_records_create/update and aspen_records_bulk_update. Writes are confirm-gated; there is no delete.
 ---
 
 # Records (read and write)
@@ -147,12 +147,12 @@ record is being created with a required file field: upload first, then create wi
 `fields: {<file field>: "<file_id>"}`. The file itself is a `file_p` record that `list`/`get`
 cannot read; the id on the field is how it is reached.
 
-## Bulk update — many records, one confirmation (Claude Code only)
+## Bulk update — many records, one confirmation (when the bulk-update tool is available)
 
 `aspen_records_bulk_update` changes up to **100 records of one object in one call**: one
 PATCH to the instance, one confirmation from the user. It is in your tool list **only on
-Claude Code** — the plugin's launcher starts the server with `ASPEN_BULK_WRITES=1`. On Cowork
-/ Claude Desktop the tool is absent: update one record at a time with `aspen_records_update`,
+hosts whose server has `ASPEN_BULK_WRITES=1`**. The local Codex and Claude Code launchers
+enable it by default. If the tool is absent: update one record at a time with `aspen_records_update`,
 confirming each, and do not send the user off to enable anything.
 
 Reach for it when the user wants the same change across many records ("mark these 40
@@ -200,6 +200,6 @@ speaks for itself.
 | `CONFIRMATION_REQUIRED` | you called a write without `confirmed=true`. Show the diff, get a yes, retry with it. |
 | `AUTH_REQUIRED` / `INSTANCE_UNREACHABLE` | identity/instance config, not your problem to fix — relay `fix_hint`, which names the fix for this host (connector settings, or `aspen login`). Never guess which. |
 | `RATE_LIMITED` | back off, retry after a short delay. |
-| `USAGE` "… is not enabled on this server" | you called `aspen_records_bulk_update` on a host without it (Cowork / Desktop). Update one record at a time; do not ask the user to change the server. |
+| `USAGE` "… is not enabled on this server" | you called `aspen_records_bulk_update` on a host without it (bulk writes disabled). Update one record at a time; do not ask the user to change the server. |
 | `USAGE` | your tool arguments don't match the schema (for a bulk update: over 100 rows, a repeated id, an empty `fields`). Fix and retry. |
 | `BAD_RESPONSE` / `UNEXPECTED` | surface it; retry once, then hand off via the deep link. Do not guess. |

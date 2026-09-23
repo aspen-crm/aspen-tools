@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "newObjects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "name",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "metadataTypes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "explanation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "newObjects",
+    "fields",
+    "metadataTypes",
+    "explanation"
+  ],
+  "additionalProperties": false
+}

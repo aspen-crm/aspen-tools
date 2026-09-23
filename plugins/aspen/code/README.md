@@ -1,4 +1,7 @@
-# Aspen Code — Claude Code plugin
+# Aspen Code — Codex and Claude Code plugin
+
+For Codex installation, hook trust and runtime differences, see
+[Installing for Codex](../../../docs/installing-for-codex.md).
 
 Customizing an [Aspen Platform](https://github.com/aspen-crm) instance with the `aspen` CLI. This
 is the build half of the Aspen tools; the collaboration half ships separately as
@@ -113,12 +116,18 @@ fails quiet.
 
 ## Safety rails
 
+Both hosts enter through `hooks/pre-tool.mjs`. It normalizes Codex `apply_patch` inputs
+before running the checks below. In Codex, footprint and custom-UI findings are advisory;
+generated-file and styling violations deny the edit. Direct shared-state recovery commands
+are denied until the workflow uses the explicitly confirmed recovery helper. The `ask`
+behavior described below is specific to Claude Code. Hooks must be enabled and trusted.
+
 `hooks/guard-destructive.mjs` (a `PreToolUse` hook on `Bash`) asks — never blocks — before `aspen
 move checkin-clear` and `aspen move clear-package`, the two verbs that reach the dev set every
 builder on the instance shares. It matches on what a command *means* (quotes, tabs, line
 continuations, case, and an absolute path to the binary all resolve to the same verb) and returns
-`permissionDecision: "ask"`, so a host that does not understand the field degrades to *allowed*,
-never *blocked* — the hook cannot wedge a recovery path.
+`permissionDecision: "ask"` on Claude Code. Codex's adapter uses supported responses and
+the `using-aspen` skill documents its confirmed recovery path.
 
 `hooks/guard-footprint.mjs` (a `PreToolUse` hook on `Write`/`Edit`/`MultiEdit`) asks before a
 component that should probably not exist — see the first gate above for the checks and how the

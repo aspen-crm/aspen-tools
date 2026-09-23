@@ -10,7 +10,7 @@ summarize, they do not export.
 
 ## `aspen_query` — a natural-language question
 
-**Not every gateway has it.** `aspen_query` needs a model key configured server-side; a gateway
+**Not every gateway has a configured planner.** `aspen_query` needs a model key configured server-side; a gateway
 without one answers every call with `this gateway has no ANTHROPIC_API_KEY configured`. That is
 a **deployment fact, not a transient error** — it will not clear on a retry, and it says nothing
 about your question. The first time you see it, stop using this tool for the rest of the session
@@ -62,3 +62,7 @@ aggregates it, up to a 10,000-row scan ceiling. Read **`exact`** and say which y
 When the **row** cap bounds what you can show, tell the user it's a bounded page and hand
 over the `app_url` so they can see the rest — rather than implying you listed everything.
 Numeric results come back as JSON **strings** — parse before formatting.
+
+The planner is independent of the host model: using Codex does not supply an Anthropic
+key or Vertex identity. Keep the server's configured provider, or use describe/list/report.
+Do not ask for another model key just to answer a question the read tools already support.

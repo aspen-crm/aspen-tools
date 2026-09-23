@@ -29,8 +29,7 @@
 //      in that file. A token past its stamped expiry is refused, not refreshed -- the CLI
 //      owns refresh. Run any `aspen` command, then retry.
 //   <config> is $ASPEN_CONFIG_DIR, else $XDG_CONFIG_HOME/aspen, else ~/.config/aspen.
-//   A login whose secret lives only in the OS keyring is NOT read here (contact-merge.mjs
-//   has that path); pass --token or export ASPEN_API_TOKEN instead.
+//   OS-keyring credentials and OAuth pairs use the same reader as contact-merge.mjs.
 //
 // The token is never printed and never written anywhere; `check` names the source only.
 //
@@ -42,6 +41,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { fromAspenCli } from '../../contact-merge/scripts/contact-merge.mjs';
 
 export const API_BASE_DEFAULT = '/api/v24.3';
 export const QUERY_PAGE = 100;    // /data/query returns at most this many rows, whatever LIMIT says
@@ -106,7 +106,7 @@ export function isExpired(expiresAt, nowMs = Date.now()) {
     return Number.isFinite(at) && at - EXPIRY_BUFFER_MS <= nowMs;
 }
 
-export function resolveIdentity(opts = {}, env = process.env, { nowMs = Date.now() } = {}) {
+export function resolveIdentity(opts = {}, env = process.env, { nowMs = Date.now(), os, run } = {}) {
     const root = configRoot(env);
     const envPath = join(root, 'mcp', 'env');
     const fileEnv = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {};
@@ -127,6 +127,16 @@ export function resolveIdentity(opts = {}, env = process.env, { nowMs = Date.now
         if (existsSync(credsPath)) {
             let creds = {};
             try { creds = JSON.parse(readFileSync(credsPath, 'utf8')); } catch { creds = {}; }
+            // Modern CLI credentials may live in the OS keyring or contain an OAuth
+            // JSON pair. Reuse the merge helper's reader and keep token+instance paired.
+            if (creds.token_storage && creds.method) {
+                let cli;
+                try { cli = fromAspenCli(root, { nowMs, os, run }); }
+                catch (error) { throw new ConfigError(error.message); }
+                if (cli) return { instance: cli.instance, token: cli.token, apiBase: apiBase.value,
+                    sources: { instance: 'aspen-cli', token: 'aspen-cli', apiBase: apiBase.source } };
+                throw new ConfigError('No usable aspen CLI login; ask the user to log in again.');
+            }
             if (!instance && creds.instance) {
                 instance = { value: creds.instance, source: `${credsPath} instance` };
             }
@@ -145,8 +155,7 @@ export function resolveIdentity(opts = {}, env = process.env, { nowMs = Date.now
         const missing = [!instance && 'instance', !token && 'token'].filter(Boolean).join(' and ');
         throw new ConfigError(
             `no usable identity (missing ${missing}); pass --instance/--token, export `
-            + 'ASPEN_INSTANCE/ASPEN_API_TOKEN, or run `aspen login`. A login whose secret is '
-            + 'only in the OS keyring is not read here.');
+            + 'ASPEN_INSTANCE/ASPEN_API_TOKEN, or run `aspen login`.');
     }
     return {
         instance: instance.value.replace(/\/+$/, ''),
@@ -244,16 +253,16 @@ export async function queryAll(id, xql, fetchImpl = fetch) {
 }
 
 export async function main(argv, { env = process.env, fetchImpl = fetch, readFile = readFileSync,
-    writeFile = writeFileSync, nowMs = Date.now() } = {}) {
+    writeFile = writeFileSync, nowMs = Date.now(), os, run } = {}) {
     const opts = parseArgs(argv);
 
     if (opts.action === 'check') {
-        const id = resolveIdentity(opts, env, { nowMs });
+        const id = resolveIdentity(opts, env, { nowMs, os, run });
         return { status: 'OK', instance: id.instance, api_base: id.apiBase,
             sources: id.sources, token: '(resolved, not shown)' };
     }
 
-    const id = resolveIdentity(opts, env, { nowMs });
+    const id = resolveIdentity(opts, env, { nowMs, os, run });
 
     if (opts.action === 'count') {
         if (!opts.xql) throw new UsageError('count needs --xql "ROWCOUNT FROM <object> [WHERE ...]"');

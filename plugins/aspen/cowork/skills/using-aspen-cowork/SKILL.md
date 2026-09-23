@@ -1,14 +1,13 @@
 ---
 name: using-aspen-cowork
-description: Use when starting any task that reads or writes a customer's Aspen CRM through the runtime MCP (the .mcpb) — viewing, searching, listing, reporting on, creating, or updating records, or attaching a file to one — routes each moment to the right skill before acting. This is the Data + Describe runtime lane; there is no CLI and no metadata authoring here.
+description: Use when starting any task that reads or writes a customer's Aspen CRM through the runtime MCP (the .mcpb) — viewing, searching, listing, reporting on, creating, or updating records, or attaching a file to one — routes each moment to the right skill before acting. This is the Data + Describe runtime lane; no metadata authoring or deployment.
 ---
 
 # Using Aspen (runtime lane)
 
 You are working a customer's live **Aspen** CRM through the **runtime MCP** — the tools the
 `aspen-runtime-mcp` server exposes, namespaced `aspen_*` (the host shows them under its own
-prefix, such as `mcp__aspen-runtime-mcp__aspen_*`). There is **no CLI, no file authoring, no deploy or
-promote here** — only reading and editing the signed-in user's records. Everything you can
+prefix, such as `mcp__aspen-runtime-mcp__aspen_*`). There is **no metadata authoring, deploy or promote here** — only reading and editing the signed-in user's records. Everything you can
 see is already permission-scoped to that user.
 
 ## The rule
@@ -35,15 +34,15 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 |--------|-------|
 | "What objects exist? What are this object's fields / a picklist's values?" | `explore` |
 | Reading records (list, get one, search, related) or writing one (create/update) + proving it | `records` |
-| Changing **many** records of one object at once — the same edit across a set, or a table of per-record edits (Claude Code: one confirmed call; elsewhere one record at a time) | `records` (bulk update) |
+| Changing **many** records of one object at once — the same edit across a set, or a table of per-record edits (one confirmed call when the bulk tool is available) | `records` (bulk update) |
 | A natural-language question, or a group-by count/sum ("pipeline by stage") | `query-report` |
 | Merging duplicate contacts into a survivor, or unmerging one (contacts only) | `contact-merge` |
 | Uploading or attaching a file (a PDF, image, document) to a record, or setting a file field | `files` |
 | More rows than `aspen_records_bulk_update` takes (>100), creating many records, deleting any, or a file-driven load | `bulk-data` |
 
-## Fan-out (subagent — parallel, read-only)
+## Model-wide exploration (read-only)
 
-| Moment | Subagent |
+| Moment | Skill |
 |--------|----------|
 | "What does our <domain> model look like?" — a read-only sweep across objects | `schema-explorer` |
 
@@ -63,7 +62,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
   a record, so neutralize by updating rather than implying a delete. A genuine bulk delete is
   the `bulk-data` skill's helper, which is a hard delete with no undo: route there, say so
   plainly, and get an explicit yes. A **bulk update**
-  (`aspen_records_bulk_update`, in the tool list on Claude Code only) is confirmed **once for
+  (`aspen_records_bulk_update`, in the tool list when this server enables it) is confirmed **once for
   the batch** — every row shown, or the rule + the exact count + a sample — and read **per
   row**: `failed > 0` beside `updated > 0` is a partial write, and you say so.
 - **A contact merge is not a records write.** `merged_into_p` and `contact_merge_p` reject
@@ -108,7 +107,7 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
   depends on the host and you do not have to know: on `AUTH_REQUIRED`, **read `fix_hint` and
   relay it** — the server knows whether this session's identity came from the connector's
   own settings (Claude Desktop, Cowork — where the user has no CLI) or from an `aspen login`
-  (Claude Code), and names only the fix that host's user can carry out. Do not offer the
+  (a local coding host such as Codex or Claude Code), and names only the fix that host's user can carry out. Do not offer the
   other one, and never supply a credential yourself.
 
 ## Red flags — STOP
@@ -123,10 +122,17 @@ instance's own). So an object is `account_c` or `account_p`, never `account`; a 
 | "I told them the record was created" | Without `app_url` they can't go look at it. Every result carries the link — end with it. |
 | "I'll build the record's URL from the instance host" | Don't assemble a link. `app_url` is in the result; a hand-made one lands on an in-app 404. |
 | "I'll delete that test record" | No MCP tool deletes. Neutralize by updating, or route to `bulk-data` — a hard delete, no undo, explicit yes first. |
-| "I'll call `aspen_records_update` 40 times" | If `aspen_records_bulk_update` is in your tool list (Claude Code), that is **one** call of ≤100 rows with one confirmation. Only when it is absent do you go one at a time. |
+| "I'll call `aspen_records_update` 40 times" | If `aspen_records_bulk_update` is in your tool list (a local coding host such as Codex or Claude Code), that is **one** call of ≤100 rows with one confirmation. Only when it is absent do you go one at a time. |
 | "The bulk call returned, so all 40 changed" | Read `updated` / `failed` and each row's `error`. Rows are independent; report the partial result and retry only the rejected rows. |
 | "I'll set `merged_into_p` to merge these two contacts" | Rejected by the instance. Route to `contact-merge`, which drives the merge endpoints. |
 | "There's no upload tool — I'll attach the PDF through the web UI" | `aspen_files_upload` is the upload. Route to `files`; in Cowork the path is the file's path on the user's computer. |
 | "I'll parse the error text" | Route on the `code`; read `fix_hint`. |
 | "That number is 50000" | Numeric fields come back as JSON **strings** (`"50000.00"`). Parse before doing math. |
 | "I'll page through all objects" | `aspen_describe` with no object caps at ~100 (`truncated` flag). Scope to the object you need. |
+
+## Host capabilities
+
+Select behavior from the actual tool list, not the product name. Codex and Claude Code can
+run bundled helpers when Node and the instance credentials are available on their execution
+host. Read each skill from its installed location. For a model-wide question, use the
+`schema-explorer` skill directly; Claude hosts may also expose its agent wrapper.

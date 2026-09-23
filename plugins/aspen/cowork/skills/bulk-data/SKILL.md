@@ -6,7 +6,7 @@ description: Use for a data job on an Aspen instance that the records tools cann
 # Bulk data
 
 For the jobs the `records` skill cannot carry. Reach for `records` first — it is the safer
-lane, and on Claude Code `aspen_records_bulk_update` already does **up to 100 rows of
+lane, and when available, `aspen_records_bulk_update` already does **up to 100 rows of
 updates** in one confirmed call. Come here when the job is outside that:
 
 - **more than ~100 rows**, or a file-driven load of unknown size;
@@ -16,16 +16,19 @@ updates** in one confirmed call. Come here when the job is outside that:
 
 This skill reaches the platform's batch data API through the bundled helper.
 
+Resolve `<absolute skill directory>` to the directory containing this loaded `SKILL.md`.
+Use that absolute path in the commands below; do not depend on a plugin-root shell variable.
+
 ```
-node "${CLAUDE_PLUGIN_ROOT}/skills/bulk-data/scripts/aspen-data.mjs" check
-node "${CLAUDE_PLUGIN_ROOT}/skills/bulk-data/scripts/aspen-data.mjs" query  --xql "SELECT id_p, work_email_p FROM contact_p" --out rows.json
-node "${CLAUDE_PLUGIN_ROOT}/skills/bulk-data/scripts/aspen-data.mjs" count  --xql "ROWCOUNT FROM contact_p"
-node "${CLAUDE_PLUGIN_ROOT}/skills/bulk-data/scripts/aspen-data.mjs" create --object account_p --file new.json
-node "${CLAUDE_PLUGIN_ROOT}/skills/bulk-data/scripts/aspen-data.mjs" update --object contact_p --file changes.json --execute
-node "${CLAUDE_PLUGIN_ROOT}/skills/bulk-data/scripts/aspen-data.mjs" delete --object task_p    --file ids.json
+node "<absolute skill directory>/scripts/aspen-data.mjs" check
+node "<absolute skill directory>/scripts/aspen-data.mjs" query  --xql "SELECT id_p, work_email_p FROM contact_p" --out rows.json
+node "<absolute skill directory>/scripts/aspen-data.mjs" count  --xql "ROWCOUNT FROM contact_p"
+node "<absolute skill directory>/scripts/aspen-data.mjs" create --object account_p --file new.json
+node "<absolute skill directory>/scripts/aspen-data.mjs" update --object contact_p --file changes.json --execute
+node "<absolute skill directory>/scripts/aspen-data.mjs" delete --object task_p    --file ids.json
 ```
 
-It needs a shell with `node` — Claude Code. In a host without one (Claude Desktop), say so
+It needs a shell with `node`, such as local Codex or Claude Code. In a host without one (Claude Desktop), say so
 and fall back to `records` for a small job, or hand the user the plan to run themselves.
 
 **Writes are dry runs unless `--execute`.** Without it the batches are built and summarised

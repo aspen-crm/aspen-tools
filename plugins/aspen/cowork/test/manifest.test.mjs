@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,6 +76,30 @@ test('the packaged zip carries manifests within the limit', (t) => {
         entry.description.length <= MAX_DESCRIPTION,
         `${member} description is ${entry.description.length} chars, over the ${MAX_DESCRIPTION} limit`,
       );
+    }
+  }
+});
+
+test('Codex archives include their runtime wiring and all helper dependencies', (t) => {
+  const out = mkdtempSync(join(tmpdir(), 'codex-pkg-'));
+  t.after(() => rmSync(out, { recursive: true, force: true }));
+  for (const lane of ['code', 'cowork']) {
+    const packaged = execFileSync(join(repo, 'scripts/package-plugin.sh'),
+      [join('plugins', 'aspen', lane), out, 'codex'], { cwd: repo, encoding: 'utf8' });
+    const zip = packaged.split('\n')[0].split('->').pop().trim();
+    const members = execFileSync('unzip', ['-Z1', zip], { encoding: 'utf8' }).split('\n');
+    assert.ok(members.includes('.codex-plugin/plugin.json'));
+    assert.ok(!members.some(m => m.startsWith('.claude-plugin/')));
+    if (lane === 'cowork') {
+      assert.ok(members.includes('bin/aspen-runtime-mcp.mjs'));
+      assert.ok(members.includes('skills/contact-merge/scripts/contact-merge.mjs'));
+      assert.ok(members.includes('skills/schema-explorer/SKILL.md'));
+      const manifest = JSON.parse(execFileSync('unzip', ['-p', zip, '.codex-plugin/plugin.json'], { encoding: 'utf8' }));
+      assert.equal(manifest.mcpServers['aspen-runtime-mcp'].command, 'node');
+    } else {
+      for (const file of ['hooks/hooks.json', 'hooks/pre-tool.mjs', 'hooks/patch-input.mjs', 'skills/using-aspen/scripts/recover.mjs']) {
+        assert.ok(members.includes(file), file);
+      }
     }
   }
 });

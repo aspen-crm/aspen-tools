@@ -97,3 +97,9 @@ an unfamiliar instance, and when someone asks whether the model has got away fro
 **Findings are about what to build next, not a demand to remove what is there.** Nothing deletes;
 a flagged object that is already deployed is a fact to work with, and the useful response is to
 stop the next one, not to churn the model.
+
+## Host behavior
+
+Claude Code asks through the hook when a finding needs judgment. Codex delivers the same
+finding as advisory context; make the decision above before authoring. Hooks must be enabled
+and trusted. Run the bundled footprint/UI checks before deployment even when hooks are absent.

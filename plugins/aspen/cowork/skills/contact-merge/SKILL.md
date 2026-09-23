@@ -11,13 +11,16 @@ own merge endpoints. The runtime MCP has **no merge tool**, and the merge state 
 log are maintained by the endpoints alone, and a direct write is rejected. The bundled
 helper is the one way this lane reaches them:
 
+Resolve `<absolute skill directory>` to the directory containing this loaded `SKILL.md`.
+Use that absolute path in the commands below; do not depend on a plugin-root shell variable.
+
 ```
-node "${CLAUDE_PLUGIN_ROOT}/skills/contact-merge/scripts/contact-merge.mjs" merge   --survivor <id_p> --merged <id_p> --reason "why"
-node "${CLAUDE_PLUGIN_ROOT}/skills/contact-merge/scripts/contact-merge.mjs" unmerge --merge-id <id_p> --reason "why"
-node "${CLAUDE_PLUGIN_ROOT}/skills/contact-merge/scripts/contact-merge.mjs" check
+node "<absolute skill directory>/scripts/contact-merge.mjs" merge   --survivor <id_p> --merged <id_p> --reason "why"
+node "<absolute skill directory>/scripts/contact-merge.mjs" unmerge --merge-id <id_p> --reason "why"
+node "<absolute skill directory>/scripts/contact-merge.mjs" check
 ```
 
-It needs a shell with `node` — Claude Code. In a host without one (Claude Desktop), hand
+It needs a shell with `node`, such as local Codex or Claude Code. In a host without one (Claude Desktop), hand
 the user the pair(s) and their `app_url`s and point them at the merge action in the app.
 
 ## What a merge is — set the expectation first
@@ -95,7 +98,7 @@ user unmerges something a sync created.
 | `FAILURE` · `INVALID_STATE` (unmerge) | the survivor has since been merged, or the pointer no longer matches the event. Show the user the current `merged_into_p`; ask. |
 | `REJECTED` (HTTP 400/422) | the request shape was refused — read `detail`. If it says more than one row or `merge_source`, the helper is being misused; report it. |
 | `NOT_AVAILABLE` (HTTP 404) | this instance's build has no merge endpoints. Stop; the user merges in the app. |
-| `AUTH_REQUIRED` | expired or missing credential. Relay the `fix_hint` the call returned — it names this host's fix (the connector's settings on Cowork/Desktop, `aspen login --instance <URL> --api-key <KEY>` on Claude Code). Do not send a Cowork user to a CLI they do not have. **Never read, print or set the token yourself.** |
+| `AUTH_REQUIRED` | expired or missing credential. Relay the `fix_hint` the call returned — it names this host's fix (the connector's settings on Cowork/Desktop, `aspen login --instance <URL> --api-key <KEY>` on local coding hosts). Do not send a Cowork user to a CLI they do not have. **Never read, print or set the token yourself.** |
 | `NO_IDENTITY` (exit 3) | nothing to sign in with — the `detail` names the fix. Relay it verbatim. |
 | `TRANSPORT` / `USAGE` | network or your arguments. Fix and retry once; then surface it. |
 

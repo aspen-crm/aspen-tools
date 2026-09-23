@@ -1,20 +1,20 @@
 {
-    "name": "aspen-cowork",
-    "displayName": "Aspen Cowork",
-    "description": "Work an Aspen CRM from any host that loads the Aspen runtime MCP (.mcpb) — skills and a read-only explorer subagent for the Data + Describe tool surface: view, search, report on, create, and update records (up to 100 per confirmed call on Claude Code), attach files, merge duplicate contacts, and run bulk loads and deletes through the batch data API. No CLI. Paired with the aspen-runtime-mcp server; on Claude Code the plugin starts it from a copy bin/install-runtime-mcp.sh puts in place.",
-    "version": "0.7.0",
-    "author": {
-        "name": "Aspen CRM"
-    },
-    "repository": "https://github.com/aspen-crm/aspen-tools",
-    "keywords": [
-        "aspen",
-        "crm",
-        "runtime",
-        "mcp",
-        "cowork",
-        "records",
-        "files",
-        "bulk"
-    ]
+  "name": "aspen-cowork",
+  "displayName": "Aspen Cowork",
+  "description": "Explore and update Aspen CRM records through the runtime MCP, including reports, file uploads, contact merges and bulk data jobs.",
+  "version": "0.8.0",
+  "author": {
+    "name": "Aspen CRM"
+  },
+  "repository": "https://github.com/aspen-crm/aspen-tools",
+  "keywords": [
+    "aspen",
+    "crm",
+    "runtime",
+    "mcp",
+    "cowork",
+    "records",
+    "files",
+    "bulk"
+  ]
 }

@@ -8,6 +8,23 @@ distributed.
 Each tool is versioned and released on its own. See
 [docs/releasing.md](docs/releasing.md).
 
+## Codex
+
+Both Aspen plugins support Codex alongside Claude. See
+[Installing for Codex](docs/installing-for-codex.md) for repository-marketplace installation,
+runtime credentials, hook trust, and testing. `aspen-code` handles model authoring;
+`aspen-cowork` (displayed as Aspen Runtime in Codex) handles live records.
+
+**One-prompt customer setup:** start `codex` in the terminal, then paste:
+
+```text
+Run `curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/start-codex.md` (use curl.exe on Windows), read the full document, and follow its setup steps. Ask for my Aspen instance URL when needed.
+```
+
+The [setup guide](docs/start-codex.md) installs the selected plugins and runtime,
+reuses the customer's Aspen login, and verifies the connection with read-only checks.
+Sign-in, hook trust, and restarting Codex remain customer actions.
+
 ## Aspen Builder
 
 A desktop app for administering an Aspen instance: objects, fields, layouts,

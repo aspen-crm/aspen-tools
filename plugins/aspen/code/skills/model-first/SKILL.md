@@ -100,3 +100,9 @@ the model, validate offline, deploy, verify — then build the page over it.
 
 A guard hook asks before a new route, custom-page tab or `custom_code` layout section lands. It is
 a backstop, not the decision. The decision is this table.
+
+## Host behavior
+
+Claude Code asks through the hook when a finding needs judgment. Codex delivers the same
+finding as advisory context; make the decision above before authoring. Hooks must be enabled
+and trusted. Run the bundled footprint/UI checks before deployment even when hooks are absent.

@@ -1,4 +1,9 @@
-# Aspen Cowork — Claude Code plugin
+# Aspen Runtime — Codex and Claude plugin
+
+The plugin identifier remains `aspen-cowork`. For Codex, see
+[Installing for Codex](../../../docs/installing-for-codex.md): its native manifest uses
+the cross-platform Node launcher, includes the schema-explorer skill, and keeps a
+360-second upload timeout. Claude Code and Desktop installation remain below.
 
 The **agent-knowledge layer for the Aspen runtime lane** — the skills and read-only explorer
 that pair with the `aspen-runtime-mcp` server (the `.mcpb`). The server carries the raw
