@@ -89,7 +89,7 @@ or `aspen login` yourself.
 Sibling files hold the parts that are read only when authoring that kind of thing, so the skill
 itself stays short: the `aspen_crm` shapes for a Rust trigger, the design-token inventory for a
 page, the metadata shapes that have no compiled example to copy (a dot-walked list view column, a
-custom-page tab), and the XQL rules for a query from either a page or a trigger.
+custom-page tab), and the AQL rules for a query from either a page or a trigger.
 
 For triggers the skill also ships two things a fresh instance folder does not have. A **server
 skeleton** — the toolchain pin, a `server_main_c` crate with its lockfile and descriptor — copied
@@ -206,7 +206,7 @@ skills/using-aspen/server-skeleton/       # toolchain pin + server_main_c crate;
 skills/using-aspen/ui-design-tokens.md    # --ap-sem-* token inventory, read only when styling a page
 skills/using-aspen/ui-component-tokens.md # every --ap-comp-* name; grep it for one component
 skills/using-aspen/metadata-shapes.md     # shapes with no compiled example; read when step 1 finds nothing
-skills/using-aspen/query-notes.md         # XQL rules, counting, paging; read before writing a query
+skills/using-aspen/query-notes.md         # AQL rules, counting, paging; read before writing a query
 start.md                                  # setup guide, bundled so a re-read after install is local
 test/                                     # node:test suite (session-start, four guards, eval hygiene, skeleton identity)
 ```

@@ -3,8 +3,8 @@
 // large for the runtime MCP's record tools (aspen_records_bulk_update tops out at 100
 // updates, and no MCP tool deletes).
 //
-//   node aspen-data.mjs query  --xql "SELECT id_p, name_p FROM account_p" [--out rows.json]
-//   node aspen-data.mjs count  --xql "ROWCOUNT FROM contact_p WHERE owner_p = CURRENT_USER()"
+//   node aspen-data.mjs query  --aql "SELECT id_p, name_p FROM account_p" [--out rows.json]
+//   node aspen-data.mjs count  --aql "ROWCOUNT FROM contact_p WHERE owner_p = CURRENT_USER()"
 //   node aspen-data.mjs create --object account_p --file new.json     [--execute]
 //   node aspen-data.mjs update --object contact_p --file changes.json [--execute]
 //   node aspen-data.mjs delete --object task_p    --file ids.json     [--execute]
@@ -13,7 +13,7 @@
 // Endpoints (all take the platform batch envelope {data:[...]}, all answer HTTP 200 with a
 // per-row result plus an `overview` tally):
 //
-//   POST   <instance><api-base>/data/query    {query: "<XQL>"}        -> {data:[row,...]}
+//   POST   <instance><api-base>/data/query    {query: "<AQL>"}        -> {data:[row,...]}
 //   POST   <instance><api-base>/data/count    {query: "ROWCOUNT ..."} -> {count: n}
 //   POST   <instance><api-base>/data/<object> {data:[{...}]}            create
 //   PATCH  <instance><api-base>/data/<object> {data:[{id_p,...}]}       update
@@ -69,9 +69,13 @@ export function parseArgs(argv) {
         const a = argv[i];
         if (a === '--execute') { opts.execute = true; continue; }
         if (!a.startsWith('--')) throw new UsageError(`unexpected argument: ${a}`);
-        const key = a.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+        // Keep the former flag as an alias for existing scripts; document only --aql.
+        const key = a === '--xql' ? 'aql' : a.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
         const value = argv[++i];
         if (value === undefined) throw new UsageError(`${a} needs a value`);
+        if (key === 'aql' && opts.aql !== undefined && opts.aql !== value) {
+            throw new UsageError('conflicting query values; supply one --aql query');
+        }
         opts[key] = value;
     }
     const n = Number(opts.batch);
@@ -171,7 +175,7 @@ export function apiUrl(instance, apiBase, path) {
 
 /**
  * Checkbox fields cross the JSON body as the STRINGS "true"/"false"; a real JSON boolean is
- * rejected with 'invalid type: boolean `false`, expected a string'. (An XQL WHERE clause is
+ * rejected with 'invalid type: boolean `false`, expected a string'. (An AQL WHERE clause is
  * the opposite -- there they must be UNQUOTED. Do not carry one convention to the other.)
  */
 export function coerce(record) {
@@ -203,11 +207,11 @@ export function normalizeRecords(parsed, action) {
  * name that is not on the object. Without this check the caller sees an empty result and
  * reports "no such record", which sends you hunting for the wrong bug.
  */
-export function rowsOrThrow(json, xql) {
+export function rowsOrThrow(json, aql) {
     if (!json || !Object.prototype.hasOwnProperty.call(json, 'data')) {
         throw new RequestError(
             'query returned no data envelope -- usually a bad field or object name',
-            { query: xql, response: json });
+            { query: aql, response: json });
     }
     return json.data;
 }
@@ -236,17 +240,17 @@ export async function call(id, method, path, body, fetchImpl = fetch) {
 }
 
 /** Page past the 100-row ceiling. The caller must not supply LIMIT/OFFSET. */
-export async function queryAll(id, xql, fetchImpl = fetch) {
-    if (/\b(limit|offset)\b/i.test(xql)) {
+export async function queryAll(id, aql, fetchImpl = fetch) {
+    if (/\b(limit|offset)\b/i.test(aql)) {
         throw new UsageError(
-            `do not put LIMIT/OFFSET in --xql; this pages for you (/data/query caps at ${QUERY_PAGE} rows)`);
+            `do not put LIMIT/OFFSET in --aql; this pages for you (/data/query caps at ${QUERY_PAGE} rows)`);
     }
     const rows = [];
     for (let offset = 0; ; offset += QUERY_PAGE) {
         const page = rowsOrThrow(
             await call(id, 'POST', '/data/query',
-                { query: `${xql} LIMIT ${QUERY_PAGE} OFFSET ${offset}` }, fetchImpl),
-            xql);
+                { query: `${aql} LIMIT ${QUERY_PAGE} OFFSET ${offset}` }, fetchImpl),
+            aql);
         rows.push(...page);
         if (page.length < QUERY_PAGE) return rows;
     }
@@ -265,14 +269,14 @@ export async function main(argv, { env = process.env, fetchImpl = fetch, readFil
     const id = resolveIdentity(opts, env, { nowMs, os, run });
 
     if (opts.action === 'count') {
-        if (!opts.xql) throw new UsageError('count needs --xql "ROWCOUNT FROM <object> [WHERE ...]"');
-        const json = await call(id, 'POST', '/data/count', { query: opts.xql }, fetchImpl);
+        if (!opts.aql) throw new UsageError('count needs --aql "ROWCOUNT FROM <object> [WHERE ...]"');
+        const json = await call(id, 'POST', '/data/count', { query: opts.aql }, fetchImpl);
         return { status: 'OK', count: json.count ?? 0 };
     }
 
     if (opts.action === 'query') {
-        if (!opts.xql) throw new UsageError('query needs --xql "SELECT ... FROM <object> [WHERE ...]"');
-        const rows = await queryAll(id, opts.xql, fetchImpl);
+        if (!opts.aql) throw new UsageError('query needs --aql "SELECT ... FROM <object> [WHERE ...]"');
+        const rows = await queryAll(id, opts.aql, fetchImpl);
         if (opts.out) {
             writeFile(opts.out, `${JSON.stringify(rows, null, 2)}\n`);
             return { status: 'OK', rows: rows.length, out: opts.out };

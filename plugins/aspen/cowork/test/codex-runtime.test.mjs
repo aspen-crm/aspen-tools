@@ -65,13 +65,13 @@ test('bulk helper unwraps OAuth pairs and refuses expired credentials before net
     token: JSON.stringify({ access_token: 'access', refresh_token: 'refresh' }), access_expires_at: new Date(Date.now() + 120000).toISOString() };
   writeFileSync(join(dir, 'credentials.json'), JSON.stringify(creds));
   const env = { ASPEN_CONFIG_DIR: dir };
-  await bulk(['count', '--xql', 'ROWCOUNT FROM contact_p'], { env, fetchImpl: async (_url, init) => {
+  await bulk(['count', '--aql', 'ROWCOUNT FROM contact_p'], { env, fetchImpl: async (_url, init) => {
     assert.equal(init.headers.Authorization, 'Bearer access');
     return { ok: true, status: 200, text: async () => '{"count":2}' };
   }});
   creds.access_expires_at = '2000-01-01T00:00:00Z';
   writeFileSync(join(dir, 'credentials.json'), JSON.stringify(creds));
-  await assert.rejects(() => bulk(['count', '--xql', 'ROWCOUNT FROM contact_p'], { env,
+  await assert.rejects(() => bulk(['count', '--aql', 'ROWCOUNT FROM contact_p'], { env,
     fetchImpl: () => assert.fail('must not call network') }), /expired/);
 });
 test('Codex MCP definition retains upload timeout and environment forwarding', () => {

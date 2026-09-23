@@ -18,7 +18,7 @@ A hard error is also the only confirmed way to surface a message to the user on 
 `warn!` and `info!` output cannot be read back anywhere.
 
 Background for judging the code: the parent quote's approval status is not in the batch, so it
-takes a query (single-line XQL, `LIMIT` required) or a lookup off the batch's quote ids.
+takes a query (single-line AQL, `LIMIT` required) or a lookup off the batch's quote ids.
 
 PASS if the file registers or implements a before-insert and/or before-update trigger on
 `quote_line_c` that checks the discount against the parent's approval status and rejects with a

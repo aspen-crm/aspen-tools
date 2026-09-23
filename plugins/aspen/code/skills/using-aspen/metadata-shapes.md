@@ -20,7 +20,7 @@ nothing, or when a `list_view_p` or `tab_p` behaves unlike its JSON suggests.
   column, whether or not you declare it. On a join object (`contact_rel_p`) that field is the
   uniqueness key — raw UUIDs lead the table, and no column order you author changes that.
 - `query-filter` is a `WHERE` fragment. It takes `CURRENT_USER()` and dot-walked predicates
-  (`employee_p.user_p = CURRENT_USER()`); the XQL rules in `query-notes.md` apply to it.
+  (`employee_p.user_p = CURRENT_USER()`); the AQL rules in `query-notes.md` apply to it.
 - **Columns can dot-walk, but never as a dotted `field` string** — `"field": "product_p.sku_p"`
   parses as a literal field name and fails "unresolved reference". The shape is three-part:
   `field` is the lookup hop on the base object, `expression` is the dotted path, `relationships`

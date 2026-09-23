@@ -1,6 +1,6 @@
 ---
 name: bulk-data
-description: Use for a data job on an Aspen instance that the records tools cannot carry — more than ~100 rows, creating many records, deleting any record, or a data load/import/backfill driven from a CSV, spreadsheet or JSON file. Covers mass updates, clearing or re-pointing a field across many records, and removing test or seed data. Drives the platform's batch data API through the bundled helper (aspen_records_bulk_update tops out at 100 updates, and no MCP tool deletes). Also the reference for the batch endpoints, XQL paging, and the type quirks that silently break a load.
+description: Use for a data job on an Aspen instance that the records tools cannot carry — more than ~100 rows, creating many records, deleting any record, or a data load/import/backfill driven from a CSV, spreadsheet or JSON file. Covers mass updates, clearing or re-pointing a field across many records, and removing test or seed data. Drives the platform's batch data API through the bundled helper (aspen_records_bulk_update tops out at 100 updates, and no MCP tool deletes). Also the reference for the batch endpoints, AQL paging, and the type quirks that silently break a load.
 ---
 
 # Bulk data
@@ -21,8 +21,8 @@ Use that absolute path in the commands below; do not depend on a plugin-root she
 
 ```
 node "<absolute skill directory>/scripts/aspen-data.mjs" check
-node "<absolute skill directory>/scripts/aspen-data.mjs" query  --xql "SELECT id_p, work_email_p FROM contact_p" --out rows.json
-node "<absolute skill directory>/scripts/aspen-data.mjs" count  --xql "ROWCOUNT FROM contact_p"
+node "<absolute skill directory>/scripts/aspen-data.mjs" query  --aql "SELECT id_p, work_email_p FROM contact_p" --out rows.json
+node "<absolute skill directory>/scripts/aspen-data.mjs" count  --aql "ROWCOUNT FROM contact_p"
 node "<absolute skill directory>/scripts/aspen-data.mjs" create --object account_p --file new.json
 node "<absolute skill directory>/scripts/aspen-data.mjs" update --object contact_p --file changes.json --execute
 node "<absolute skill directory>/scripts/aspen-data.mjs" delete --object task_p    --file ids.json
@@ -47,7 +47,7 @@ before re-running with `--execute` — the helper has no gate of its own.
    dry-run confirmation (step 4), once for the job; the rule is in `records`
    ("will they see it?").
 2. **Count, then read.** `count` tells you the size of the job before you fetch anything.
-   `query` pages for you; do not put `LIMIT`/`OFFSET` in your XQL (the helper refuses it).
+   `query` pages for you; do not put `LIMIT`/`OFFSET` in your AQL (the helper refuses it).
 3. **Build the file.** A JSON array of records. `update` and `delete` need `id_p` on every
    row; `delete` also accepts a bare array of id strings. Write the file yourself — the
    customer-specific mapping is the part no helper can own.
@@ -73,7 +73,7 @@ reference is cleared for you.
 
 | Symptom | Cause |
 |---|---|
-| `invalid type: boolean, expected a string` | **Checkbox values are the strings `"true"`/`"false"` in a JSON body.** In an XQL `WHERE` clause they are the opposite — unquoted, or you get *"must be written without quotes"*. The helper coerces booleans on the way out; the WHERE side is yours. |
+| `invalid type: boolean, expected a string` | **Checkbox values are the strings `"true"`/`"false"` in a JSON body.** In an AQL `WHERE` clause they are the opposite — unquoted, or you get *"must be written without quotes"*. The helper coerces booleans on the way out; the WHERE side is yours. |
 | A record "does not exist" that plainly does | A bad field name can come back as an **error payload under HTTP 200**, so a naive read of `data` sees zero rows. The helper fails loudly instead. Check the field is really on the object — `user_p`, for instance, has **no `name_p`**; it carries `first_name_p`/`last_name_p`. |
 | Only 100 rows came back | `/data/query` caps at **100 rows per request whatever `LIMIT` says**. Page with `OFFSET`; `query` does it for you. |
 | Arithmetic gives nonsense | Numbers and checkboxes come back as **strings** (`"50000.00"`, `"true"`). Parse before you compute. |

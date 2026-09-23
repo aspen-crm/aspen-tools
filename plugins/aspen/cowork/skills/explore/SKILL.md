@@ -46,7 +46,7 @@ surface, keyed by component type:
 
 | key | what it is | attributes worth reading |
 |---|---|---|
-| `list_view_p` | the object's saved list views | `tab`, `query-filter` (an XQL string), `label` |
+| `list_view_p` | the object's saved list views | `tab`, `query-filter` (an AQL string), `label` |
 | `tab_p` | its tabs in the app nav | `tab-type`, `default-list-view`, `active` |
 | `layout_p` | its record-detail layouts | `label`, `object_type`, **`placed_fields`**, `read_only_fields`, `sections` |
 | `search_config_p` | how it's searched | `label` |

@@ -22,7 +22,7 @@ in a single call: a fast model composes the query server-side (a filtered list o
 report) and the gateway runs it under the list/report caps. It is worth preferring over chaining
 `explore` + `aspen_list` yourself.
 
-- `question` is **natural language**, not SQL or XQL — pass the user's question as prose.
+- `question` is **natural language**, not SQL or AQL — pass the user's question as prose.
 - Name the `object` (`opportunity_c`). If you don't know which object, `aspen_search` first.
 - Read-only by construction — it never writes.
 - **End with the `app_url`.** It sits at the **top level** of the query result (and again

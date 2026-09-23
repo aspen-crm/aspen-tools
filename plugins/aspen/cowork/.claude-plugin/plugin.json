@@ -2,7 +2,7 @@
   "name": "aspen-cowork",
   "displayName": "Aspen Cowork",
   "description": "Explore and update Aspen CRM records through the runtime MCP, including reports, file uploads, contact merges and bulk data jobs.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "author": {
     "name": "Aspen CRM"
   },

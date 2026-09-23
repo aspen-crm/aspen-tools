@@ -139,7 +139,7 @@ look elsewhere first (field name typo, wrong variant) — it almost never means 
 
 Use the id to read anything else about the record with a separate query. **`SELECT` requires a
 `LIMIT`** — a query without one is rejected at query time; adding `LIMIT 1` (nothing else changed)
-turned a real query from failing to working. The rest of the XQL rules — one line only, `LIMIT` at
+turned a real query from failing to working. The rest of the AQL rules — one line only, `LIMIT` at
 most 1000, two-hop dot-walking, `AS` when two leaf names collide — are in `query-notes.md` beside
 this file; it is the same query language a page sends, so they apply here too:
 

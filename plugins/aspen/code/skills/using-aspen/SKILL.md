@@ -68,6 +68,10 @@ metacode/
    like what you want. That file is a working example — copy it, do not invent attribute names or
    enum values. Filtering a big one down to the part you need: `jq`, not a Python heredoc — one
    line, no interpreter startup.
+   - **Before writing or changing a query**, read [query-notes.md](query-notes.md). This applies
+     to pages, triggers, scripts and verification queries. Check each selected field and lookup
+     target against the schema; `name_p` is not a universal display field. The reference also
+     covers picklist technical values versus UI labels and currency formatting.
 
 2. **Author** into `metacode/metadata/<ctype>/<name>.json`:
    - *Declarative* (object, field, picklist, layout, list view, tab, tab collection): copy the
@@ -159,8 +163,12 @@ metacode/
      even an absolute `href` against the guest route. The SDK's `navigation.navigate` to
      `/objects/:objectName/:recordId` needs `config.tabName`, or the platform errors "No active
      tab found". Data comes from the instance's query endpoints via `@aspen-crm/sdk/request`;
-     `query-notes.md` beside this file has the XQL rules and the paging/counting pattern — read it
-     before writing the first query.
+     follow the AQL and paging/counting rules read in step 1.
+     - **Picklist values stay technical; visible text uses the item's metadata label.** Keep
+       names such as `usd_p` in API payloads, comparisons and option values. Resolve labels from
+       the field's picklist for options, cells, badges and read-only text; never derive a label
+       by stripping a suffix or changing case. See [Picklist values and UI labels](query-notes.md#picklist-values-and-ui-labels)
+       for the currency formatter boundary.
      - **Styling: read `ui-design-tokens.md` before the first line of markup, not after.** Which
        token a thing takes is structural, and retrofitting tokens onto a page built from hex and
        px is a rewrite. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing to
@@ -214,6 +222,12 @@ metacode/
    - `aspen compile --rust ./metacode` — **never bare `aspen compile`** (it also picks a TypeScript
      target this layout does not build that way).
    - UI, if you changed it: `cd metacode/ui/ui_main_c && npm install && npm run build`.
+   - **Check new or changed queries and display values.** TypeScript and metadata validation do
+     not validate AQL strings or formatter inputs. Run the actual queries read-only against the
+     target instance's existing schema before deployment, and inspect response failures as well
+     as HTTP status. Queries depending on newly deployed fields must be checked in step 6.
+     Render representative returned values with their picklist metadata, including currency;
+     confirm the UI shows labels and the selected technical values survive a form round trip.
 
 5. **Deploy.** Confirm with the human first — this changes the shared instance. Then, in order:
    ```

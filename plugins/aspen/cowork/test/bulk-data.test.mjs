@@ -34,8 +34,33 @@ test('flags become camelCase options; --execute is a bare switch', () => {
 });
 
 test('a flag with no value, and a stray positional, are usage errors', () => {
-  assert.throws(() => parseArgs(['query', '--xql']), UsageError);
+  assert.throws(() => parseArgs(['query', '--aql']), UsageError);
   assert.throws(() => parseArgs(['query', 'oops']), UsageError);
+});
+
+test('AQL and the legacy flag send the same query to the correct endpoint', async () => {
+  for (const flag of ['--aql', '--xql']) {
+    for (const [action, aql, body, expected] of [
+      ['query', 'SELECT id_p FROM contact_p', { data: [{ id_p: 'contact-1' }] },
+        { status: 'OK', rows: 1, data: [{ id_p: 'contact-1' }] }],
+      ['count', 'ROWCOUNT FROM contact_p', { count: 1 }, { status: 'OK', count: 1 }],
+    ]) {
+      const fetchImpl = async (url, init) => {
+        assert.ok(url.endsWith(`/data/${action}`));
+        assert.equal(JSON.parse(init.body).query,
+          action === 'query' ? `${aql} LIMIT ${QUERY_PAGE} OFFSET 0` : aql);
+        return { ok: true, status: 200, text: async () => JSON.stringify(body) };
+      };
+      assert.deepEqual(await main([action, flag, aql], { env: bare(ident), fetchImpl }), expected);
+    }
+  }
+});
+
+test('conflicting query flags are rejected in either order', () => {
+  for (const flags of [['--aql', '--xql'], ['--xql', '--aql']]) {
+    assert.throws(() => parseArgs(['query', flags[0], 'SELECT id_p FROM contact_p',
+      flags[1], 'SELECT id_p FROM account_p']), /conflicting query values/);
+  }
 });
 
 test('--batch is bounded by the platform cap', () => {
@@ -241,7 +266,7 @@ test('a non-200 is a RequestError carrying the response', async () => {
     ok: false, status: 403, text: async () => JSON.stringify({ message: 'denied' }),
   });
   await assert.rejects(
-    () => main(['count', '--xql', 'ROWCOUNT FROM contact_p'], { env: bare(ident), fetchImpl }),
+    () => main(['count', '--aql', 'ROWCOUNT FROM contact_p'], { env: bare(ident), fetchImpl }),
     RequestError,
   );
 });

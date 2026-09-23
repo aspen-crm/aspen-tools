@@ -34,7 +34,7 @@ one thing that lets the user pick up where your answer stopped (and the honest m
 row cap bounded what you could show).
 
 **`app_url_exact: false` means the link is broader than your rows.** The app's list-view
-filters are narrower than XQL: a text field has no "not equals", and some field types can't
+filters are narrower than AQL: a text field has no "not equals", and some field types can't
 be filtered in the UI at all. When a filter has no equivalent the gateway leaves it out
 rather than emit one the app would silently discard, sets `app_url_exact: false`, and names
 the casualties in `app_url_dropped_filters`. Read it and say so — "this link shows all

@@ -229,11 +229,11 @@ impl target_owner_default_c for Entrypoints {
         let mut owners: HashMap<Uuid, Uuid> = HashMap::new();
         for chunk in wanted.chunks(100) {
             let ids: Vec<String> = chunk.iter().map(|id| format!("'{id}'")).collect();
-            let xql = format!(
+            let aql = format!(
                 "SELECT id_p, owner_p FROM account_p WHERE id_p IN ({}) LIMIT 100",
                 ids.join(",")
             );
-            let query = context.services().query().query(xql).build()?;
+            let query = context.services().query().query(aql).build()?;
             let rows = context.services().query().execute(query)?;
             for row in rows.iter_rows() {
                 if let (Some(account), Some(owner)) = (cell_id(row, 0), cell_id(row, 1)) {
