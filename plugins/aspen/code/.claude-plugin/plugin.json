@@ -2,7 +2,7 @@
   "name": "aspen-code",
   "displayName": "Aspen Code",
   "description": "Customize an Aspen instance with the aspen CLI. Two gates before the first file: lean-data-model asks whether a component should exist at all, model-first places it in the right tier. using-aspen is the loop after \u2014 copy a compiled shape, author into metadata/, validate offline, compile, deploy, verify. Plus a server skeleton, trigger patterns, and guards that ask before duplicating an object or adding a custom UI surface.",
-  "version": "2.8.1",
+  "version": "2.8.2",
   "author": {
     "name": "Aspen CRM"
   },

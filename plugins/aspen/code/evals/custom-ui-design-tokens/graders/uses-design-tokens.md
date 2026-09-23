@@ -2,11 +2,11 @@
 type: llm
 weight: 3
 focus:
-  source: file
-  path: metacode/ui/ui_main_c/src/pages/account-health.tsx
+  source: trace
 ---
 
-The file is a custom Aspen UI page. Judge ONLY its styling against the Aspen design system.
+Judge the authored page and any shared helpers/styles written or inspected in the trace. Judge
+ONLY styling against the Aspen design system; statements of intent do not replace implementation.
 
 Aspen exposes its design system to custom UI as CSS custom properties — `--ap-sem-*` semantic
 tokens (e.g. `--ap-sem-color-text-primary`, `--ap-sem-color-surface-raised`,
@@ -18,12 +18,17 @@ one theme on one screen. The recommended form writes the light value as a fallba
 `var(--ap-sem-color-text-primary, #11171d)`. The page should also set `box-sizing: border-box` on
 its own subtree, because the platform's resets don't reach the shadow root.
 
-PASS if governed properties — text/background/border colors, the health-badge colors, spacing and
-padding, radius, and the type scale — are driven by `--ap-sem-*` tokens via `var(...)`, and the
-page is not leaning on hardcoded hex colors, px paddings/sizes, or a `system-ui`/`Arial` font stack
-for those governed properties.
+PASS if controls use their corresponding `--ap-comp-*` token families (table/cell, button,
+typeahead, select, and cardheader when used). Semantic tokens remain appropriate for custom
+widgets and accents. Labels, values and cells use their own typography, controls receive the
+public body font family or the component typography, and the table action header has outer
+spacing. Native components imported from a verified public SDK export also satisfy this without
+duplicating their CSS. Accept shared styles; the tokens need not appear in the page module itself.
 
-FAIL if governed properties are hardcoded — literal hex colors for text/surface/badges, px values
-for padding/spacing/radius/font-size, or a non-token font family — rather than referencing the
-tokens. (A hardcoded `width`/`height`/grid track, or a `monospace` stack, is fine — the system
-publishes no token for those.)
+FAIL if the controls are rebuilt from semantic tokens alone, use unrelated component styles,
+flatten all typography with one overriding size, or remove the action header's vertical spacing.
+A component token mentioned elsewhere in a file does not excuse an incorrectly styled control.
+Also fail unexplained hardcodes for governed colors, spacing, radius or typography. Token
+fallbacks, page dimensions, grid tracks, and a monospace stack are allowed; component dimensions
+with published tokens should use those tokens. Do not require browser evidence in this offline
+exercise, and do not infer visual parity merely because the code meets this rubric.

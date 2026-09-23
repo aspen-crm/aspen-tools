@@ -1,19 +1,87 @@
 # Custom UI: design tokens and the component inventory
 
-Read this only when you're writing or styling a TypeScript page or layout section — a
+Read the requirements below whenever creating or restyling a TypeScript page or layout section — a
 `definePage`/`defineLayoutSection` under `ui/ui_main_c/`. The loop around it (author, `npm run
 build`, deploy, verify) is the same as for everything else and stays in `SKILL.md`.
+
+## Required component decisions
+
+Token usage alone is not component correctness. Match the native control's structure, type
+scale, spacing, states and interaction. These requirements apply to edits as well as new pages.
+
+Before markup, inspect the project's shared controls and identify each needed Aspen counterpart.
+For a new or changed control, inspect a native example in the running instance when available,
+including its open/edit state. Then use the corresponding rows in `ui-component-tokens.md`.
+Keep a short implementation note of the counterpart and shared helper chosen; no new approval
+step or user-facing design document is required.
+
+| Meaning | Required control and token families |
+|---|---|
+| Record reference, including an account/engagement/product selector | Lookup/typeahead (`--ap-comp-typeahead-*`), preserving record id separately from display text. Search, select, show the selected record, and clear when optional. An ordinary `<select>` or free-text id input is not a lookup. |
+| Picklist or fixed choice | Select (`--ap-comp-select-*`), including the opened menu, selected/hover/focus states and keyboard operation. Picklist option text comes from metadata labels; values remain technical names. A styled closed `<select>` does not prove its browser-owned menu matches Aspen. |
+| Text / numeric value | `--ap-comp-textinput-*` / `--ap-comp-numberinput-*`, respectively, including labels and error states. Numeric fields retain numeric input semantics. Do not apply select styles to these fields. |
+| Record navigation | Link (`--ap-comp-link-*`) plus the verified SDK/instance navigation helper. Preserve instance and tab context; exercise the destination. |
+| Table with actions above it | Table/cell tokens plus `--ap-comp-cardheader-*` for a card header. Button padding does not provide the header's outer spacing. |
+| Side panel / modal | Match the chosen surface's header, body and footer using its component tokens. Use the user's requested interaction; do not substitute a modal for a requested side panel. |
+
+Reuse or correct one shared implementation for each repeated control in the project. Put
+record navigation and field styling there instead of making page-specific copies. A shared
+helper is not automatically correct: validate it against the native example before reusing it.
+The SDK availability rules below determine whether that implementation imports a supported
+platform component or uses local markup. Do not invent imports or reach into platform internals.
+
+## Typography and composition requirements
+
+- Set the subtree's box sizing and public body font family explicitly. Browser controls do not
+  reliably inherit the surrounding typography; apply each control's typography to the actual
+  input/button/menu text as well as its wrapper. Use component typography tokens with `font`,
+  not `font-size`, and check later shorthand or global rules do not reset the family or size.
+- Keep label, value, table-cell and heading typography distinct. Do not flatten them with a
+  blanket `font: inherit` or one font-size override. Check the computed family, size, weight and
+  line height against native controls; a token appearing in source is not evidence it took effect.
+- Preserve the component's field height, inner padding and surrounding spacing. In particular,
+  a card header uses `--ap-comp-cardheader-padding` on all sides; zeroing its bottom padding makes
+  action buttons touch the table. If a compact variant is needed, verify that variant instead
+  of inventing smaller type or spacing to make the form fit.
+- Follow the native surface's action placement and any explicit user preference. For a table
+  card, keep its title and actions in one header, with the action group on the right. Keep help
+  text only where it resolves a user decision or constraint; omit implementation explanations
+  and repeated descriptions of what a label already says.
+- User-requested deviations take precedence. Record deliberate differences narrowly; an
+  exemption comment or successful lint run does not establish visual parity.
+
+## Verify the rendered UI
+
+After deploying and reloading, compare the changed UI with native Aspen controls in the same
+instance, theme and viewport. Use browser screenshots plus computed-style measurements where
+available. Verify the following for the affected controls, not every unrelated page:
+
+- Typography, field heights, label gaps, table cells and action-header outer spacing match.
+  Inspect a rendered control, not just its parent container.
+- Open picklists and lookup results. Exercise keyboard selection, focus, dismissal, optional
+  clearing, and relevant loading/empty/error states. A screenshot of a closed menu is insufficient.
+- Follow changed record links and check panel open/close, focus entry and return. Use authorized
+  fixtures for write interactions; visual verification does not authorize new customer data.
+- Check changed styling in light and dark themes and at a narrow viewport. When a shared helper
+  or stylesheet changes, inspect each affected surface type, including pages and record sections.
+
+Report build/token checks, visual comparison and interaction checks separately. If browser
+access or a native reference is unavailable, complete what can be checked and name the remaining
+gap. Do not report "matches Aspen" based on token lint, a successful deploy, or backend tests.
 
 ## What a page gets, and what it doesn't
 
 - `definePage`/`defineLayoutSection` (from `@aspen-crm/sdk`) hand you one bare `element` and take
   back `{ unmount }`. Plain DOM, or a framework root you mount yourself — the SDK's own docstring
-  shows `createRoot(element)`. Confirmed from `index.d.ts` of both published SDK builds (npm `0.1.0`
+  shows `createRoot(element)`. Confirmed from `index.d.ts` of both inspected SDK builds (npm `0.1.0`
   and the platform's `26.2.2`): those two functions, plus `@aspen-crm/sdk/navigation` and
   `@aspen-crm/sdk/request`, are the whole export surface.
-- **There is no Aspen component library to import.** The component names in the inventory at the
-  end are token namespaces (`--ap-comp-button-*`), not modules. Bring your own components (React,
-  Mantine, plain DOM) and style them with the tokens below.
+- **Those inspected SDK versions expose no component library to import.** The inventory's names
+  (`--ap-comp-button-*`, etc.) are token namespaces, not modules. Check the installed SDK's public
+  exports once when starting UI work, and again after an SDK upgrade. Prefer supported platform
+  components when available. Otherwise use shared local controls that satisfy the requirements
+  above; default styling from a third-party library is not Aspen styling. Describe local controls
+  accurately as local implementations, not native platform components.
 - **Nothing ships the token list except these two files.** The variables exist only inside a
   running instance — not in the SDK, not in `x-cli`, not in `node_modules` — so a local build
   cannot tell a real name from a typo, and neither can the browser: a misspelled `var(--ap-…)` is
@@ -36,8 +104,8 @@ build`, deploy, verify) is the same as for everything else and stays in `SKILL.m
 - A customer page that hardcodes `#d7dee2` borders and `system-ui` fonts is the pattern this
   replaces, not one to copy — it renders wrong in dark mode and doesn't tighten on a phone.
 
-The rest of this file is the design system's own reference for custom UI, kept verbatim so it can
-be re-synced when the platform team updates it.
+The token inventory below is the design system's reference for custom UI and can be re-synced
+when the platform team updates it. The requirements above govern how to use it.
 
 ---
 

@@ -169,13 +169,13 @@ metacode/
        the field's picklist for options, cells, badges and read-only text; never derive a label
        by stripping a suffix or changing case. See [Picklist values and UI labels](query-notes.md#picklist-values-and-ui-labels)
        for the currency formatter boundary.
-     - **Styling: read `ui-design-tokens.md` before the first line of markup, not after.** Which
-       token a thing takes is structural, and retrofitting tokens onto a page built from hex and
-       px is a rewrite. `definePage`/`defineLayoutSection` hand you a bare `element` and nothing to
-       import for the look — style your own markup with Aspen's `--ap-sem-*` CSS variables, never
-       a hex value or px size. That file is the inventory: every semantic token by name, with the
-       per-component `--ap-comp-*` names in `ui-component-tokens.md` beside it (grep it for one
-       component; never read it whole).
+     - **UI contract: read the opening requirements in [ui-design-tokens.md](ui-design-tokens.md)
+       before creating or restyling any page or layout section.** Map each control to its field
+       meaning and Aspen counterpart first: record reference → lookup/typeahead, picklist →
+       select, text → textinput, number → numberinput. Reuse shared controls; do not substitute
+       an ordinary record dropdown or style every input as a select. Use the counterpart's
+       `--ap-comp-*` tokens; reserve `--ap-sem-*` composition for UI without a counterpart.
+       Grep `ui-component-tokens.md` for the selected components; do not read the whole inventory.
      - **The tokens do reach you, and nothing else does.** Only the JavaScript runs in that hidden
        iframe; the DOM renders in a **shadow root on the platform document**, so every `--ap-*`
        custom property inherits from `:root` — semantic, component, the dark value and the
@@ -271,6 +271,13 @@ metacode/
    forever, which looks exactly like a deploy that did nothing. Reload the browser — and if you
    fetch the bundle yourself, re-resolve the id from `download-active-set` — before concluding the
    page did not ship.
+
+   **For UI, build/token checks are not visual verification.** Follow the acceptance checks in
+   [ui-design-tokens.md](ui-design-tokens.md#verify-the-rendered-ui): compare changed controls
+   with their native counterparts, open menus/panels, and exercise navigation and keyboard
+   behavior. A shared-style change requires checking its affected pages and record sections.
+   If the live UI is unavailable, finish the available checks and explicitly report visual or
+   interaction verification as outstanding; do not claim that the UI matches Aspen.
 
 ## Rules
 

@@ -33,7 +33,7 @@ measures.
 | `trigger-notify-and-errors` | Author a record trigger that notifies a user, with failures surfaced — not swallowed |
 | `bulk-crud-batching` | Batch reads and writes across the whole trigger batch; one round trip, not N |
 | `metadata-layout-first` | Reach for a metadata layout/list view/tab before building any custom UI |
-| `custom-ui-design-tokens` | When a custom page is genuinely needed, style it with the Aspen design tokens |
+| `custom-ui-design-tokens` | Match component styling and field behavior; distinguish offline checks from live UI verification |
 | `derived-value-in-model` | A budget figure becomes a stored field plus a trigger, not page arithmetic |
 | `status-flow-is-lifecycle` | A stage order becomes `lifecycle_p`, not a hand-rolled transition check |
 | `validation-not-in-page` | A save-time rule lands in a before-trigger, because every other write path bypasses the page |
