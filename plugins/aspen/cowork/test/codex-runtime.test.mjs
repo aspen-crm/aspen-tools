@@ -27,6 +27,15 @@ test('Codex launcher reads settings as data, keeps shell precedence, and default
   assert.equal(clean.env.ASPEN_API_TOKEN, undefined);
   assert.equal(clean.env.ASPEN_BULK_WRITES, '1');
 });
+test('Codex launcher on Windows finds the server and its settings under %APPDATA%\\aspen', t => {
+  const appData = fixture(t);
+  mkdirSync(join(appData, 'aspen', 'mcp'), { recursive: true });
+  writeFileSync(join(appData, 'aspen', 'mcp', 'env'), "ASPEN_INSTANCE='https://h/d/i'\n");
+  const c = launchConfig({ APPDATA: appData, HOME: fixture(t) }, 'win32');
+  assert.equal(c.binary, join(appData, 'aspen', 'mcp', 'aspen-runtime-mcp.exe'));
+  assert.equal(c.env.ASPEN_INSTANCE, 'https://h/d/i');
+  assert.equal(c.env.APPDATA, appData, 'the server reads the CLI login from the same place');
+});
 test('Codex launcher starts a server without corrupting its stdout', t => {
   const dir = fixture(t);
   // Node itself is a portable fake server: --stdio is invalid, and its error stays on stderr.
@@ -80,5 +89,6 @@ test('Codex MCP definition retains upload timeout and environment forwarding', (
   assert.equal(server.command, 'node');
   assert.ok(server.tool_timeout_sec > 300);
   assert.ok(server.env_vars.includes('ASPEN_CONFIG_DIR'));
+  assert.ok(server.env_vars.includes('APPDATA'), 'Windows resolves the config dir from it');
   assert.ok(server.args[0].endsWith('/bin/aspen-runtime-mcp.mjs'));
 });

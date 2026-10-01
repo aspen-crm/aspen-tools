@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { configRoot, parseEnvFile } from '../skills/contact-merge/scripts/contact-merge.mjs';
 
 export function launchConfig(env = process.env, platform = process.platform) {
-  const root = configRoot(env);
+  const root = configRoot(env, platform);
   const settings = join(root, 'mcp', 'env');
   const stored = existsSync(settings) ? parseEnvFile(readFileSync(settings, 'utf8')) : {};
   const childEnv = { ...env };

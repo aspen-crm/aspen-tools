@@ -28,7 +28,8 @@
 //      secret store (service "aspen", account = the instance URL) or inline in the file.
 //      An OAuth access token past its stamped expiry is refused, not refreshed -- the CLI
 //      owns refresh, and racing it can invalidate the login. Run any `aspen` command.
-//   <config> is $ASPEN_CONFIG_DIR, else $XDG_CONFIG_HOME/aspen, else ~/.config/aspen.
+//   <config> is $ASPEN_CONFIG_DIR, else %APPDATA%\aspen on Windows, else
+//   $XDG_CONFIG_HOME/aspen, else ~/.config/aspen.
 //
 // Output is one JSON object on stdout. Exit codes: 0 the row succeeded; 1 the row failed
 // (read error_type); 2 the request was rejected as a whole (HTTP status, read errors);
@@ -101,9 +102,12 @@ export function rowFor(opts) {
 
 const nonEmpty = (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
 
-export function configRoot(env) {
+export function configRoot(env, os = platform()) {
   const explicit = nonEmpty(env.ASPEN_CONFIG_DIR);
   if (explicit) return explicit;
+  // The CLI keeps its login under %APPDATA% on Windows, not in the XDG layout.
+  const appData = os === 'win32' ? nonEmpty(env.APPDATA) : undefined;
+  if (appData) return join(appData, 'aspen');
   const xdg = nonEmpty(env.XDG_CONFIG_HOME);
   if (xdg) return join(xdg, 'aspen');
   const home = nonEmpty(env.HOME) || homedir();
@@ -189,7 +193,7 @@ export function fromAspenCli(root, { os, run, nowMs = Date.now() } = {}) {
 }
 
 export function resolveIdentity(env = process.env, extra = {}) {
-  const root = configRoot(env);
+  const root = configRoot(env, extra.os);
   // 1. the environment; 2. the installer's env file. Empty values are unset in both.
   const fromEnv = (vars) => ({
     token: nonEmpty(vars.ASPEN_API_TOKEN),

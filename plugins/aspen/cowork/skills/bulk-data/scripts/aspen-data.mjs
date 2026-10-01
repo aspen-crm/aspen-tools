@@ -28,7 +28,8 @@
 //   4. The aspen CLI's stored login at <config>/credentials.json, when the secret is inline
 //      in that file. A token past its stamped expiry is refused, not refreshed -- the CLI
 //      owns refresh. Run any `aspen` command, then retry.
-//   <config> is $ASPEN_CONFIG_DIR, else $XDG_CONFIG_HOME/aspen, else ~/.config/aspen.
+//   <config> is $ASPEN_CONFIG_DIR, else %APPDATA%\aspen on Windows, else
+//   $XDG_CONFIG_HOME/aspen, else ~/.config/aspen.
 //   OS-keyring credentials and OAuth pairs use the same reader as contact-merge.mjs.
 //
 // The token is never printed and never written anywhere; `check` names the source only.
@@ -100,9 +101,11 @@ export function parseEnvFile(text) {
     return out;
 }
 
-export function configRoot(env = process.env) {
-    return env.ASPEN_CONFIG_DIR
-        || join(env.XDG_CONFIG_HOME || join(env.HOME || homedir(), '.config'), 'aspen');
+export function configRoot(env = process.env, os = process.platform) {
+    if (env.ASPEN_CONFIG_DIR) return env.ASPEN_CONFIG_DIR;
+    // The CLI keeps its login under %APPDATA% on Windows, not in the XDG layout.
+    if (os === 'win32' && env.APPDATA) return join(env.APPDATA, 'aspen');
+    return join(env.XDG_CONFIG_HOME || join(env.HOME || homedir(), '.config'), 'aspen');
 }
 
 export function isExpired(expiresAt, nowMs = Date.now()) {
@@ -111,7 +114,7 @@ export function isExpired(expiresAt, nowMs = Date.now()) {
 }
 
 export function resolveIdentity(opts = {}, env = process.env, { nowMs = Date.now(), os, run } = {}) {
-    const root = configRoot(env);
+    const root = configRoot(env, os);
     const envPath = join(root, 'mcp', 'env');
     const fileEnv = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, 'utf8')) : {};
 
