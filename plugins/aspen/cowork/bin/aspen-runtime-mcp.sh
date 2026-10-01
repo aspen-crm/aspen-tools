@@ -12,6 +12,8 @@
 #   $ASPEN_RUNTIME_MCP, if set (a build of your own, say), else
 #   <config>/mcp/aspen-runtime-mcp, where <config> is $ASPEN_CONFIG_DIR, else
 #   $XDG_CONFIG_HOME/aspen, else ~/.config/aspen -- the aspen CLI's own directory.
+#   On Windows (Git Bash, MSYS, Cygwin) the CLI keeps that directory in
+#   %APPDATA%\aspen instead, and the server is aspen-runtime-mcp.exe.
 #
 # Identity, in order:
 #   1. ASPEN_API_TOKEN / ASPEN_INSTANCE / ASPEN_API_BASE from the environment
@@ -32,9 +34,22 @@
 # time. ASPEN_BULK_WRITES=0 in the shell turns it off for a session.
 set -eu
 
-config="${ASPEN_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/aspen}"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) windows=1 ;;
+  *) windows="" ;;
+esac
+
+if [ -n "${ASPEN_CONFIG_DIR:-}" ]; then
+  config="$ASPEN_CONFIG_DIR"
+elif [ -n "$windows" ] && [ -n "${APPDATA:-}" ]; then
+  # APPDATA arrives as C:\Users\...; cygpath turns it into a path sh can test.
+  appdata="$(cygpath -u "$APPDATA" 2>/dev/null || printf '%s' "$APPDATA")"
+  config="$appdata/aspen"
+else
+  config="${XDG_CONFIG_HOME:-$HOME/.config}/aspen"
+fi
 dir="$config/mcp"
-bin="${ASPEN_RUNTIME_MCP:-$dir/aspen-runtime-mcp}"
+bin="${ASPEN_RUNTIME_MCP:-$dir/aspen-runtime-mcp${windows:+.exe}}"
 
 # What the shell set wins over the env file.
 token="${ASPEN_API_TOKEN:-}"

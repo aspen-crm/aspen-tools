@@ -90,6 +90,12 @@ test('config root honours ASPEN_CONFIG_DIR, then XDG, then ~/.config', () => {
   assert.equal(configRoot({ HOME: '/h' }), join('/h', '.config', 'aspen'));
 });
 
+test('on Windows the config root is %APPDATA%\\aspen, unless ASPEN_CONFIG_DIR says otherwise', () => {
+  assert.equal(configRoot({ APPDATA: '/a', XDG_CONFIG_HOME: '/x', HOME: '/h' }, 'win32'), join('/a', 'aspen'));
+  assert.equal(configRoot({ APPDATA: '/a', ASPEN_CONFIG_DIR: '/c' }, 'win32'), '/c');
+  assert.equal(configRoot({ APPDATA: '/a', HOME: '/h' }, 'darwin'), join('/h', '.config', 'aspen'));
+});
+
 test('flags beat the environment, and the trailing slash is trimmed', async () => {
   const out = await main(['check', '--instance', 'https://flag/d/i/', '--token', 'ft'],
     { env: bare(ident) });

@@ -81,11 +81,14 @@ runtime MCP 0.1.19 or later.
 Registered the server by hand before this plugin carried it (`claude mcp add …`)? Remove
 that entry, or every tool appears twice.
 
-**Windows.** The launcher is a shell script, so the plugin's server entry fails there.
-Take `server\aspen-runtime-mcp.exe` out of the
+**Windows.** The installer does not run there, but the launcher does: Claude Code runs it
+through Git Bash. The `aspen` CLI keeps its login in `%APPDATA%\aspen` on Windows, and the
+launcher and the server look there too. Take `server\aspen-runtime-mcp.exe` out of the
 [Windows bundle](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb)
-(it is a zip) and register it directly:
-`claude mcp add --scope user -e ASPEN_BULK_WRITES=1 aspen-runtime-mcp -- C:\path\to\aspen-runtime-mcp.exe --stdio`.
+(it is a zip) and put it at `%APPDATA%\aspen\mcp\aspen-runtime-mcp.exe`. That needs plugin
+0.8.2 and runtime MCP 0.1.23 or later; older ones look under `%USERPROFILE%\.config\aspen`
+and miss both the server and the login. Registered the `.exe` by hand with `claude mcp add`
+before then? Remove that entry, or every tool appears twice.
 
 **Without this plugin** the installed server registers the same way:
 `claude mcp add --scope user aspen-runtime-mcp -- ~/.config/aspen/mcp/aspen-runtime-mcp --stdio`,

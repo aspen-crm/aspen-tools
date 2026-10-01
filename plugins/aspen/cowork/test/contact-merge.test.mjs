@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  ConfigError, UsageError, apiUrl, fromAspenCli, isExpired, keyringSecret, main, normalize,
+  ConfigError, UsageError, apiUrl, configRoot, fromAspenCli, isExpired, keyringSecret, main, normalize,
   parseArgs, parseEnvFile, resolveIdentity, rowFor,
 } from '../skills/contact-merge/scripts/contact-merge.mjs';
 
@@ -63,6 +63,19 @@ test('the shell wins over the env file, and an empty value is unset', () => {
   assert.deepEqual(fromFile, { token: 'file-token', instance: 'https://file.example/a/b', apiBase: '/api/v24.3', source: 'mcp-env' });
   const fromShell = resolveIdentity({ HOME: home, ASPEN_API_TOKEN: 'shell-token', ASPEN_API_BASE: '/i/api/v24.3' });
   assert.deepEqual(fromShell, { token: 'shell-token', instance: 'https://file.example/a/b', apiBase: '/i/api/v24.3', source: 'env' });
+});
+
+test('on Windows the config dir is %APPDATA%\\aspen, where the CLI keeps its login', () => {
+  const appData = scratch();
+  assert.equal(configRoot({ APPDATA: appData, HOME: '/h', XDG_CONFIG_HOME: '/x' }, 'win32'), join(appData, 'aspen'));
+  assert.equal(configRoot({ APPDATA: appData, ASPEN_CONFIG_DIR: '/c' }, 'win32'), '/c', 'an explicit dir still wins');
+  assert.equal(configRoot({ APPDATA: appData, HOME: '/h' }, 'linux'), join('/h', '.config', 'aspen'), 'APPDATA means nothing off Windows');
+  assert.equal(configRoot({ APPDATA: '  ', HOME: '/h' }, 'win32'), join('/h', '.config', 'aspen'), 'an empty APPDATA is unset');
+
+  mkdirSync(join(appData, 'aspen', 'mcp'), { recursive: true });
+  writeFileSync(join(appData, 'aspen', 'mcp', 'env'), "ASPEN_INSTANCE='https://h/d/i'\nASPEN_API_TOKEN='t'\n");
+  const id = resolveIdentity({ APPDATA: appData, HOME: scratch() }, { os: 'win32' });
+  assert.equal(id.instance, 'https://h/d/i');
 });
 
 test('with nothing configured the error names both fixes', () => {

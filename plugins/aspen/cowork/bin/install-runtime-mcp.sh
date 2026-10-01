@@ -82,7 +82,7 @@ case "$os" in
       *) die "no Linux bundle is published for $arch" ;;
     esac ;;
   *)
-    die "this installer covers macOS and Linux. On Windows: download $RELEASES/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb, unzip server\\aspen-runtime-mcp.exe somewhere permanent, then: claude mcp add --scope user aspen-runtime-mcp -- C:\\path\\to\\aspen-runtime-mcp.exe --stdio" ;;
+    die "this installer covers macOS and Linux. On Windows: download $RELEASES/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb (a zip) and put its server\\aspen-runtime-mcp.exe at %APPDATA%\\aspen\\mcp\\aspen-runtime-mcp.exe, beside the aspen CLI's login, where the aspen-cowork plugin looks for it" ;;
 esac
 
 config="${ASPEN_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/aspen}"

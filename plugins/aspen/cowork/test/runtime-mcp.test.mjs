@@ -118,6 +118,42 @@ test('launcher: XDG_CONFIG_HOME and ASPEN_CONFIG_DIR are honoured, in the CLI\'s
   assert.equal(r.status, 0, r.stderr);
 });
 
+// A `uname` that answers the way Git Bash does, first on PATH: the launcher's only
+// Windows signal, so its Windows branch runs on any machine.
+function gitBashPath() {
+  const bin = join(scratch(), 'bin');
+  mkdirSync(bin);
+  writeFileSync(join(bin, 'uname'), '#!/bin/sh\necho MINGW64_NT-10.0-19045\n');
+  chmodSync(join(bin, 'uname'), 0o755);
+  return `${bin}:${process.env.PATH}`;
+}
+
+test('launcher: on Windows the server is the .exe under %APPDATA%\\aspen, where the CLI keeps its login', () => {
+  const appData = scratch();
+  fakeServerAt(join(appData, 'aspen', 'mcp', 'aspen-runtime-mcp.exe'));
+  writeFileSync(join(appData, 'aspen', 'mcp', 'env'), "ASPEN_INSTANCE='https://h/d/i'\n");
+  // A ~/.config/aspen server too, as an older install left it: it must not be the one run.
+  const home = scratch();
+  fakeServerAt(join(home, '.config', 'aspen', 'mcp', 'aspen-runtime-mcp'));
+  const r = run(launcher, [], env({ PATH: gitBashPath(), APPDATA: appData, HOME: home }));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(report(r.stdout).instance, 'https://h/d/i');
+});
+
+test('launcher: on Windows ASPEN_CONFIG_DIR still wins over APPDATA, and the miss names the .exe', () => {
+  const explicit = scratch();
+  const r = run(launcher, [], env({ PATH: gitBashPath(), APPDATA: scratch(), ASPEN_CONFIG_DIR: explicit }));
+  assert.equal(r.status, 1);
+  assert.ok(r.stderr.includes(join(explicit, 'mcp', 'aspen-runtime-mcp.exe')), r.stderr);
+});
+
+test('launcher: off Windows APPDATA is ignored', () => {
+  const home = scratch();
+  fakeServerAt(join(home, '.config', 'aspen', 'mcp', 'aspen-runtime-mcp'));
+  const r = run(launcher, [], env({ HOME: home, APPDATA: scratch() }));
+  assert.equal(r.status, 0, r.stderr);
+});
+
 test('launcher: ASPEN_RUNTIME_MCP points at a server of your own', () => {
   const bin = fakeServerAt(join(scratch(), 'my-build', 'aspen-runtime-mcp'));
   const r = run(launcher, [], env({ ASPEN_CONFIG_DIR: scratch(), ASPEN_RUNTIME_MCP: bin }));

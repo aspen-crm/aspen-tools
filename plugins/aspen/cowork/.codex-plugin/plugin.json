@@ -1,6 +1,6 @@
 {
   "name": "aspen-cowork",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "author": {
     "name": "Aspen CRM"
   },
@@ -41,6 +41,7 @@
         "ASPEN_RUNTIME_MCP",
         "ASPEN_CONFIG_DIR",
         "XDG_CONFIG_HOME",
+        "APPDATA",
         "ASPEN_API_TOKEN",
         "ASPEN_INSTANCE",
         "ASPEN_DEFAULT_INSTANCE",
