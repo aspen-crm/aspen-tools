@@ -175,25 +175,35 @@ metacode/
        select, text → textinput, number → numberinput. Reuse shared controls; do not substitute
        an ordinary record dropdown or style every input as a select. Use the counterpart's
        `--ap-comp-*` tokens; reserve `--ap-sem-*` composition for UI without a counterpart.
-       Grep `ui-component-tokens.md` for the selected components; do not read the whole inventory.
-     - **The tokens do reach you, and nothing else does.** Only the JavaScript runs in that hidden
-       iframe; the DOM renders in a **shadow root on the platform document**, so every `--ap-*`
-       custom property inherits from `:root` — semantic, component, the dark value and the
-       responsive steps alike. The platform's own CSS does not come with it: no utility classes,
-       and **no resets**, so the guest starts at `box-sizing: content-box`. Set
-       `box-sizing: border-box` on your own subtree yourself.
-     - **Write the light value as a fallback** — `var(--ap-sem-color-text-primary, #11171d)`. A
-       misspelled token is not an error anywhere: it resolves to nothing, the build passes, and the
-       element silently keeps whatever it inherited. The fallback is the only thing standing
-       between a typo and an invisible one.
+       [ui-component-tokens.md](ui-component-tokens.md) says which family fits; the names are in
+       the installed SDK's `node_modules/@aspen-crm/sdk/dist/tokens/comp/<family>.d.ts`.
+     - **The installed `@aspen-crm/sdk` is the source of truth for token names.** Each SDK
+       version includes a copy of the list of Component and Semantic tokens valid in that version;
+       the platform injects values for those tokens onto the **shadow root within the platform document**,
+       with light and dark and responsive typography variants already applied to the values. Only the
+       JavaScript runs in the hidden iframe. Your code is isolated from the platform's own CSS and variables
+       (**including resets**), so the guest starts at `box-sizing: content-box`. Set `box-sizing: border-box`
+       on your own subtree yourself if desired.
+     - **`x-cli build` (`npm run build`) validates token names in your stylesheets.** An unknown
+       `--ap-sem-*`/`--ap-comp-*` name fails with a suggested real name; any other `--ap-*` name
+       fails because the prefix is reserved for Aspen. It does not check your own custom properties
+       (`--ps-row-h`), stylesheets under `node_modules`, or JS and inline styles. **In JS and inline styles**,
+       prefer importing from `@aspen-crm/sdk/tokens/sem` or `/comp` instead of writing bare `var(...)` strings — a wrong
+       name there is a TypeScript error. Details in [ui-design-tokens.md](./ui-design-tokens.md#how-to-use-these-tokens).
+     - **Do not write light-value fallbacks** (`var(--ap-sem-color-text-primary, #11171d)`).
+       Existing fallbacks are harmless. **Exception:** if the installed SDK has no
+       `tokenStyleSheetFilePath` in `node_modules/@aspen-crm/sdk/dist/manifest.json`, it predates
+       snapshots — nothing validates names, so copy them exactly and keep the fallback. Tell the
+       human the SDK needs upgrading; do not upgrade it yourself.
      - **If Aspen already ships the thing you are building, start from that component's tokens.**
        A `<table>` in a record section sits inches from Aspen's own list views, and
        `--ap-comp-cell-*` and the 65 `--ap-comp-table-*` names already hold the cell padding,
        hover and border that the semantic layer only gets you close to. Compose from `--ap-sem-*`
        for what has no Aspen counterpart — which is most of a page, but not your table. Mixing the
        two is normal.
-     - A hardcode, an unknown token name, or a `table`/`button`/`select`/`textarea` styled from the
-       semantic layer alone is **denied by the enabled, trusted hook**, with the token family to use instead. When a
+     - A hardcode, a token name the installed SDK does not define, or a
+       `table`/`button`/`select`/`textarea` styled from the semantic layer alone is **denied by
+       the enabled, trusted hook**, with the token family to use instead. When a
        value genuinely has no token — a page dimension, a grid track, a mono stack — keep it and
        write `aspen-token-exempt: <reason>` on that line or the line above; for a component you are
        deliberately not rebuilding, `aspen-component-exempt: <reason>` anywhere in the file. Widths,
