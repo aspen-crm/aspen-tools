@@ -92,13 +92,6 @@ gap. Do not report "matches Aspen" based on token lint, a successful deploy, or 
   `dist/tokens/comp/*.d.ts`). The platform renders the page with that snapshot, so a name is real
   when the installed SDK defines it — not when this file lists it. `x-cli build` enforces this for
   stylesheets; see [Build check](#build-check).
-- **`--ap-comp-*` names are in the SDK, one file per component family:**
-  `node_modules/@aspen-crm/sdk/dist/tokens/comp/<family>.d.ts`. Each token's JSDoc gives its custom
-  property and its value per theme and breakpoint. `ui-component-tokens.md` beside this file says
-  which family fits which control; read it to choose, then read only the families you chose.
-- **Ask first whether Aspen already ships the thing you are building.** If it does — a table, a
-  select, a tag, a modal — start from that component's own tokens. If it does not, compose from
-  the semantic layer. That order matters more than it sounds: see the next rule.
 - **Eleven per-role font-family tokens exist and are internal**: `--ap-sem-font-family-body-bold`,
   `-body-large`, `-body-small`, `-caption`, `-display`, `-footnote`, `-heading-1`, `-heading-2`,
   `-heading-3`, `-heading-4`, `-label`. They resolve, and component typography tokens alias them,
@@ -164,7 +157,8 @@ Rules that matter:
     the platform document**, and the platform injects the SDK's token snapshot into it, while its
     own stylesheets stay outside the tree. (Only the JavaScript is iframe-isolated.)
     Your code is isolated from the platform's own CSS and variables (**including resets**), so the
-    guest starts at `box-sizing: content-box`. Set `box-sizing: border-box` on your own subtree yourself if desired.
+    guest starts at `box-sizing: content-box`; see
+    [Typography and composition requirements](#typography-and-composition-requirements).
 - **Names are validated at build time; see [Build check](#build-check).** So do not write the
   light value as a fallback (`var(--ap-sem-color-text-primary, #11171d)`) in new code: it only
   ever guarded against typos the build could not see, and it now sees them in CSS, while JS uses
@@ -287,18 +281,8 @@ Choosing within a group — what the names alone do not tell you:
 
 ## Component tokens (`--ap-comp-*`)
 
-Every Aspen component publishes its own tokens, each aliasing a semantic token. **These are
-not the advanced case — they are the right starting point whenever you are rebuilding a component
-Aspen already ships** (for example `--ap-comp-button-radius`,
-`--ap-comp-button-primary-bg-default`). The alias means you gain the match for free and lose
-nothing: a component token follows the same theme and the same responsive steps as the semantic
-token behind it.
-
-Compose from the semantic tokens for what has no Aspen counterpart. That is most of a page, which
-is why the semantic layer is still the bulk of any stylesheet — but it is a different question
-from "how should my table look".
-
-Pattern: `--ap-comp-<component>-<property>[-<variant>][-<state>]`.
-
-Which family fits which control: `ui-component-tokens.md`. Exact names: the installed SDK's
-`dist/tokens/comp/<family>.d.ts`.
+Every Aspen component publishes its own tokens, each aliasing a semantic token, so a component
+token follows the same theme and responsive steps as the semantic token behind it. When to use
+them over `--ap-sem-*`: the "Rebuilding an Aspen component?" rule under
+[How to use these tokens](#how-to-use-these-tokens). Which family fits which control, the naming
+pattern, and where the names are: [ui-component-tokens.md](ui-component-tokens.md).

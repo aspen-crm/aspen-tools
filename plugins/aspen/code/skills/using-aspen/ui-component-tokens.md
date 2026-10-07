@@ -108,4 +108,4 @@ Choose by what the control **does**, not what it looks like. A field's meaning d
 | `menu`, `menubase`                    | A dropdown menu surface and its items, including destructive and disabled items. |
 
 Nothing here fits? Compose from `--ap-sem-*`. Something fits but you are deliberately not
-building it? Write `aspen-component-exempt: <reason>` in a comment in the file.
+building it? See the exemption in `ui-design-tokens.md`'s "Rebuilding an Aspen component?" rule.
