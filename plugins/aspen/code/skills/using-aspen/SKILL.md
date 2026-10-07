@@ -74,7 +74,7 @@ metacode/
      covers picklist technical values versus UI labels and currency formatting.
 
 2. **Author** into `metacode/metadata/<ctype>/<name>.json`:
-   - *Declarative* (object, field, picklist, layout, list view, tab, tab collection): copy the
+   - _Declarative_ (object, field, picklist, layout, list view, tab, tab collection): copy the
      compiled shape, change `name`/`label` to your `_c` name, and swap in your members.
      - **Never author a `namespace` field — not on the component, not on a nested member.** The
        compiled tier shows `namespace` because it is resolved output; the importer refuses it on
@@ -123,17 +123,17 @@ metacode/
          be added to the "Aspen" nav**. Author a new custom `tab_collection_p` (`marketing_c`)
          that lists the platform tabs you want beside your own; referencing a platform tab is
          fine, only overriding the collection is not.
-       A platform *field* override is untested and risks the whole batch — to relabel a field in
-       one view, set `label` on that `list_view_p` column instead. **Deploy anything that touches
-       a platform component as its own package**, apart from your custom work, so one rejection
-       cannot take the rest down with it.
+         A platform _field_ override is untested and risks the whole batch — to relabel a field in
+         one view, set `label` on that `list_view_p` column instead. **Deploy anything that touches
+         a platform component as its own package**, apart from your custom work, so one rejection
+         cannot take the rest down with it.
      - A new field on an object that has record types must also be declared in each of its
        `object_type_p` files, or typed records reject it. A layout needs an `object` attribute
        and names fields by their raw name (`amount_p`), never an object-type alias (`amount_c`).
      - Some shapes have **no compiled example to copy** — a dot-walked list view column, a
        `custom_page` tab, a `query-filter` on the current user. `metadata-shapes.md` beside this
        file has them, reverse-engineered and checked in; read it when step 1 turns up nothing.
-   - *Rust trigger*: a crate at **`server/server_main_c/`, that exact directory name** — the
+   - _Rust trigger_: a crate at **`server/server_main_c/`, that exact directory name** — the
      platform only ever loads a server codefile named `server_main_c` (or `server_main_a`); any
      other crate directory compiles and checks in clean and then silently never fires, on any
      object or event. The trigger declared in its `aspen.server.json` (its `"name"` field, separate
@@ -155,7 +155,7 @@ metacode/
        they share. Copy the helpers and the one closest to yours. `rust-trigger-notes.md` has the
        rules behind them (variant per field type, the changed-fields-only batch, the debugging
        order), read when a pattern doesn't cover your case.
-   - *TypeScript page*: a module under `ui/ui_main_c/src/pages/` with the route declared in
+   - _TypeScript page_: a module under `ui/ui_main_c/src/pages/` with the route declared in
      `aspen.client.json`. A custom (`_c`) codefile serves at
      `/ui/c/<base-url-path-part>/<route path>` — `/ui/a/` is app scope, not yours. The page runs
      in a **sandboxed guest iframe**: build URLs and navigate through `window.top`, and intercept
@@ -211,11 +211,13 @@ metacode/
 
 3. **Validate offline — before anything touches the instance.** The instance's own validator
    runs locally in 0.2s and reports the same errors `checkin-prep` would, with the same text:
+
    ```
    ./ac validate --custom ./metacode/metadata --active-custom ./metacode/active \
                  --active-platform ./metacode/platform --format json \
      | jq -r '.valid, (.["batch-failures"][]?), (.components[].failures[] | select(.subtype != "SKIPPED_DUE_TO_BATCH_ERRORS") | .detail)'
    ```
+
    The first line is `true`/`false`; the rest is only the root causes. **One bad component fails
    the whole batch**, and every other component then reports `SKIPPED_DUE_TO_BATCH_ERRORS` — the
    `select` above hides those, because they are the cascade, not the error. Fix what's left, run
@@ -240,12 +242,14 @@ metacode/
      confirm the UI shows labels and the selected technical values survive a form round trip.
 
 5. **Deploy.** Confirm with the human first — this changes the shared instance. Then, in order:
+
    ```
    aspen move save-package ./metacode
    aspen move checkin-prep
    aspen move checkin-index
    aspen move checkin-deploy
    ```
+
    Pass `./metacode` to `save-package`; the three checkin verbs are ordered and mandatory.
 
    `save-package` validates shallowly; **`checkin-prep` is the real validator** on the instance
@@ -256,12 +260,14 @@ metacode/
    1. `aspen move clear-package` — drops this package from the dev set. Usually enough.
    2. Only if it refuses with "invoke the checkin-clear action": `aspen move checkin-clear` —
       halts the stuck checkin and clears the shared sets.
-   Both change shared state, so obtain explicit authorization for the exact recovery operation.
-   Claude Code can prompt through its hook. Codex blocks the direct command because its hook
-   runtime does not support `ask`; after authorization, use the bundled helper:
+      Both change shared state, so obtain explicit authorization for the exact recovery operation.
+      Claude Code can prompt through its hook. Codex blocks the direct command because its hook
+      runtime does not support `ask`; after authorization, use the bundled helper:
+
    ```sh
    node "<absolute using-aspen skill directory>/scripts/recover.mjs" --confirmed clear-package .aspen/bin/aspen
    ```
+
    Use `checkin-clear` in place of `clear-package` only when that wider recovery is authorized.
    `--confirmed` asserts existing user authorization; it does not obtain it. Resolve the skill
    directory from the loaded skill location, and run from the instance folder.

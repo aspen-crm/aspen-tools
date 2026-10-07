@@ -15,14 +15,14 @@ including its open/edit state. Then pick its token family from `ui-component-tok
 Keep a short implementation note of the counterpart and shared helper chosen; no new approval
 step or user-facing design document is required.
 
-| Meaning | Required control and token families |
-|---|---|
-| Record reference, including an account/engagement/product selector | Lookup/typeahead (`--ap-comp-typeahead-*`), preserving record id separately from display text. Search, select, show the selected record, and clear when optional. An ordinary `<select>` or free-text id input is not a lookup. |
-| Picklist or fixed choice | Select (`--ap-comp-select-*`), including the opened menu, selected/hover/focus states and keyboard operation. Picklist option text comes from metadata labels; values remain technical names. A styled closed `<select>` does not prove its browser-owned menu matches Aspen. |
-| Text / numeric value | `--ap-comp-textinput-*` / `--ap-comp-numberinput-*`, respectively, including labels and error states. Numeric fields retain numeric input semantics. Do not apply select styles to these fields. |
-| Record navigation | Link (`--ap-comp-link-*`) plus the verified SDK/instance navigation helper. Preserve instance and tab context; exercise the destination. |
-| Table with actions above it | Table/cell tokens plus `--ap-comp-cardheader-*` for a card header. Button padding does not provide the header's outer spacing. |
-| Side panel / modal | Match the chosen surface's header, body and footer using its component tokens. Use the user's requested interaction; do not substitute a modal for a requested side panel. |
+| Meaning                                                            | Required control and token families                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Record reference, including an account/engagement/product selector | Lookup/typeahead (`--ap-comp-typeahead-*`), preserving record id separately from display text. Search, select, show the selected record, and clear when optional. An ordinary `<select>` or free-text id input is not a lookup.                                               |
+| Picklist or fixed choice                                           | Select (`--ap-comp-select-*`), including the opened menu, selected/hover/focus states and keyboard operation. Picklist option text comes from metadata labels; values remain technical names. A styled closed `<select>` does not prove its browser-owned menu matches Aspen. |
+| Text / numeric value                                               | `--ap-comp-textinput-*` / `--ap-comp-numberinput-*`, respectively, including labels and error states. Numeric fields retain numeric input semantics. Do not apply select styles to these fields.                                                                              |
+| Record navigation                                                  | Link (`--ap-comp-link-*`) plus the verified SDK/instance navigation helper. Preserve instance and tab context; exercise the destination.                                                                                                                                      |
+| Table with actions above it                                        | Table/cell tokens plus `--ap-comp-cardheader-*` for a card header. Button padding does not provide the header's outer spacing.                                                                                                                                                |
+| Side panel / modal                                                 | Match the chosen surface's header, body and footer using its component tokens. Use the user's requested interaction; do not substitute a modal for a requested side panel.                                                                                                    |
 
 Reuse or correct one shared implementation for each repeated control in the project. Put
 record navigation and field styling there instead of making page-specific copies. A shared
@@ -78,8 +78,8 @@ gap. Do not report "matches Aspen" based on token lint, a successful deploy, or 
   token modules `@aspen-crm/sdk/tokens/*` (see
   [Typed token modules](#typed-token-modules)). Check `exports` in the installed SDK's
   `package.json` rather than assuming.
-   - If the project is on a version of the SDK prior to 0.2.0, it will need to be upgraded in order to
-   function on the latest release of Aspen. Inform the user to update their CLI and SDK versions.
+  - If the project is on a version of the SDK prior to 0.2.0, it will need to be upgraded in order to
+    function on the latest release of Aspen. Inform the user to update their CLI and SDK versions.
 - **Those inspected SDK versions expose no component library to import.** Component token
   families (`--ap-comp-button-*`, etc.) are token namespaces, not component modules. Check the installed SDK's public
   exports once when starting UI work, and again after an SDK upgrade. Prefer supported platform
@@ -162,8 +162,8 @@ Rules that matter:
   markup with these tokens.
   - Why the tokens get through when the classes do not: custom UI renders in a **shadow root on
     the platform document**, and the platform injects the SDK's token snapshot into it, while its
-    own stylesheets stay outside the tree. (Only the JavaScript is iframe-isolated.) 
-    Your code is isolated from the platform's own CSS and variables (**including resets**), so the 
+    own stylesheets stay outside the tree. (Only the JavaScript is iframe-isolated.)
+    Your code is isolated from the platform's own CSS and variables (**including resets**), so the
     guest starts at `box-sizing: content-box`. Set `box-sizing: border-box` on your own subtree yourself if desired.
 - **Names are validated at build time; see [Build check](#build-check).** So do not write the
   light value as a fallback (`var(--ap-sem-color-text-primary, #11171d)`) in new code: it only
@@ -254,16 +254,16 @@ cat metacode/ui/ui_main_c/node_modules/@aspen-crm/sdk/dist/tokens/sem/color.d.ts
 Each token's JSDoc gives its custom property and its value per theme and breakpoint. The groups
 are the first word after `--ap-sem-`, so a two-word family is split across a group and its keys:
 
-| File | Holds | Import key example |
-|---|---|---|
-| `color.d.ts` | text, background, surface, border, icon, brand, interactive, link and feedback colors | `color.textPrimary` |
-| `font.d.ts` | `font-family`, `font-size` and `font-weight` per text role | `font.sizeBody` |
-| `line.d.ts` | `line-height` per text role | `line.heightBody` |
-| `spacing.d.ts` | inner, layout, gutter and page-margin spacing | `spacing.innerMd` |
-| `radius.d.ts` | corner radius scale | `radius.md` |
-| `border.d.ts` | border widths | `border.widthDefault` |
-| `icon.d.ts` | icon sizes | `icon.sizeSm` |
-| `elevation.d.ts` | `box-shadow` levels and the focus ring | `elevation.low` |
+| File             | Holds                                                                                 | Import key example    |
+| ---------------- | ------------------------------------------------------------------------------------- | --------------------- |
+| `color.d.ts`     | text, background, surface, border, icon, brand, interactive, link and feedback colors | `color.textPrimary`   |
+| `font.d.ts`      | `font-family`, `font-size` and `font-weight` per text role                            | `font.sizeBody`       |
+| `line.d.ts`      | `line-height` per text role                                                           | `line.heightBody`     |
+| `spacing.d.ts`   | inner, layout, gutter and page-margin spacing                                         | `spacing.innerMd`     |
+| `radius.d.ts`    | corner radius scale                                                                   | `radius.md`           |
+| `border.d.ts`    | border widths                                                                         | `border.widthDefault` |
+| `icon.d.ts`      | icon sizes                                                                            | `icon.sizeSm`         |
+| `elevation.d.ts` | `box-shadow` levels and the focus ring                                                | `elevation.low`       |
 
 Choosing within a group — what the names alone do not tell you:
 
