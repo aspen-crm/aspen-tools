@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 // PreToolUse (Write, Edit) guard for custom UI styling under `metacode/ui/`.
 //
-// Two failures this catches are both SILENT, which is why prose could never hold the line
-// on them. A misspelled `var(--ap-sem-color-text-primry)` is not an error anywhere: the
-// declaration is dropped, the element renders with whatever it inherited, and the build
-// passes -- the token list exists only inside a running instance, so neither `npm run
-// build` nor the browser can tell a real name from a typo. A hardcoded `#11171d` is worse
-// than silent: it looks correct, because the author is on the light theme. It renders
-// black-on-black the first time someone opens the page in dark mode, and nothing tightens
-// on a phone.
+// A hardcoded `#11171d` looks correct, because the author is on the light theme. It renders
+// black-on-black the first time someone opens the page in dark mode, and nothing tightens on
+// a phone. No build step catches that, so this one does.
 //
-// Verified against the platform (app/ui/engine/distribution + the custom-UI e2e suite):
-// custom UI renders in a shadow root on the platform document, so `--ap-*` inherits from
-// `:root` and every token resolves -- semantic, component, dark-mode and the responsive
-// steps. The tokens are genuinely there to use, which is what makes ignoring them a bug
-// rather than a preference.
+// Token NAMES are the build's job now. Each `@aspen-crm/sdk` version ships a snapshot of its
+// Public tokens, and `x-cli build` fails a stylesheet that names an `--ap-*` property the
+// installed snapshot does not define. This guard checks names against that same snapshot --
+// read from the project's own `node_modules`, never from a copy here that can disagree with
+// it -- for two things the build cannot do: answer at write time, and see JS and inline
+// styles, which the build does not scan. With no installed SDK, or one with no snapshot,
+// there is nothing authoritative to check against and the name check stands down.
 //
 // It denies rather than asks, like guard-metadata-writes: a typo is never intended, and a
 // hardcode has a documented escape hatch, so there is nothing for a human to weigh in on
@@ -22,31 +19,48 @@
 // pages do need a value the system has no token for, and a rule with no way to say so
 // gets switched off. This one makes deviation cost one comment and leave a reason behind.
 
-import { readFileSync, realpathSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
-const HERE = dirname(fileURLToPath(import.meta.url))
+const SDK_PACKAGE = join('node_modules', '@aspen-crm', 'sdk')
 
-// The shipped inventory is the source of truth for what names exist. Parsing the two
-// skill files rather than a generated copy means there is no second artifact to go stale:
-// when the platform team re-syncs the docs, the guard follows in the same commit.
-const TOKEN_DOCS = [
-  join(HERE, '..', 'skills', 'using-aspen', 'ui-design-tokens.md'),
-  join(HERE, '..', 'skills', 'using-aspen', 'ui-component-tokens.md')
-]
-
-// Names ending in `-` are prose -- the files write `--ap-sem-color-*` when naming a family.
-export function loadTokenNames (paths = TOKEN_DOCS) {
-  const names = new Set()
-  for (const path of paths) {
-    let text
-    try { text = readFileSync(path, 'utf8') } catch { continue }
-    for (const match of text.matchAll(/--ap-[a-z0-9-]+/g)) {
-      if (!match[0].endsWith('-')) names.add(match[0])
-    }
+// The installed SDK nearest the file, the way Node would resolve it from there. A file not
+// yet under a UI project with `node_modules` has none.
+export function findSdkDirectory (filePath) {
+  let dir = dirname(resolve(String(filePath ?? '')))
+  for (;;) {
+    const candidate = join(dir, SDK_PACKAGE)
+    if (existsSync(join(candidate, 'package.json'))) return candidate
+    const parent = dirname(dir)
+    if (parent === dir) return null
+    dir = parent
   }
-  return names
+}
+
+// The same lookup x-cli does: `dist/manifest.json` names the snapshot, and an SDK version
+// that names none predates snapshots. Returns null when there is no snapshot to read, so
+// callers can tell "no authority" apart from "an empty inventory".
+export function loadSdkTokenNames (sdkDirectory) {
+  if (!sdkDirectory) return null
+  try {
+    const manifest = JSON.parse(readFileSync(join(sdkDirectory, 'dist', 'manifest.json'), 'utf8'))
+    if (!manifest.tokenStyleSheetFilePath) return null
+    const css = readFileSync(join(sdkDirectory, 'dist', manifest.tokenStyleSheetFilePath), 'utf8')
+    const names = new Set()
+    for (const match of css.matchAll(/(--ap-[\w-]+)\s*:/g)) names.add(match[1])
+    return names.size ? names : null
+  } catch {
+    return null
+  }
+}
+
+const cache = new Map()
+
+export function tokenNamesFor (filePath) {
+  const sdk = findSdkDirectory(filePath)
+  if (!cache.has(sdk)) cache.set(sdk, loadSdkTokenNames(sdk))
+  return cache.get(sdk)
 }
 
 // ---- what this guard looks at ------------------------------------------------------
@@ -77,9 +91,8 @@ export function stripBlockComments (source) {
   return out
 }
 
-// A `var()` fallback is not a deviation -- it is the recommended way to write one, since
-// a typo'd token otherwise resolves to nothing at all. Fallbacks nest and carry commas
-// and parens of their own (`var(--ap-sem-elevation-low, 0 1px 2px rgba(17,23,29,.06))`),
+// A `var()` fallback is not a hardcode -- the token in front of it is what applies.
+// Fallbacks nest and carry commas and parens of their own (`var(--ap-sem-elevation-low, 0 1px 2px rgba(17,23,29,.06))`),
 // so this counts parens instead of trying to match them with a regex.
 export function stripVarCalls (source) {
   let out = source
@@ -301,13 +314,26 @@ export function findComponentMismatches (source) {
   return findings
 }
 
+// The two rules `x-cli build` applies, so the answer here matches the build's: under the
+// reserved `--ap-` prefix only `--ap-sem-*` and `--ap-comp-*` are Guest-usable, and only the
+// names the installed snapshot defines. Declarations count as well as references -- the
+// build rejects a Guest declaring `--ap-sem-foo: 1px` too. `known` is null when there is no
+// snapshot to check against, and then nothing is reported.
+const RESERVED_NAME = /var\(\s*(--ap-[\w-]*)|(?:^|[;{'"`\s])(--ap-[\w-]*)['"]?\s*:/g
+const PUBLIC_NAME = /^--ap-(sem|comp)-/
+
 export function findUnknownTokens (source, known) {
+  if (!known) return []
   const findings = []
   source.split('\n').forEach((line, index) => {
-    for (const match of line.matchAll(/var\(\s*(--ap-[a-z0-9-]*)/g)) {
-      const name = match[1]
+    for (const match of line.matchAll(RESERVED_NAME)) {
+      const name = match[1] ?? match[2]
       if (known.has(name)) continue
-      findings.push({ line: index + 1, name, nearest: nearestName(name, known) })
+      if (!PUBLIC_NAME.test(name)) {
+        findings.push({ line: index + 1, name, reserved: true, nearest: null })
+        continue
+      }
+      findings.push({ line: index + 1, name, reserved: false, nearest: nearestName(name, known) })
     }
   })
   return findings
@@ -351,11 +377,12 @@ function distance (a, b, ceiling) {
 // The component check needs that distinction and the other two do not: it asks whether a
 // file styles its table anywhere, and a fragment that adds three `<td>`s carries none of
 // the file's CSS, so judging one would flag every edit to a table that is already right.
-export function decide (filePath, content, known = loadTokenNames(), whole = true) {
+export function decide (filePath, content, known, whole = true) {
   const path = String(filePath ?? '')
   if (!UI_SOURCE.test(path)) return null
   const source = String(content ?? '')
   if (!source) return null
+  if (known === undefined) known = tokenNamesFor(path)
 
   const unknown = findUnknownTokens(source, known)
   const hardcoded = findHardcodedValues(source)
@@ -366,11 +393,14 @@ export function decide (filePath, content, known = loadTokenNames(), whole = tru
 
   if (unknown.length) {
     parts.push(
-      'These `--ap-*` names are not in the inventory, and a name that does not exist is ' +
-      'not an error anywhere — the declaration is silently dropped and the element keeps ' +
-      'whatever it inherited:\n' +
-      unknown.map(({ line, name, nearest }) =>
-        `  line ${line}: \`${name}\`` + (nearest ? ` — did you mean \`${nearest}\`?` : '')
+      'These `--ap-*` names are not Public tokens in the installed `@aspen-crm/sdk`. In a ' +
+      'stylesheet `x-cli build` fails on them; in JS or an inline style nothing does, and the ' +
+      'declaration is silently dropped:\n' +
+      unknown.map(({ line, name, reserved, nearest }) =>
+        `  line ${line}: \`${name}\`` +
+        (reserved
+          ? ' — the `--ap-` prefix is reserved for Aspen; only `--ap-sem-*` and `--ap-comp-*` are public. Name your own properties without it.'
+          : nearest ? ` — did you mean \`${nearest}\`?` : '')
       ).join('\n')
     )
   }
@@ -394,7 +424,7 @@ export function decide (filePath, content, known = loadTokenNames(), whole = tru
       'hover, border and frame values being re-derived here:\n' +
       mismatched.map(({ component, prefixes }) =>
         `  renders a \`${component}\` but references no ${prefixes.map((p) => `\`${p}*\``).join(' or ')} token` +
-        ` — grep \`ui-component-tokens.md\` for ${prefixes.map((p) => `\`${p}\``).join(' and ')}`
+        ` — see ${prefixes.map((p) => `\`dist/tokens/comp/${p.slice('--ap-comp-'.length, -1)}.d.ts\``).join(' and ')} in the installed SDK`
       ).join('\n') +
       '\n\nStart from the component\'s tokens for the parts it publishes, and compose from ' +
       '`--ap-sem-*` only for what it does not (a magnitude bar in a cell, say). If this is ' +
@@ -404,11 +434,13 @@ export function decide (filePath, content, known = loadTokenNames(), whole = tru
   }
 
   parts.push(
-    'Names are in `ui-design-tokens.md` beside the skill (grep `ui-component-tokens.md` ' +
-    'for one component\'s `--ap-comp-*`). Copy them exactly. Writing the light value as a ' +
-    'fallback — `var(--ap-sem-color-text-primary, #11171d)` — is encouraged and not ' +
-    'flagged. If a value genuinely has no token, keep it and put `aspen-token-exempt: ' +
-    '<reason>` in a comment on that line or the line above.'
+    'Token names come from the installed SDK: its typed modules under ' +
+    '`node_modules/@aspen-crm/sdk/dist/tokens/` (`comp/<family>.d.ts` per component), with ' +
+    '`ui-design-tokens.md` and `ui-component-tokens.md` beside the skill for which token ' +
+    'or component family fits. In JS and ' +
+    'inline styles, import them from `@aspen-crm/sdk/tokens/sem` or `/comp` instead of ' +
+    'writing the string. If a value genuinely has no token, keep it and put ' +
+    '`aspen-token-exempt: <reason>` in a comment on that line or the line above.'
   )
 
   return parts.join('\n\n')
@@ -461,7 +493,8 @@ if (invokedDirectly()) {
   try {
     const payload = await readStdin()
     const input = payload?.tool_input
-    const reason = decide(input?.file_path, contentOf(input), loadTokenNames(), isWholeFile(input))
+    const filePath = input?.file_path && resolve(payload?.cwd || process.cwd(), input.file_path)
+    const reason = decide(filePath, contentOf(input), undefined, isWholeFile(input))
     if (reason) process.stdout.write(deny(reason))
   } catch { /* a guard that crashes must not take the session with it */ }
   process.exit(0)

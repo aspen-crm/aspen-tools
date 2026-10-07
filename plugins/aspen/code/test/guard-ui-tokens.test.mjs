@@ -1,12 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
   decide,
-  loadTokenNames,
+  findSdkDirectory,
+  loadSdkTokenNames,
   findHardcodedValues,
   findUnknownTokens,
   stripVarCalls,
@@ -16,7 +19,40 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SCRIPT = join(HERE, '..', 'hooks', 'guard-ui-tokens.mjs')
 
-const KNOWN = loadTokenNames()
+// A UI project with an installed SDK whose snapshot is shaped like the real one: `:host`
+// rules, a dark override, a media query, and component tokens aliasing semantic ones.
+const SNAPSHOT = `:host {
+  --ap-sem-color-text-primary: #11171d;
+  --ap-sem-color-text-secondary: #3b424a;
+  --ap-sem-color-border-subtle: #e1e3e6;
+  --ap-sem-color-border-default: #cbced2;
+  --ap-sem-color-surface-hover: #eef0f3;
+  --ap-sem-color-brand-primary: #e3722d;
+  --ap-sem-spacing-inner-xs: 8px;
+  --ap-sem-spacing-inner-sm: 12px;
+  --ap-sem-spacing-inner-md: 16px;
+  --ap-sem-border-width-default: 1px;
+  --ap-comp-button-radius: var(--ap-sem-radius-md);
+  --ap-comp-cell-bg-default: var(--ap-sem-color-surface-default);
+}
+:host([data-theme='dark']) { --ap-sem-color-text-primary: #fff; }
+@media (max-width: 767px) { :host { --ap-sem-spacing-inner-md: 12px; } }
+`
+
+function makeProject ({ manifest = { tokenStyleSheetFilePath: 'tokens.css' }, snapshot = SNAPSHOT } = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'aspen-ui-'))
+  const ui = join(root, 'metacode', 'ui', 'ui_main_c')
+  const sdk = join(ui, 'node_modules', '@aspen-crm', 'sdk')
+  mkdirSync(join(sdk, 'dist'), { recursive: true })
+  mkdirSync(join(ui, 'src', 'pages'), { recursive: true })
+  writeFileSync(join(sdk, 'package.json'), '{"name":"@aspen-crm/sdk","version":"0.2.0"}')
+  writeFileSync(join(sdk, 'dist', 'manifest.json'), JSON.stringify(manifest))
+  if (snapshot) writeFileSync(join(sdk, 'dist', 'tokens.css'), snapshot)
+  return { sdk, page: join(ui, 'src', 'pages', 'plan.ts') }
+}
+
+const PROJECT = makeProject()
+const KNOWN = loadSdkTokenNames(PROJECT.sdk)
 const UI = '/Users/x/Aspen/veeva.com_niraj/metacode/ui/ui_main_c/src/pages/plan.ts'
 
 const css = (body) => `export const STYLE = \`\n${body}\n\``
@@ -24,20 +60,21 @@ const flagged = (body) => findHardcodedValues(css(body))
 
 // ---- the inventory the guard checks against ----------------------------------------
 
-test('the shipped token docs parse into a real inventory', () => {
-  // The two md files are the only copy of these names that reaches a customer; if the
-  // parse ever returns a handful, every unknown-name check silently passes.
-  assert.ok(KNOWN.size > 1700, `expected the full inventory, got ${KNOWN.size}`)
+test("names come from the installed SDK's snapshot", () => {
+  assert.equal(findSdkDirectory(PROJECT.page), PROJECT.sdk)
   assert.ok(KNOWN.has('--ap-sem-color-text-primary'))
   assert.ok(KNOWN.has('--ap-comp-button-radius'))
+  // A name only referenced in a value is not one the snapshot defines.
+  assert.ok(!KNOWN.has('--ap-sem-radius-md'))
 })
 
-test('a family written as prose is not mistaken for a token name', () => {
-  // The docs say "prefer `--ap-sem-*`" and name families like `--ap-sem-color-`; a parse
-  // that accepted those would wave through a truncated name.
-  for (const prose of ['--ap-sem-', '--ap-sem-color-', '--ap-comp-', '--ap-sem-spacing-']) {
-    assert.ok(!KNOWN.has(prose), `${prose} is prose, not a token`)
-  }
+test('an SDK without a snapshot, or no SDK at all, is no authority', () => {
+  // The skill no longer carries a list of its own to fall back on: one that disagrees with
+  // the installed SDK would deny names the build accepts.
+  assert.equal(loadSdkTokenNames(makeProject({ manifest: {} }).sdk), null)
+  assert.equal(loadSdkTokenNames(makeProject({ snapshot: null }).sdk), null)
+  assert.equal(findSdkDirectory(UI), null)
+  assert.deepEqual(findUnknownTokens('color: var(--ap-sem-color-text-primry);', null), [])
 })
 
 // ---- unknown token names -----------------------------------------------------------
@@ -56,8 +93,31 @@ test('a real token passes, with or without a fallback', () => {
 })
 
 test('a name too far from anything real reports no suggestion rather than a wrong one', () => {
-  const [found] = findUnknownTokens('color: var(--ap-totally-made-up-thing);', KNOWN)
+  const [found] = findUnknownTokens('color: var(--ap-sem-totally-made-up-thing);', KNOWN)
   assert.equal(found.nearest, null)
+})
+
+test('any other --ap-* name is reserved, referenced or declared', () => {
+  // The build's second rule: only `--ap-sem-*` and `--ap-comp-*` belong to the Guest.
+  const found = findUnknownTokens(
+    'a { --ap-int-gap: 4px; color: var(--ap-prim-gray-900); }\n' +
+    "const s = { '--ap-row-h': '38px' }",
+    KNOWN
+  )
+  assert.deepEqual(found.map(({ name, reserved }) => [name, reserved]), [
+    ['--ap-int-gap', true],
+    ['--ap-prim-gray-900', true],
+    ['--ap-row-h', true]
+  ])
+})
+
+test("the Guest's own custom properties are not checked", () => {
+  assert.deepEqual(findUnknownTokens('a { --ps-row-h: 38px; height: var(--ps-row-h); }', KNOWN), [])
+})
+
+test('a JS token string is checked, which the build does not do', () => {
+  const found = findUnknownTokens("el.style.color = 'var(--ap-sem-color-text-primry)'", KNOWN)
+  assert.equal(found[0]?.nearest, '--ap-sem-color-text-primary')
 })
 
 // ---- hardcoded values, by property -------------------------------------------------
@@ -90,8 +150,7 @@ test('colors, spacing, radius, type and shadow are each caught on their own prop
 // these is one a builder turns off, and then it protects nothing.
 
 test('a var() fallback is not a hardcode', () => {
-  // The skill actively recommends writing the light value as a fallback, because a
-  // misspelled token otherwise resolves to nothing at all.
+  // The token in front of it is what applies; older pages wrote the light value this way.
   assert.deepEqual(flagged('.x { color: var(--ap-sem-color-text-primary, #11171d); }'), [])
   assert.deepEqual(flagged('.x { padding: var(--ap-sem-spacing-inner-md, 16px); }'), [])
 })
@@ -183,9 +242,9 @@ test('the message names the line, the property and the token family to use', () 
   assert.match(reason, /ui-design-tokens\.md/)
 })
 
-test('the message says a fallback is fine, so the fix is not to strip them', () => {
+test('the message points at the typed token modules for JS and inline styles', () => {
   const reason = decide(UI, css('.x { color: #11171d; }'), KNOWN)
-  assert.match(reason, /fallback/)
+  assert.match(reason, /@aspen-crm\/sdk\/tokens\/sem/)
 })
 
 // ---- the tool payloads it runs on ---------------------------------------------------
@@ -217,6 +276,17 @@ test('a clean write produces no output at all, so the tool proceeds', () => {
   }
   const stdout = execFileSync('node', [SCRIPT], { input: JSON.stringify(payload), encoding: 'utf8' })
   assert.equal(stdout, '')
+})
+
+test('a write under a UI project is checked against its installed SDK', () => {
+  const payload = {
+    tool_name: 'Write',
+    tool_input: { file_path: PROJECT.page, content: css('.x { color: var(--ap-sem-color-text-primry); }') }
+  }
+  const stdout = execFileSync('node', [SCRIPT], { input: JSON.stringify(payload), encoding: 'utf8' })
+  const decision = JSON.parse(stdout)
+  assert.equal(decision.hookSpecificOutput.permissionDecision, 'deny')
+  assert.match(decision.hookSpecificOutput.permissionDecisionReason, /did you mean `--ap-sem-color-text-primary`/)
 })
 
 test('a malformed payload is allowed through rather than wedging the session', () => {
@@ -259,7 +329,7 @@ test('the message names the component and where to find its tokens', () => {
   const reason = decide(UI, REBUILT_TABLE, KNOWN)
   assert.match(reason, /renders a `table`/)
   assert.match(reason, /--ap-comp-cell-/)
-  assert.match(reason, /ui-component-tokens\.md/)
+  assert.match(reason, /dist\/tokens\/comp\/cell\.d\.ts/)
   assert.match(reason, /aspen-component-exempt/)
 })
 
