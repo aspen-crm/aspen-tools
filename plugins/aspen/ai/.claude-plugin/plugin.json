@@ -1,0 +1,20 @@
+{
+  "name": "aspencrm-ai",
+  "displayName": "Aspen CRM AI",
+  "description": "Work an Aspen CRM through its hosted MCP connector: explore the model, read, search and report on records, create, update, bulk-update and delete them, attach files, and merge duplicate contacts. Every write is approved in the host.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Aspen CRM"
+  },
+  "repository": "https://github.com/aspen-crm/aspen-tools",
+  "keywords": [
+    "aspen",
+    "crm",
+    "mcp",
+    "hosted",
+    "cowork",
+    "records",
+    "files",
+    "bulk"
+  ]
+}

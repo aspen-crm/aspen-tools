@@ -36,15 +36,15 @@ function call(method, params) {
 try {
   await call('initialize', { clientInfo: { name: 'aspen-plugin-test', version: '1' }, capabilities: { experimentalApi: true } })
   child.stdin.write('{"method":"initialized"}\n')
-  for (const [lane, expectedSkills, expectedHooks] of [['code', 3, 2], ['cowork', 8, 0]]) {
-    const name = `aspen-${lane}`
+  for (const [dir, name, expectedSkills, expectedHooks] of [['code', 'aspen-code', 3, 2], ['ai', 'aspencrm-ai', 8, 0]]) {
     const { plugin } = await call('plugin/read', { pluginName: name, marketplacePath: join(repo, '.claude-plugin/marketplace.json') })
-    const manifest = JSON.parse(readFileSync(join(repo, 'plugins/aspen', lane, '.codex-plugin/plugin.json')))
+    const manifest = JSON.parse(readFileSync(join(repo, 'plugins/aspen', dir, '.codex-plugin/plugin.json')))
     assert.equal(plugin.summary.localVersion, manifest.version)
     assert.equal(plugin.summary.interface.displayName, manifest.interface.displayName)
     assert.equal(plugin.skills.length, expectedSkills)
     assert.equal(plugin.hooks.length, expectedHooks)
-    assert.deepEqual(plugin.mcpServers, lane === 'cowork' ? ['aspen-runtime-mcp'] : [])
+    // Neither plugin starts a server: aspencrm-ai's hosted MCP is added to Codex by URL.
+    assert.deepEqual(plugin.mcpServers, [])
     assert.ok(plugin.skills.every(skill => skill.name.startsWith(`${name}:`)))
     console.log(`${name}: native Codex loader found ${plugin.skills.length} skills, ${plugin.hooks.length} hooks, ${plugin.mcpServers.length} MCP servers`)
   }

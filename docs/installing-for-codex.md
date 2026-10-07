@@ -1,9 +1,10 @@
 # Aspen plugins in Codex
 
-`aspen-code` builds the model through the Aspen CLI. `aspen-cowork` works with live
-records through the runtime MCP; its Codex display name is **Aspen Runtime**.
+`aspen-code` builds the model through the Aspen CLI. `aspencrm-ai` works with live
+records through the instance's hosted MCP; its Codex display name is **Aspen CRM AI**.
 Both use the existing `aspen` repository marketplace. The deprecated
-`aspen-crm-builder` plugin is not needed.
+`aspen-crm-builder` plugin is not needed, and neither is `aspen-cowork` (Aspen Runtime),
+which `aspencrm-ai` replaces.
 
 For the customer-facing, agent-executable walkthrough, use
 [One-prompt terminal setup](start-codex.md). The sections below document the
@@ -17,7 +18,7 @@ tested with Codex CLI 0.156.0. Run from the repository root:
 ```sh
 codex plugin marketplace add .
 codex plugin add aspen-code@aspen
-codex plugin add aspen-cowork@aspen
+codex plugin add aspencrm-ai@aspen
 ```
 
 Install either plugin independently. Once these changes are released, the marketplace
@@ -30,50 +31,35 @@ For code work, select the instance folder Aspen Builder created under `~/Aspen/`
 The CLI lives at `.aspen/bin/aspen` in that folder. Worktrees may omit Builder's ignored
 cache; use the intended instance folder as the CLI working directory.
 
-## Runtime server and identity
+## The hosted MCP and identity
 
-The runtime plugin carries a launcher, not the compiled server. On macOS or Linux:
-
-```sh
-sh plugins/aspen/cowork/bin/install-runtime-mcp.sh --instance https://HOST/DOMAIN/INSTANCE
-```
-
-The installer puts the binary in `~/.config/aspen/mcp/`, respecting `ASPEN_CONFIG_DIR`
-and `XDG_CONFIG_HOME`. `--file BUNDLE.mcpb` uses an already downloaded bundle.
-On Windows, extract `server/aspen-runtime-mcp.exe` from the Windows `.mcpb` (a ZIP),
-and put it in that same config directory's `mcp/` folder, or set `ASPEN_RUNTIME_MCP`
-to the executable. The Codex launcher uses Node on all three platforms.
-
-The user supplies the instance credential through an existing Aspen CLI login or through
-`ASPEN_INSTANCE` and `ASPEN_API_TOKEN` in the host environment/private `mcp/env` file.
-The agent must not read or print credentials. A CLI API-key login is durable; the MCP
-cannot refresh an expired OAuth token. The bulk and merge helpers also understand CLI
-file credentials and OS-keyring credentials on macOS/Linux. Linux keyring access from
-the helpers requires `secret-tool`; Windows helpers require file/environment credentials.
-
-Do not register the same server separately when the runtime plugin is enabled. The plugin
-declares the Node launcher inline in its Codex manifest; Claude Code retains its shell
-launcher. Codex forwards the listed Aspen environment variables. A desktop app started
-outside a terminal may not inherit terminal exports; the private env file or CLI login
-avoids that dependency.
-
-Bulk updates default to enabled for the local launcher. `ASPEN_BULK_WRITES=0` disables
-them. Skills check the actual tool catalog. The Codex server definition allows 360 seconds
-per tool call to accommodate the runtime's 300-second upload ceiling.
-
-For a standalone server without the plugin, register the launcher by its absolute path:
+`aspencrm-ai` carries skills only. The tools come from the instance itself: every Aspen
+instance serves an MCP server at its own URL with `/mcp` on the end. Add it to Codex once,
+then sign in:
 
 ```sh
-codex mcp add aspen-runtime-mcp -- node /ABSOLUTE/aspen-tools/plugins/aspen/cowork/bin/aspen-runtime-mcp.mjs
+codex mcp add aspen --url https://HOST/DOMAIN/INSTANCE/mcp
+codex mcp login aspen
 ```
 
-Then set `tool_timeout_sec = 360` under `[mcp_servers.aspen-runtime-mcp]` in Codex's
-`config.toml`, and use `env_vars` to forward any needed Aspen environment settings.
-The launcher reads the private env file itself. Never put a real token in a shared config.
+`login` opens the instance's own sign-in page; the session it stores is the customer's,
+scoped to what they can see in the CRM. The instance registers OAuth clients by client ID
+metadata document — if `login` fails at client registration, run it again with
+`--oauth-client-registration cimd`. `--no-browser` prints the authorization URL instead, for a
+remote shell. When the session later expires, `codex mcp login aspen` again.
 
-The `aspen_query` planner has its own Anthropic/Vertex configuration. Codex login does not
-configure it. Describe/list/report work without that planner, and the query skill falls
-back to those tools when the planner is unavailable.
+There is no API key, no binary to install and no environment variable to set. The agent never
+reads, prints or handles a credential.
+
+The server exposes three tools — `summarize_api`, `search_api_operations`,
+`execute_api_request` — and asks the user to approve every operation that changes data through
+an MCP elicitation. It speaks protocol revision 2026-07-28 only. **Neither has been verified
+against Codex yet:** if Codex cannot connect, or reads work but every write fails with "…this
+client cannot collect", that is a Codex client limitation, not an install problem.
+
+If `aspen-cowork` and its runtime server were set up before, remove them:
+`codex plugin remove aspen-cowork@aspen`, and `codex mcp remove aspen-runtime-mcp` if it was
+registered by hand. Left in place they show a second, older set of Aspen tools.
 
 ## Hook behavior
 
@@ -99,18 +85,15 @@ on demand.
 ## Validate and package
 
 ```sh
-node --test plugins/aspen/code/test/*.test.mjs plugins/aspen/cowork/test/*.test.mjs
-node scripts/validate-plugins.mjs plugins/aspen/code plugins/aspen/cowork
+node --test plugins/aspen/code/test/*.test.mjs plugins/aspen/ai/test/*.test.mjs
+node scripts/validate-plugins.mjs plugins/aspen/code plugins/aspen/ai
 node scripts/test-codex.mjs
-node scripts/smoke-runtime-mcp.mjs /ABSOLUTE/PATH/TO/aspen-runtime-mcp
 ./scripts/package-plugin.sh plugins/aspen/code dist codex
-./scripts/package-plugin.sh plugins/aspen/cowork dist codex
+./scripts/package-plugin.sh plugins/aspen/ai dist codex
 ```
 
-The native loader test makes no model calls and does not install plugins. The protocol
-smoke uses an empty temporary identity directory and only initializes/lists tools and
-resources; it never calls a live instance. Behavioral model evals are separately opt-in;
-see the plugin's eval README.
+The native loader test makes no model calls, does not install plugins and never reaches an
+instance. Behavioral model evals are separately opt-in; see the plugin's eval README.
 
-Codex archives end in `-codex.zip` and retain the runtime launcher. The default `cowork`
-archive preserves the Claude Desktop delivery contract and omits MCP startup wiring.
+Codex archives end in `-codex.zip` and carry the Codex manifest. The default `cowork`
+archive carries Claude's manifest and is the Cowork upload.

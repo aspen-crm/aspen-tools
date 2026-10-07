@@ -59,8 +59,8 @@ in Claude Code:
 If the install asks which scope, they should pick **User**: that turns the plugin on in every
 instance folder they open, not only this one, and its hooks stay silent outside an Aspen folder.
 
-`aspen-code` is the one this document needs. The same marketplace also carries `aspen-cowork`, the
-collaboration half — it is not part of this setup, so do not install it here unless asked.
+`aspen-code` is the one this document needs. The same marketplace also carries `aspencrm-ai`, the
+records half — it is not part of this setup, so do not install it here unless asked.
 
 When the plugin is installed, one skill becomes available — `using-aspen` — and it is the whole
 procedure: the folder map, the CLI commands, and the loop from finding a component's shape through

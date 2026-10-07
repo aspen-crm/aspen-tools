@@ -10,11 +10,11 @@ in sync. The shared skills and hooks have one source. Build a Codex archive with
 
 ```sh
 ./scripts/package-plugin.sh plugins/aspen/code dist codex
-./scripts/package-plugin.sh plugins/aspen/cowork dist codex
+./scripts/package-plugin.sh plugins/aspen/ai dist codex
 ```
 
-The resulting `*-codex.zip` retains the Node MCP launcher and Codex manifest. The default
-packaging target remains `cowork`, which strips MCP launch wiring and the Codex manifest.
+The resulting `*-codex.zip` carries the Codex manifest and leaves out Claude's. The default
+packaging target remains `cowork`, which carries Claude's manifest and leaves out Codex's.
 The CI Codex job validates the archives and reads both plugins through the native loader.
 Builds do not publish, install plugins, configure credentials, or trust hooks.
 
@@ -26,7 +26,7 @@ A release tag names the tool, then its version:
 builder-v0.11.0
 stdio-mcp-v0.1.14
 aspen-code--v1.4.0
-aspen-cowork--v0.1.8
+aspencrm-ai--v0.1.0
 ```
 
 The prefix is what keeps the tools independent: GitHub keys a release to a
@@ -37,7 +37,10 @@ one version onto everything here, which is exactly what this layout avoids.
 **The two plugins get a prefix each**, not a shared `plugin-` one. They are
 versioned separately and change for unrelated reasons, so a single prefix
 would make every `aspen-code` release look like it said something about
-`aspen-cowork`.
+`aspencrm-ai`.
+
+Retired tools keep their prefixes and their releases: `stdio-mcp-` (the
+runtime MCP) and `aspen-cowork--` are never reused.
 
 The plugins use `--v` rather than Builder's `-v` because that is what
 `claude plugin tag` produces, and cutting the tag with that command is worth
@@ -154,7 +157,7 @@ the most recent release ACROSS THIS WHOLE REPOSITORY.
 **This is no longer hypothetical.** `/releases/latest/` currently resolves to
 `stdio-mcp-v0.1.14`, which holds no installers -- so a Builder link written
 against it would 404 today, with nothing on the page to say why. Every download
-link in the README points at a FIXED tag (`builder-latest`, `stdio-mcp-latest`)
+link in the README points at a FIXED tag (`builder-latest`, `aspencrm-ai-latest`)
 for exactly this reason. Keep it that way: a link that names a release by
 recency belongs to whichever tool shipped last.
 
@@ -164,84 +167,19 @@ get a specific older build.
 The macOS build is unsigned unless a signing identity is configured, so a first
 open needs right-click then Open. Worth saying wherever the link is handed out.
 
-## Runtime MCP
+## Runtime MCP (retired)
 
-The source is private and lives elsewhere; the `.mcpb` bundles are built there
-by `release-runtime-mcp.yml` and published HERE, so a download link can be
-handed to someone who has no access to the source. Anyone who needs the source
-already knows where it is -- this page is read by people who do not.
+The Aspen Runtime MCP — the local `.mcpb` server — is **retired**. Each instance now serves
+its own MCP at `https://<host>/<domain>/<instance>/mcp`, built and deployed with the platform,
+so there is nothing to publish here for it.
 
-**Four files are published: macOS, Windows, and Linux for x86_64 and arm64.**
-Claude Desktop, which is what installs an `.mcpb`, runs on the first two only,
-so the README links only those. The Linux bundles are for hosts that launch a
-local MCP server themselves: on Claude Code,
-`plugins/aspen/cowork/bin/install-runtime-mcp.sh` downloads the bundle for the
-machine it runs on, Linux included, and takes the server out of it.
-
-The macOS bundle is universal, so unlike Builder there is no second mac file.
-
-**The asset names are a contract.** That installer builds its URL from the
-tag and the platform: `stdio-mcp-latest/aspen-runtime-mcp-<platform>.mcpb`,
-or `stdio-mcp-v<version>/aspen-runtime-mcp-<version>-<platform>.mcpb` for a
-pinned version, with `<platform>` one of `macos`, `linux-x86_64`,
-`linux-aarch64`. Renaming an asset, or publishing a version without one of the
-four, breaks every install from then on, with nothing in this repository
-failing to say so.
-
-The version is whatever the bundle says about itself. Read it before tagging,
-and make the tag match -- a user who checks their installed version has to be
-able to find the matching release:
-
-```bash
-unzip -p aspen-runtime-mcp-macos.mcpb manifest.json | grep -o '"version":"[^"]*"'
-```
-
-### Publishing
-
-There is no script yet; Builder's guards are about a public subset of a private
-release line, which does not apply here. By hand:
-
-```bash
-VERSION=0.1.14
-TAG="stdio-mcp-v$VERSION"
-
-# versioned release: the archive, with versioned filenames
-for p in macos windows linux-x86_64 linux-aarch64; do
-  cp "aspen-runtime-mcp-$p.mcpb" "aspen-runtime-mcp-$VERSION-$p.mcpb"
-done
-gh release create "$TAG" \
-  aspen-runtime-mcp-"$VERSION"-{macos,windows,linux-x86_64,linux-aarch64}.mcpb \
-  --repo aspen-crm/aspen-tools \
-  --title "Aspen Runtime MCP $VERSION" --notes-file notes.md
-
-# stdio-mcp-latest: version-less filenames, overwritten each time
-gh release upload stdio-mcp-latest \
-  aspen-runtime-mcp-{macos,windows,linux-x86_64,linux-aarch64}.mcpb \
-  --repo aspen-crm/aspen-tools --clobber
-gh release edit stdio-mcp-latest --repo aspen-crm/aspen-tools \
-  --notes "Always the current Aspen Runtime MCP. Currently $VERSION."
-```
-
-`stdio-mcp-latest` is a fixed tag created with `--latest=false`, for the same
-reason `builder-latest` is: GitHub's own "Latest" resolves across the whole
-repository, so a `builder-` release would silently repoint every MCP download
-link at a release holding no bundles.
-
-Do not move `stdio-mcp-latest` backwards. The versioned release is the archive
-and can be published for any version; the pointer everyone downloads should
-only go forward.
-
-It is paired with the `aspen-cowork` plugin, and the pairing runs one way: the
-plugin teaches tools the server owns. **The server is the authority on both the
-tool names and the error codes.** A server release that renames a tool or drops
-an error code breaks the plugin's guidance without changing a file in
-`plugins/aspen/cowork/`, and nothing here will fail to build. When the server
-moves, re-read the cowork skills against it and cut a plugin release too.
-
-### The notes are public
-
-Same rule as Builder: written by hand, in the words of someone who does not
-have the source. Say what a person will notice, not what changed in the code.
+- **Don't delete the `stdio-mcp-` releases or `stdio-mcp-latest`.** Their links are in
+  people's hands; a 404 says nothing about where to go. `stdio-mcp-latest`'s notes point at
+  the hosted server instead.
+- **Don't publish another `stdio-mcp-` release.** Nothing in this repository installs one any
+  more; the plugin that did (`aspen-cowork`) is retired with it.
+- The source repository still builds the server; that is its business. Its releases are no
+  longer public.
 
 ## The Claude plugins
 
@@ -250,7 +188,7 @@ Two plugins ship from `plugins/aspen/`, and they are separate products:
 | Plugin | Directory | Lane | Tag |
 | --- | --- | --- | --- |
 | `aspen-code` | `plugins/aspen/code/` | Author metadata with the `aspen` CLI | `aspen-code--vX.Y.Z` |
-| `aspen-cowork` | `plugins/aspen/cowork/` | Work live records over the runtime MCP | `aspen-cowork--vX.Y.Z` |
+| `aspencrm-ai` | `plugins/aspen/ai/` | Work live records over the instance's hosted MCP | `aspencrm-ai--vX.Y.Z` |
 
 **In Claude Code, neither is installed from a release.** Claude Code reads
 `.claude-plugin/marketplace.json` at the root of this repository, so what a
@@ -259,7 +197,7 @@ user installs is the repository's CONTENTS at the ref they add:
 ```
 /plugin marketplace add aspen-crm/aspen-tools
 /plugin install aspen-code@aspen
-/plugin install aspen-cowork@aspen
+/plugin install aspencrm-ai@aspen
 ```
 
 The marketplace is named `aspen`; that is what `@aspen` refers to, and it does
@@ -271,17 +209,17 @@ updating the marketplace as soon as it lands on the default branch. For
 a changelog, not the delivery mechanism -- useful for saying what changed and
 for pinning, not for getting the code to people.
 
-### `aspen-cowork` also ships as a zip, and that one IS the delivery
+### `aspencrm-ai` also ships as a zip, and that one IS the delivery
 
 Cowork installs a plugin by **uploading a zip** in Customize -> Plugins. It has
 no `/plugin` command, and pointing it at the marketplace has not worked in
-practice. So `aspen-cowork` is published as a release asset as well, and for a
+practice. So `aspencrm-ai` is published as a release asset as well, and for a
 Cowork user that asset -- not the default branch -- is what they run.
 
 Build it from the plugin directory; never assemble one by hand:
 
 ```bash
-./scripts/package-plugin.sh plugins/aspen/cowork    # -> dist/aspen-cowork-<version>.zip
+./scripts/package-plugin.sh plugins/aspen/ai    # -> dist/aspencrm-ai-<version>.zip
 ```
 
 The script stages the plugin, generates a one-plugin `marketplace.json` into the
@@ -291,50 +229,50 @@ validates what is about to ship rather than the source tree, and pins every
 mtime to the plugin's last commit so two builds of one commit are byte-identical.
 Build from a clean tree: a dirty one reuses the previous commit's timestamp.
 
-**The zip leaves out `.mcp.json` and `bin/`, on purpose.** Those two wire the
-runtime MCP up for Claude Code, where the plugin has to start the server
-itself. In Cowork the server is Claude Desktop's extension, holding the token
-in Desktop's secret store; a second entry that starts a launcher would fail
-there for want of a binary, or, once one was installed, list every tool twice.
-This is the one place the zip and the marketplace differ, and the difference
-is by host, not by version.
+The zip and the marketplace carry the same files. The plugin has no server
+wiring at all -- the hosted MCP's URL is different for every instance, so each
+host adds it as a connector -- which is what lets one zip serve every Cowork
+user.
 
-**Why it is built and not hand-made.** The zip previously lived in a GCS bucket,
+**Why it is built and not hand-made.** A zip once lived in a GCS bucket,
 maintained by hand. It drifted to five versions behind the repository and still
-carried the router under its pre-rename name, which collided with `aspen-code`'s
+carried a router under its pre-rename name, which collided with `aspen-code`'s
 router of the same name -- a bug that could not be seen from this repository,
 because nothing here referenced that file. Generated at tag time, that cannot
 recur. The bucket is gone; do not resurrect it.
 
-Publishing follows the runtime MCP's shape -- a versioned archive plus a fixed
-pointer tag, so the download link in `docs/installing-for-cowork.md` is
-permanent:
+Publishing is a versioned archive plus a fixed pointer tag, so the download link
+in `docs/installing-for-cowork.md` is permanent:
 
 ```bash
-VERSION=0.1.8
-./scripts/package-plugin.sh plugins/aspen/cowork
+VERSION=0.1.0
+./scripts/package-plugin.sh plugins/aspen/ai
 
 # versioned release: the archive
-gh release create "aspen-cowork--v$VERSION" "dist/aspen-cowork-$VERSION.zip" \
+gh release create "aspencrm-ai--v$VERSION" "dist/aspencrm-ai-$VERSION.zip" \
   --repo aspen-crm/aspen-tools \
-  --title "Aspen Cowork $VERSION" --notes-file notes.md
+  --title "Aspen CRM AI $VERSION" --notes-file notes.md
 
-# aspen-cowork-latest: version-less filename, overwritten each time
-cp "dist/aspen-cowork-$VERSION.zip" dist/aspen-cowork-plugin.zip
-gh release upload aspen-cowork-latest dist/aspen-cowork-plugin.zip \
+# aspencrm-ai-latest: version-less filename, overwritten each time
+cp "dist/aspencrm-ai-$VERSION.zip" dist/aspencrm-ai-plugin.zip
+gh release upload aspencrm-ai-latest dist/aspencrm-ai-plugin.zip \
   --repo aspen-crm/aspen-tools --clobber
-gh release edit aspen-cowork-latest --repo aspen-crm/aspen-tools \
-  --notes "Always the current Aspen Cowork plugin. Currently $VERSION."
+gh release edit aspencrm-ai-latest --repo aspen-crm/aspen-tools \
+  --notes "Always the current Aspen CRM AI plugin. Currently $VERSION."
 ```
 
-`aspen-cowork-latest` is a fixed tag created with `--latest=false`, for the same
-reason `builder-latest` and `stdio-mcp-latest` are: GitHub's own "Latest"
-resolves across the whole repository. Do not move it backwards.
+`aspencrm-ai-latest` is a fixed tag created with `--latest=false` (the first
+publish: `gh release create aspencrm-ai-latest dist/aspencrm-ai-plugin.zip
+--latest=false ...`), for the same reason `builder-latest` is: GitHub's own
+"Latest" resolves across the whole repository. Do not move it backwards.
 
 **The zip and the marketplace must not diverge.** They are the same plugin
 delivered two ways, and a Cowork user and a Claude Code user comparing notes
 should be on the same version. Cut the zip from the same commit you tag, in the
 same pass -- not later, from whatever the tree looks like then.
+
+`aspen-cowork-latest` stays up for the links already handed out, with notes
+pointing at `aspencrm-ai-latest`. Nothing new is published to it.
 
 ### Cutting a plugin tag
 
@@ -352,11 +290,15 @@ user reading an installed plugin's version should be able to find the matching
 release notes, which is the whole reason the manifest version and the tag have
 to agree.
 
-`aspen-cowork` has a second dependency Builder does not: it teaches the ten
-`aspen_*` tools of the `aspen-runtime-mcp` server but ships none of them. A
-release of the server that renames a tool or an error code breaks the plugin's
-guidance without changing a file here, so cut a `aspen-cowork` release when the
-server moves under it, not only when a skill is edited.
+`aspencrm-ai` has a second dependency Builder does not: it teaches the REST
+operations an instance's hosted MCP runs, and ships none of them. Those come
+from the platform build each instance is on, not from a release here, so two
+customers can be on different operation sets at once. The skills lean on
+`summarize_api` and `search_api_operations` when a path or body is in doubt,
+and `plugins/aspen/ai/test/skills.test.mjs` checks every path a skill names
+against a snapshot of the catalog. When the platform renames or drops an
+operation, refresh that snapshot, fix the skills, and cut a release -- not only
+when a skill is edited.
 
 ### Renaming or adding a plugin is a breaking change for installers
 
@@ -371,9 +313,9 @@ a major version bump.
 1. Put it under `plugins/aspen/<name>/` if it is a Claude plugin, and add it
    to the `plugins` array in `.claude-plugin/marketplace.json` with
    `"source": "./plugins/aspen/<name>"`. Its `plugin.json` `name` is what
-   users type, so prefix it: `aspen-<name>`. If it is a binary, it needs no
-   directory here at all -- only releases. Builder and the runtime MCP are
-   both that second shape: nothing of either is committed.
+   users type, so prefix it (`aspen-code`, `aspencrm-ai`). If it is a binary,
+   it needs no directory here at all -- only releases. Builder is that second
+   shape, as the retired runtime MCP was: nothing of it is committed.
 2. Give it a tag prefix -- `claude plugin tag` derives one from the plugin
    name, so for a plugin this is already decided.
 3. Add a section to the README saying how to get it.

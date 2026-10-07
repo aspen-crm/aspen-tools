@@ -5,11 +5,11 @@
 # a zip in Customize -> Plugins. This builds the second. The zip is also a valid
 # `archive` source for a marketplace entry, should one ever point at it.
 #
-#   ./scripts/package-plugin.sh plugins/aspen/cowork
-#   ./scripts/package-plugin.sh plugins/aspen/cowork dist codex
+#   ./scripts/package-plugin.sh plugins/aspen/ai
+#   ./scripts/package-plugin.sh plugins/aspen/ai dist codex
 #
-# The optional codex target retains the runtime launcher and native manifest,
-# and omits the Claude-specific discovery files.
+# The optional codex target keeps the native Codex manifest and omits the
+# Claude-specific discovery files.
 #
 # The zip carries the plugin root at its TOP LEVEL -- .claude-plugin/,
 # skills/, agents/ -- not nested under a directory. A host that unpacks it
@@ -48,17 +48,14 @@ trap 'rm -rf "$STAGE"' EXIT
 BUILD="$STAGE/$NAME"
 
 # Copy the plugin verbatim, minus anything that is repository bookkeeping, and
-# minus the Claude Code server wiring (.mcp.json and the bin/ it runs). In Cowork
-# the runtime MCP is Claude Desktop's extension; a second entry that starts a
-# launcher would fail there, or list every tool twice once the launcher found a
-# server. See docs/releasing.md.
+# minus the other host's manifest.
 mkdir -p "$BUILD"
 EXCLUDES=(--exclude='.git' --exclude='.gitignore' --exclude='.DS_Store'
     --exclude='node_modules' --exclude='test')
 if [ "$TARGET" = cowork ]; then
-    EXCLUDES+=(--exclude='.mcp.json' --exclude='bin' --exclude='.codex-plugin')
+    EXCLUDES+=(--exclude='.codex-plugin')
 else
-    # Codex declares its MCP inline; do not also discover Claude's shell launcher.
+    # Codex reads its own manifest; leave out Claude's, its MCP wiring and its agents.
     EXCLUDES+=(--exclude='.claude-plugin' --exclude='.mcp.json' --exclude='agents')
 fi
 tar -cf - -C "$PLUGIN_DIR" "${EXCLUDES[@]}" . | tar -xf - -C "$BUILD"

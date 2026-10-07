@@ -4,8 +4,8 @@ For Codex installation, hook trust and runtime differences, see
 [Installing for Codex](../../../docs/installing-for-codex.md).
 
 Customizing an [Aspen Platform](https://github.com/aspen-crm) instance with the `aspen` CLI. This
-is the build half of the Aspen tools; the collaboration half ships separately as
-[aspen-cowork](../cowork).
+is the build half of the Aspen tools; the records half ships separately as
+[aspencrm-ai](../ai).
 
 Deliberately small. Its whole job is to remove decisions from the session — two gates before the
 first file, one skill that is the entire procedure for building it, a session-start hook that

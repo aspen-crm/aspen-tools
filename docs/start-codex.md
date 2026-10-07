@@ -2,7 +2,7 @@
 
 You are setting up this customer's computer to use Aspen from Codex CLI. Execute
 the steps below, verify each result, and reuse anything already configured. The
-default setup includes Aspen Code for customization and Aspen Runtime for records;
+default setup includes Aspen Code for customization and Aspen CRM AI for records;
 honor a request for only one. Setup ends with read-only verification.
 
 This guide is intended to be read inside an authenticated Codex terminal session.
@@ -38,7 +38,7 @@ they do that. Builder downloads:
 - [Windows x64](https://github.com/aspen-crm/aspen-tools/releases/download/builder-latest/Aspen-Builder-Setup-x64.exe)
 
 Other platforms need a supported Aspen CLI/instance workspace from their Aspen
-administrator. Runtime-only use does not require Builder. Do not run `aspen init`
+administrator. Records-only use does not require Builder. Do not run `aspen init`
 or put the instance CLI on PATH. A worktree can omit Builder's ignored `.aspen/`
 cache; use the actual instance folder for setup.
 
@@ -58,48 +58,39 @@ Install the selected plugins using shell commands, not Claude slash commands:
 
 ```sh
 codex plugin add aspen-code@aspen
-codex plugin add aspen-cowork@aspen
+codex plugin add aspencrm-ai@aspen
 codex plugin list --marketplace aspen --json
 ```
 
 Check that the selected plugins are installed and enabled. The initial Codex
-versions are `aspen-code` 2.8.0 and `aspen-cowork` 0.8.0; later versions are fine.
-The runtime plugin's display name is **Aspen Runtime**. Do not install the
-deprecated `aspen-crm-builder` plugin.
+versions are `aspen-code` 2.8.0 and `aspencrm-ai` 0.1.0; later versions are fine.
+The records plugin's display name is **Aspen CRM AI**. Do not install the
+deprecated `aspen-crm-builder` plugin, or the retired `aspen-cowork` (Aspen
+Runtime): if `aspen-cowork` is installed, remove it with
+`codex plugin remove aspen-cowork@aspen`, and remove an `aspen-runtime-mcp`
+server from `codex mcp list` with `codex mcp remove`.
 
 Use the installed plugin paths returned by Codex to locate their manifests,
-skills, hooks and runtime installer. If needed, use the marketplace root returned
+skills and hooks. If needed, use the marketplace root returned
 by `codex plugin marketplace list --json` to locate the same source files. Do not
 assume a fixed cache version directory or edit the installed plugin.
 
-## 3. Install the runtime and connect the customer's login
+## 3. Connect the instance's hosted MCP
 
-Skip this step for a customization-only setup. The runtime plugin includes its
-launcher but needs the compiled server installed separately.
-
-On macOS/Linux, run the selected plugin's installer by its absolute path:
+Skip this step for a customization-only setup. The records plugin carries skills
+only; the tools come from the instance, which serves an MCP server at its URL
+with `/mcp` on the end. Check `codex mcp list` for one already pointing there,
+and reuse it. Otherwise add it:
 
 ```sh
-sh "<aspen-cowork plugin directory>/bin/install-runtime-mcp.sh" --instance "<instance URL>"
+codex mcp add aspen --url "<instance URL>/mcp"
 ```
 
-On Windows, download the
-[Windows runtime bundle](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb).
-It is a ZIP: extract `server/aspen-runtime-mcp.exe` into `<config>/mcp/`.
-`<config>` is `ASPEN_CONFIG_DIR`, otherwise `XDG_CONFIG_HOME/aspen`, otherwise
-`~/.config/aspen`. On all platforms verify the installed binary with `--version`.
-
-The plugin starts the Node launcher itself. Do not add a second server with
-`codex mcp add`. Some installer messages refer to Claude Code; its separate MCP
-registration command is unnecessary for this Codex plugin.
-
-Reuse the customer's existing Aspen login. Let the runtime resolve credentials;
-do not inspect credential files, query the keyring, or print environment secrets.
-If authentication needs setup, the customer signs in through Builder or their
-Aspen CLI. If using a personal API token, have them configure it privately using
-the [runtime identity guide](https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/installing-for-codex.md).
-Never ask them to paste a token into the conversation. OAuth credentials may need
-refreshing through the Aspen CLI; the runtime does not refresh them itself.
+Then the customer signs in. `codex mcp login aspen` opens the instance's own
+sign-in page in their browser; they run it themselves in their terminal, since
+it needs them at the keyboard. If login fails at client registration, they
+retry with `--oauth-client-registration cimd`. There is no API key or token in
+this setup: never ask for one, and refuse one if offered.
 
 ## 4. Start a fresh Codex session and verify
 
@@ -120,24 +111,27 @@ Do not edit hook trust state or bypass a managed policy.
 In the fresh session:
 
 1. Confirm the selected plugins' skills are available. Aspen Code includes
-   `using-aspen`, `lean-data-model`, and `model-first`; Aspen Runtime includes
-   `using-aspen-cowork` and `explore` among its skills.
+   `using-aspen`, `lean-data-model`, and `model-first`; Aspen CRM AI includes
+   `using-aspencrm-ai` and `explore` among its skills.
 2. For customization, confirm the instance folder contains `metacode/` and the
    Aspen CLI runs. Check whether hooks are trusted; if not, report that explicitly.
-3. For runtime use, confirm one `aspen-runtime-mcp` connection and its tools. Load
-   the `explore` skill and make one `aspen_describe` call to list objects on the
-   intended instance, using the actual tool schema. This proves authentication
-   and connectivity without changing data. If it fails, report the error's code
-   and `fix_hint`, let the customer complete any login step, then retry.
+3. For records use, confirm the hosted MCP connection and its three tools
+   (`summarize_api`, `search_api_operations`, `execute_api_request`). Load the
+   `explore` skill and make one read: `GET /api/v24.3/describe/me` through
+   `execute_api_request`, which names the signed-in user, then the object
+   catalog. This proves sign-in and connectivity without changing data. If it
+   fails, report the HTTP status and `body.failures`, let the customer complete
+   `codex mcp login aspen`, then retry. If Codex cannot connect at all, report
+   that too: the server needs MCP protocol revision 2026-07-28, which this
+   Codex version may not speak yet.
 4. Report what is installed, which folder and instance are selected, and what
    verification passed or remains blocked. Do not call setup complete solely
    because the plugin manifests or server binary exist.
 
 Do not create sample records, upload files, deploy metadata, or run shared-state
-recovery during setup. Natural-language `aspen_query` has separate planner
-credentials; use Describe/list/report for verification instead of requiring an
-Anthropic or Vertex account to finish onboarding. Once setup is verified, invite
-the customer's first real Aspen task.
+recovery during setup — every write would also ask the customer for an approval
+they did not expect. Once setup is verified, invite the customer's first real
+Aspen task.
 
 References: [Codex plugin setup](https://developers.openai.com/plugins/build/plugins),
 [hook trust](https://learn.chatgpt.com/docs/hooks), and the
