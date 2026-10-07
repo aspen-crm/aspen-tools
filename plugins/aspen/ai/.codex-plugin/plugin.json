@@ -1,0 +1,33 @@
+{
+  "name": "aspencrm-ai",
+  "version": "0.1.0",
+  "author": {
+    "name": "Aspen CRM"
+  },
+  "repository": "https://github.com/aspen-crm/aspen-tools",
+  "keywords": [
+    "aspen",
+    "crm",
+    "mcp",
+    "hosted",
+    "records",
+    "files",
+    "bulk"
+  ],
+  "description": "Work an Aspen CRM through its hosted MCP connector: explore the model, read, search and report on records, create, update, bulk-update and delete them, attach files, and merge duplicate contacts. Every write is approved in the host.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Aspen CRM AI",
+    "shortDescription": "Explore, report on and update Aspen CRM records through the instance's hosted MCP.",
+    "longDescription": "Explore the model, read, search and report on Aspen CRM records, create, update, bulk-update and delete them, attach files, and merge duplicate contacts, through the instance's hosted MCP server. Add that server to Codex separately; this plugin carries the know-how, not the connection.",
+    "developerName": "Aspen CRM",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Explore my Aspen CRM and summarize open work"
+    ]
+  }
+}

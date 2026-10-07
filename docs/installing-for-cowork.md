@@ -1,29 +1,25 @@
-# Installing Aspen for Cowork — end-user guide
+# Installing Aspen for Claude and Cowork — end-user guide
 
-Work your Aspen CRM from Claude: view, search, report on, create, and update records, and
-attach files to them, in plain language.
+Work your Aspen CRM from Claude: view, search, report on, create, update and delete records,
+attach files, and merge duplicate contacts, in plain language.
 
-**The quickest way through this page:** paste its URL into a Cowork conversation and say
-"read this and help me install". Claude will work the steps with you, one at a time, and
-hand you each download link as you reach it. Or just follow the steps yourself — they're
-written for both.
+**The quickest way through this page:** paste its URL into a Claude or Cowork conversation
+and say "read this and help me install". Claude will work the steps with you, one at a time.
+Or just follow the steps yourself — they're written for both.
 
 > **If you're Claude, reading this page for someone:** this document is agent-executable.
 > Work the steps in order with them, and follow these rules.
 >
-> - **Every download is theirs to click.** Do not fetch these files yourself. The human
->   clicks the link in their own browser so the file lands in the real Downloads folder
->   they can double-click from — a path inside your workspace is not somewhere they can
->   reach.
-> - **Print the URL every single time you name a file.** "Click the link" with no link is
->   a broken instruction. Copy the full URLs out of Step 1 verbatim into your own message.
->   If you summarise this page, the links are the part that must survive.
-> - **Never ask for the API key, and refuse it if it's offered.** It goes into a config
->   form in Claude Desktop and nowhere else. It must never appear in a conversation.
-> - **Stop at every step that is theirs.** Creating a key and installing a desktop
->   extension are the human's to do. Wait for them to say it's done before moving on.
+> - **Every click in settings is theirs.** Adding a connector, signing in and uploading a
+>   plugin happen in their app, not in your tools. Tell them exactly where to click, then
+>   wait for them to say it's done.
+> - **Print the URL every single time you name a file or an address.** "Click the link" with
+>   no link is a broken instruction. Copy the plugin URL out of Step 3 verbatim into your own
+>   message, and spell out their connector URL once you have their instance URL.
+> - **Never ask for a password, token or API key, and refuse one if it's offered.** Signing
+>   in happens on Aspen's own sign-in page. Nothing secret belongs in a conversation.
 > - **You cannot verify this install yourself.** A conversation's tools are fixed when it
->   starts, so the extension you just helped install will not appear in *this* one. Step 5
+>   starts, so the connector you just helped add will not appear in *this* one. Step 4
 >   happens in a fresh conversation, and it's theirs to run.
 
 ---
@@ -34,155 +30,110 @@ There are **two pieces**, and you need both:
 
 | Piece | What it is | Where it goes |
 |---|---|---|
-| **Runtime MCP** — `aspen-runtime-mcp-<os>.mcpb` | The tools. A small program that talks to your instance's API. **This is the piece that holds your API key.** | Claude Desktop → Extensions |
-| **Cowork plugin** — `aspen-cowork-plugin.zip` | The know-how. Skills that teach Claude how to explore your model and make changes safely. | Cowork → Customize → Plugins |
+| **The Aspen connector** — your instance's own MCP server | The tools. Your instance serves them; Claude signs in to it **as you**. Nothing to download. | Settings → Connectors |
+| **The plugin** — `aspencrm-ai-plugin.zip` | The know-how. Skills that teach Claude your instance's grammar and how to change records safely. | Cowork → Customize → Plugins |
 
-Installing the tools without the plugin works, but Claude guesses more. Install both.
+The connector without the plugin works, but Claude guesses more. Install both.
 
-Both install **once, globally** — every future conversation has them. There is nothing to
-redo per session.
+Both install **once** — every future conversation has them. There is nothing to redo per
+session, and it works on the desktop app and on the web alike.
 
-**Time:** about 10 minutes. **You'll need:** your Aspen instance URL, and permission to
-create an API key in it.
+**Time:** about 5 minutes. **You'll need:** your Aspen instance URL, and your Aspen sign-in.
+
+**Coming from the old setup?** If you installed the **Aspen Runtime MCP** extension
+(`aspen-runtime-mcp-*.mcpb`) or the **aspen-cowork** plugin before, remove both first —
+Claude Desktop → **Settings → Extensions** for the extension, Cowork → **Customize → Plugins**
+for the plugin. They are retired, and left in place they show Claude a second, older set of
+Aspen tools. The API key you made for the extension is no longer used; you can delete it in
+Aspen's **API Keys** screen.
 
 ---
 
-## Step 1 — Download both files
+## Step 1 — Work out your connector URL
 
-Click the runtime MCP for your operating system, then the plugin. Two files in total.
-
-| File | Download |
-|---|---|
-| Runtime MCP — macOS (Apple Silicon + Intel) | [`aspen-runtime-mcp-macos.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
-| Runtime MCP — Windows (x64) | [`aspen-runtime-mcp-windows.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
-| Cowork plugin — macOS and Windows alike | [`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip) |
-
-If you'd rather not click through a table, the three URLs in full:
-
-```
-macOS runtime MCP
-https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb
-
-Windows runtime MCP
-https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb
-
-Cowork plugin (both platforms)
-https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip
-```
-
-These links always give you the current version. **Don't unzip either file.** The `.mcpb`
-and the `.zip` are both installed exactly as they downloaded; expanding either one breaks it.
-
-## Step 2 — Create your API key
-
-The runtime MCP signs in to your instance as **you**, using a personal API key. Create it
-now, so you have it ready to paste in Step 3.
-
-1. Open a browser and **log in to your Aspen instance** — the same URL you use for the CRM
-   day to day, e.g. `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`.
-2. Go to **API Keys**.
-3. **Create a new key.** Give it a name you'll recognise later, like `Claude Desktop`.
-4. **Copy the key as soon as it's shown** and keep it somewhere safe until Step 3 — you
-   will paste it into Claude Desktop's config form. It looks like:
-
-   ```
-   secret-token:aspen_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-
-   Copy the **whole** string including the `secret-token:` prefix.
-
-While you're here, note your **instance base URL** — you need that in Step 3 too. It's the
-**full path** to your instance: the host, then your domain, then the instance name.
+Open your Aspen CRM in a browser and look at the address. Your **instance URL** is the
+**full path to your instance**: the host, then your domain, then the instance name.
 
 - ✅ `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`
 - ❌ `https://0000-00-0999-ip.aspen-crm.com`
 - ❌ `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename/ui/objects/account_p`
 
-Whatever the CRM appends after it as you click around — a tab, a record, a view — is not
-part of the base URL.
+Whatever the CRM appends after the instance name as you click around — a tab, a record, a
+view — is not part of it.
 
-**Never paste your API key into a chat.** It belongs in the extension's config form and
-nowhere else. If Claude ever asks you for it, something is wrong — the model is not
-supposed to see it.
+Your **connector URL** is that, with **`/mcp`** on the end:
 
-## Step 3 — Install the runtime MCP (`.mcpb`)
+```
+https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename/mcp
+```
 
-**Double-click the `.mcpb` file** you downloaded in Step 1 — or open **Claude Desktop →
-Settings → Extensions → Install Extension** and pick it. A config form appears:
+## Step 2 — Add the connector and sign in
 
-| Field | What to enter |
-|---|---|
-| **Instance base URL** | The full instance URL from Step 2, e.g. `https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename`. A trailing slash is fine — it's ignored |
-| **API token** | The `secret-token:aspen_…` key you created in Step 2, pasted whole |
-| **API base path (advanced)** | **Leave as-is** — `/api/v24.3`. There is nothing to change here |
+1. In Claude (desktop or web), open **Settings → Connectors**.
+2. Click **Add custom connector**. Name it **Aspen**, paste the connector URL from Step 1,
+   and click **Add**.
+3. Click **Connect** on the new connector. Aspen's own sign-in page opens: sign in as you
+   normally do and allow access.
 
-Click through to finish. On macOS the bundled program is ad-hoc signed, so macOS may warn
-the first time it runs. That's expected.
+The connector is now signed in as you. Everything Claude can see or change through it is
+exactly what you can see or change in the CRM — no more.
 
-Need the file again? [`aspen-runtime-mcp-macos.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb)
-· [`aspen-runtime-mcp-windows.mcpb`](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb)
+**No "Add custom connector" button?** On a Team or Enterprise plan, an owner adds custom
+connectors for the organization. Send them the connector URL and this page; once they've
+added it, you click **Connect** and sign in yourself.
 
-> **Cowork on the web (claude.ai/cowork) can't do this step.** Cowork web only accepts a
-> remote HTTPS MCP URL, and the runtime MCP runs locally on your machine. Use the
-> **desktop** app.
+## Step 3 — Install the plugin (`.zip`)
 
-## Step 4 — Install the Cowork plugin (`.zip`)
+1. Download the plugin:
+   [`aspencrm-ai-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspencrm-ai-latest/aspencrm-ai-plugin.zip)
 
-1. In Cowork, open **Customize → Plugins**. Click **Add → Upload plugin**.
-2. Select the `aspen-cowork-plugin.zip` you downloaded in Step 1. **Upload the zip as-is —
-   don't unzip it first.**
+   ```
+   https://github.com/aspen-crm/aspen-tools/releases/download/aspencrm-ai-latest/aspencrm-ai-plugin.zip
+   ```
 
-It installs at user scope: available in every session, no per-conversation setup.
+   This link always gives you the current version. **Don't unzip it.**
+2. In Cowork, open **Customize → Plugins**. Click **Add → Upload plugin**, and select the
+   zip as it downloaded.
 
-Need the file again?
-[`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip)
+It installs for you: available in every session, no per-conversation setup.
 
 > **Using Claude Code as well?** There the plugin comes from this repository's marketplace
 > instead — `/plugin marketplace add aspen-crm/aspen-tools`, then
-> `/plugin install aspen-cowork@aspen`. Same plugin, same version; only the delivery
-> differs. Claude Code cannot install an `.mcpb`, so there the plugin starts the server
-> itself from a copy its own one-line installer puts in place — the plugin's
-> [README](../plugins/aspen/cowork/README.md#claude-code) has that. The marketplace also
-> carries `aspen-code`, the CLI-authoring lane, which is not part of this setup.
+> `/plugin install aspencrm-ai@aspen`. Same plugin, same version; only the delivery differs.
+> If you signed in to Claude Code with the same Claude account, the connector from Step 2 is
+> there already. Otherwise add it with
+> `claude mcp add --transport http aspen <connector URL>` and sign in from `/mcp`.
 
-## Step 5 — Check it worked
+## Step 4 — Check it worked
 
 **Start a new conversation first.** A conversation loads its tools when it starts, so the
-extension you just installed won't exist in the one you've been using. Then ask:
+connector you just added won't exist in the one you've been using. Then ask:
 
 > **What objects are in my Aspen instance?**
 
-Claude should call `aspen_describe` with no arguments and come back with a list of your
-objects — mostly `_p` names like `account_p` and `contact_p`, plus any `_c` objects your
-org has added. That single call proves all three things at once: the extension is loaded,
-the instance URL resolves, and your API key is accepted.
-
-(The catalog caps at about 100 objects. If yours is larger, the answer says so rather than
-listing everything — ask about a specific object instead.)
+Claude should come back with a list of your objects — mostly `_p` names like `account_p` and
+`contact_p`, plus any `_c` objects your org has added. That one answer proves the connector
+is loaded, the URL is right, and your sign-in works.
 
 Then try a real one:
 
 > **Show me my 5 most recent accounts.**
 
-You should get rows back if there is data, plus a link that opens the same list in your CRM.
-
-Two more things to confirm the plugin loaded:
+Two more things confirm the plugin loaded:
 
 - Claude uses the namespace suffixes correctly without you explaining them — `_p` for
   platform, `_a` for an installed application, `_c` for your own — and never asks for
   `account` when it means `account_p`.
-- Ask it to **create** a record — it should ask you to confirm before writing, every time.
-  (The server enforces this itself; it cannot be talked out of it.)
+- Ask it to **create** a record. It shows you what it will write, and then **your app asks
+  you to approve the request** before anything is sent. Every change works that way — the
+  instance enforces it, and Claude cannot skip it.
 
-There is **no delete tool** in this lane. Claude can create and update records and attach
-files to them, and that is all — anything it makes while you're experimenting stays. Updates
-go one record at a time here, each confirmed; changing many records in one confirmed call is
-a Claude Code capability, not a Cowork one.
+**Deletes are permanent.** Claude can delete records here, and can change or delete many in
+one go. It always asks you in words first, and you approve each request on top of that.
+There is no undo and no recycle bin, so read what it shows you before you say yes.
 
-**Attaching a file** (runtime MCP 0.1.17 or later): the upload reads the file from *your*
-computer, where Claude Desktop runs — so when Claude asks where a file or folder is, give it
-the path as it is on your machine (`~/Documents/Contracts/msa.pdf`), even if Claude has been
-working with that folder in its own workspace.
+**Files:** small files (up to roughly 180 KB) can be attached through Claude. For anything
+larger, Claude will tell you which record and field it is, and you upload it in the CRM.
 
 ---
 
@@ -190,14 +141,14 @@ working with that folder in its own workspace.
 
 | What you see | What's wrong | Fix |
 |---|---|---|
-| `AUTH_REQUIRED` | The API key is missing, wrong, expired, or revoked | Create a fresh key (Step 2) and re-enter it in **Settings → Extensions → Aspen Runtime MCP → Configure** |
-| Every call redirects to a login page, or `NOT_FOUND` on everything | The instance URL is incomplete — usually the domain or instance name is missing, or a page path got left on the end | Re-enter it as the full `https://<host>/<domain>/<instance>` from Step 2, with nothing after the instance name |
-| `INSTANCE_UNREACHABLE` | Wrong host, or you're off the network/VPN that can reach it | Paste the instance URL into a browser — if the CRM doesn't load there, it won't load here |
-| `NOT_FOUND` on *everything*, and the URL is definitely right | The API base path was edited | Put **API base path** back to its default `/api/v24.3` |
-| No `aspen_*` tools at all | The extension isn't installed or isn't enabled | **Claude Desktop → Settings → Extensions** — confirm **Aspen Runtime MCP** is present and toggled on, then restart Desktop |
-| No `aspen_*` tools, and you installed the extension a minute ago | The conversation started before the extension existed | Start a new conversation — a conversation's tools are fixed when it opens |
-| Tools work, but Claude guesses field names and gets them wrong | The plugin isn't installed | Redo Step 4 |
-| Cowork sees no Aspen tools, but Claude Desktop does | Cowork's bridge to Desktop isn't up | Make sure Claude Desktop is running, then restart Cowork |
-| The plugin upload is rejected | The zip was unzipped, or re-zipped after editing | Download [`aspen-cowork-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip) again and upload it untouched |
-| `NOT_FOUND` on one object name only | A bare name was used where the namespaced one is needed | Not a setup problem — ask Claude to run `aspen_describe` and use the exact name it returns (`account_p`, not `account`) |
-| `CONFIRMATION_REQUIRED` | Claude tried to write without your explicit yes | Working as intended. Say yes to the change it showed you |
+| No Aspen tools at all | The connector isn't added, isn't connected, or is switched off for this conversation | **Settings → Connectors** — confirm **Aspen** is there and connected. In the conversation, check it's enabled in the tools menu |
+| No Aspen tools, and you added the connector a minute ago | The conversation started before the connector existed | Start a new conversation |
+| The connector won't connect, or sign-in loops | The URL is incomplete — usually the domain or instance name is missing — or doesn't end in `/mcp` | Re-add it as `https://<host>/<domain>/<instance>/mcp`, exactly as in Step 1 |
+| Sign-in page won't load | Wrong host, or you're off the network/VPN that reaches it | Open your instance URL in a browser — if the CRM doesn't load there, it won't load here |
+| It worked, and now every request fails to sign in | Your session with the instance expired or was revoked | **Settings → Connectors → Aspen → Connect**, and sign in again |
+| "…not permitted" / `AUTHORIZATION_FAILURE` | You're signed in, but your Aspen role can't do that | Ask your Aspen admin. Claude can only do what you can do in the CRM |
+| "…needs the user's approval, which this client cannot collect" | This app can't show approval prompts, so it can read but not write | Reads still work here. Make changes from an app that shows approval prompts, or in the CRM |
+| Claude sees two sets of Aspen tools | The retired **Aspen Runtime MCP** extension or **aspen-cowork** plugin is still installed | Remove them (see *Coming from the old setup?*) |
+| Tools work, but Claude guesses field names and gets them wrong | The plugin isn't installed | Redo Step 3 |
+| The plugin upload is rejected | The zip was unzipped, or re-zipped after editing | Download [`aspencrm-ai-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspencrm-ai-latest/aspencrm-ai-plugin.zip) again and upload it untouched |
+| An approval prompt you didn't expect | Claude is about to change data | Read it. Approve only what you asked for; declining is always safe |

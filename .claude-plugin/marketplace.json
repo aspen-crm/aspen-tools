@@ -11,9 +11,9 @@
       "description": "Developer workflow skills for customizing an Aspen instance with the aspen CLI."
     },
     {
-      "name": "aspen-cowork",
-      "source": "./plugins/aspen/cowork",
-      "description": "Work an Aspen CRM over the runtime MCP (.mcpb) \u2014 read, search, report, create, and update records, attach files, merge duplicate contacts, and run bulk loads/deletes via the batch data API. No CLI; the server confirm-gates writes."
+      "name": "aspencrm-ai",
+      "source": "./plugins/aspen/ai",
+      "description": "Work an Aspen CRM through its hosted MCP connector: explore the model, read, search and report on records, create, update, bulk-update and delete them, attach files, and merge duplicate contacts. Every write is approved in the host."
     }
   ]
 }

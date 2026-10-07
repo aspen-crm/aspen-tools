@@ -12,8 +12,8 @@ Each tool is versioned and released on its own. See
 
 Both Aspen plugins support Codex alongside Claude. See
 [Installing for Codex](docs/installing-for-codex.md) for repository-marketplace installation,
-runtime credentials, hook trust, and testing. `aspen-code` handles model authoring;
-`aspen-cowork` (displayed as Aspen Runtime in Codex) handles live records.
+connecting the hosted MCP, hook trust, and testing. `aspen-code` handles model authoring;
+`aspencrm-ai` (displayed as Aspen CRM AI) handles live records.
 
 **One-prompt customer setup:** start `codex` in the terminal, then paste:
 
@@ -21,8 +21,8 @@ runtime credentials, hook trust, and testing. `aspen-code` handles model authori
 Run `curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/start-codex.md` (use curl.exe on Windows), read the full document, and follow its setup steps. Ask for my Aspen instance URL when needed.
 ```
 
-The [setup guide](docs/start-codex.md) installs the selected plugins and runtime,
-reuses the customer's Aspen login, and verifies the connection with read-only checks.
+The [setup guide](docs/start-codex.md) installs the selected plugins, connects the
+instance's hosted MCP, and verifies the connection with read-only checks.
 Sign-in, hook trust, and restarting Codex remain customer actions.
 
 ## Aspen Builder
@@ -49,88 +49,66 @@ specific version, or an older one, use the
 [`builder-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=builder&expanded=true)
 directly.
 
-## Aspen Runtime MCP
+## Aspen CRM AI — the hosted MCP
 
-A local MCP server that lets Claude work an instance's records: view, search,
-report, create, update and attach files, over the instance's own API. It is the runtime
-counterpart to Builder -- it changes records, not the model.
+Every Aspen instance serves its own MCP server, so Claude can work the instance's records —
+view, search, report, create, update in bulk, delete, attach files, merge duplicate contacts
+— over the instance's own API, signed in as the user. There is nothing to download for it:
+add the instance's URL with `/mcp` on the end as a connector, and sign in.
 
-It ships as an `.mcpb` bundle, which Claude Desktop installs in one click.
-Cowork on the desktop bridges to whatever is installed in Claude Desktop, so
-this is also how a Cowork user gets it.
+```
+https://<host>/<domain>/<instance>/mcp
+```
 
-These links always give you the current version:
+It works in Claude and Cowork on the desktop and on the web, in Claude Code, and in Codex.
+The server carries the tools; the `aspencrm-ai` plugin below carries the procedures for
+using them well. Take both.
 
-| Platform | Download |
-| --- | --- |
-| macOS (universal) | [aspen-runtime-mcp-macos.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-macos.mcpb) |
-| Windows (x64) | [aspen-runtime-mcp-windows.mcpb](https://github.com/aspen-crm/aspen-tools/releases/download/stdio-mcp-latest/aspen-runtime-mcp-windows.mcpb) |
-
-Two builds are linked here, for the same reason as Builder: Claude Desktop runs
-on macOS and Windows only. The macOS bundle is universal, so one file covers
-Apple silicon and Intel. Linux bundles (x86_64 and arm64) are on the same
-release for hosts that launch a local MCP server themselves; the Claude Code
-installer below fetches them on its own, so they need no link here.
-
-The binary carries only an ad-hoc signature -- it is not signed with a
-Developer ID and not notarized -- so macOS will warn on first run.
-
-Open the `.mcpb` in **Claude Desktop -> Settings -> Extensions**. It asks for
-two things: the full instance URL, `https://<host>/<domain>/<instance>`, and a
-personal API key created in the instance's **API Keys** screen. Leave the API
-base path at its default. The key is held in Desktop's secret store, and the
-model never sees it.
-
-The server carries the tools; the `aspen-cowork` plugin below carries the
-procedures for using them well. Take both -- neither is much use alone.
-
-The `stdio-mcp-latest` release says which version it currently holds. For a
-specific version, or an older one, use the
+**The Aspen Runtime MCP (`.mcpb`) is retired**, and so is the `aspen-cowork` plugin that
+taught it. The hosted server replaces both: no bundle to install, no API key to create, and
+Cowork on the web works too. The old
 [`stdio-mcp-` releases](https://github.com/aspen-crm/aspen-tools/releases?q=stdio-mcp&expanded=true)
-directly.
+stay up for anyone still on them, but nothing new ships there. Moving over: remove the
+**Aspen Runtime MCP** extension (Claude Desktop → Settings → Extensions) and the
+`aspen-cowork` plugin, then follow
+[docs/installing-for-cowork.md](docs/installing-for-cowork.md).
 
 ## Claude Code plugins
 
 Two plugins, split by the lane you are working in. **aspen-code** is the
 pro-code loop, driven by the `aspen` CLI: author metadata, compile, deploy,
-verify. **aspen-cowork** is the runtime loop, driven by the Aspen runtime MCP:
-read, search, report on and update live records, with no CLI at all. They
-install independently, so you can take one without the other. Both come from
-this repository directly rather than from a release:
+verify. **aspencrm-ai** is the records loop, driven by the instance's hosted
+MCP: read, search, report on, update and delete live records, with no CLI at
+all. They install independently, so you can take one without the other. Both
+come from this repository directly rather than from a release:
 
 ```
 /plugin marketplace add aspen-crm/aspen-tools
 /plugin install aspen-code@aspen
-/plugin install aspen-cowork@aspen
+/plugin install aspencrm-ai@aspen
 ```
 
 | Plugin | Lane | Needs |
 | --- | --- | --- |
 | [aspen-code](plugins/aspen/code) | Customize an instance: read the model, author `_c` components, compile, deploy, verify. | The `aspen` CLI, which comes with Aspen Builder. |
-| [aspen-cowork](plugins/aspen/cowork) | Work a live instance's records: view, search, report, create, update (in bulk from Claude Code), attach files, and merge duplicate contacts. | The Aspen Runtime MCP, above: as the `.mcpb` in Claude Desktop, or put in place by the plugin's own installer on Claude Code. |
+| [aspencrm-ai](plugins/aspen/ai) | Work a live instance's records: view, search, report, create, update and delete (in bulk too), attach files, and merge duplicate contacts. | The instance's hosted MCP, above, added as a connector. |
 
-`aspen-cowork` teaches tools it does not carry, so it does nothing on its own —
-install the runtime MCP alongside it. On Claude Code the plugin starts the
-server, but cannot install an `.mcpb`, so one command puts the same server
-where the plugin looks (macOS and Linux):
+`aspencrm-ai` teaches tools it does not carry, so it does nothing on its own —
+add the connector alongside it. On Claude Code:
 
 ```
-curl -fsSL https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/plugins/aspen/cowork/bin/install-runtime-mcp.sh | sh -s -- --instance https://<host>/<domain>/<instance>
+claude mcp add --transport http aspen https://<host>/<domain>/<instance>/mcp
 ```
 
-The token never passes through the script. `aspen login --instance <URL>
---api-key <KEY>` covers it for anyone with the CLI, and that credential does not
-expire — a plain OAuth `aspen login` lasts about an hour and the server cannot
-refresh it. Everyone else exports `ASPEN_API_TOKEN` in their shell. The
-plugin's [README](plugins/aspen/cowork/README.md#claude-code) has the rest,
-Windows included.
+then `/mcp` to sign in. If the connector is already on the claude.ai account
+you sign in to Claude Code with, it is there already — don't add it twice.
 
 **Working in Cowork rather than Claude Code?** Cowork installs a plugin by
-uploading a zip, so take `aspen-cowork` from the release instead —
-[aspen-cowork-plugin.zip](https://github.com/aspen-crm/aspen-tools/releases/download/aspen-cowork-latest/aspen-cowork-plugin.zip),
+uploading a zip, so take `aspencrm-ai` from the release instead —
+[aspencrm-ai-plugin.zip](https://github.com/aspen-crm/aspen-tools/releases/download/aspencrm-ai-latest/aspencrm-ai-plugin.zip),
 always the current build. Same plugin, same version; only the delivery differs.
 [docs/installing-for-cowork.md](docs/installing-for-cowork.md) is the end-to-end
-guide, covering the runtime MCP too.
+guide, covering the connector too.
 
 The marketplace they come from is named `aspen`, which is what the `@aspen`
 suffix refers to. Updating the marketplace picks up whatever is on the default
