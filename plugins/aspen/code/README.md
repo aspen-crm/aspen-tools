@@ -87,7 +87,7 @@ and a deleted entry is rejected; one bad component fails the whole checkin batch
 or `aspen login` yourself.
 
 Sibling files hold the parts that are read only when authoring that kind of thing, so the skill
-itself stays short: the `aspen_crm` shapes for a Rust trigger, the design-token inventory for a
+itself stays short: the `aspen_crm` shapes for a Rust trigger, the design-token rules for a
 page, the metadata shapes that have no compiled example to copy (a dot-walked list view column, a
 custom-page tab), and the AQL rules for a query from either a page or a trigger.
 
@@ -193,7 +193,7 @@ hooks/guard-metadata-writes.mjs           # PreToolUse (Write/Edit): deny writes
 hooks/guard-ui-tokens.mjs                 # PreToolUse (Write/Edit): deny hardcoded styling, unknown --ap-* names, component rebuilds
 hooks/guard-custom-ui-surface.mjs         # PreToolUse (Write/Edit): ask before a new route, custom_page tab or custom_code section
 hooks/guard-footprint.mjs                 # PreToolUse (Write/Edit): ask before a duplicate object, wide object, thin picklist, long nav
-scripts/lint-ui-tokens.mjs                # the same two checks over a whole tree, for CI
+scripts/lint-ui-tokens.mjs                # the same checks over a whole tree, for CI
 scripts/footprint.mjs                     # the same footprint checks over a whole tree, for CI
 skills/lean-data-model/SKILL.md           # gate 1 — should this component exist at all
 skills/lean-data-model/platform-objects.md  # the ~48 platform objects and the words for them
@@ -203,8 +203,8 @@ skills/using-aspen/SKILL.md               # the loop — step 0 runs both gates
 skills/using-aspen/rust-trigger-notes.md  # aspen_crm shapes, read only when writing a trigger
 skills/using-aspen/trigger-patterns.rs    # six handlers that fired in production; copy the nearest
 skills/using-aspen/server-skeleton/       # toolchain pin + server_main_c crate; identical to example-customer-repo
-skills/using-aspen/ui-design-tokens.md    # --ap-sem-* token inventory, read only when styling a page
-skills/using-aspen/ui-component-tokens.md # every --ap-comp-* name; grep it for one component
+skills/using-aspen/ui-design-tokens.md    # custom UI rules and choosing tokens, read only when styling a page
+skills/using-aspen/ui-component-tokens.md # which --ap-comp-* family fits which control
 skills/using-aspen/metadata-shapes.md     # shapes with no compiled example; read when step 1 finds nothing
 skills/using-aspen/query-notes.md         # AQL rules, counting, paging; read before writing a query
 start.md                                  # setup guide, bundled so a re-read after install is local

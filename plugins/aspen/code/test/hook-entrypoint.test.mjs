@@ -36,8 +36,8 @@ const CASES = [
   },
   {
     hook: 'guard-ui-tokens.mjs',
-    // The token inventory does not come along to the temp dir; loadTokenNames() tolerates
-    // that and returns an empty set, and a hardcoded hex is flagged without it.
+    // No SDK is installed above that path, so the name check stands down; a hardcoded hex
+    // is flagged without it.
     payload: { tool_input: { file_path: '/x/metacode/ui/panel.css', content: 'a { color: #ff0000 }' } },
     decision: 'deny'
   },

@@ -14,8 +14,8 @@ tokens (e.g. `--ap-sem-color-text-primary`, `--ap-sem-color-surface-raised`,
 `--ap-sem-color-feedback-success` and friends for status colors) referenced with `var(...)`. Custom
 UI renders in a shadow root, so these tokens carry the correct light AND dark values and the
 responsive steps for free; a hardcoded hex, px size, or `system-ui` font only ever looks right in
-one theme on one screen. The recommended form writes the light value as a fallback, e.g.
-`var(--ap-sem-color-text-primary, #11171d)`. The page should also set `box-sizing: border-box` on
+one theme on one screen. In JS and inline styles the tokens come from the typed modules
+`@aspen-crm/sdk/tokens/sem` and `/comp`. The page should also set `box-sizing: border-box` on
 its own subtree, because the platform's resets don't reach the shadow root.
 
 PASS if controls use their corresponding `--ap-comp-*` token families (table/cell, button,

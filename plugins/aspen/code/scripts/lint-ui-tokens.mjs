@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The same two checks guard-ui-tokens.mjs runs on a write, over a whole tree.
+// The same checks guard-ui-tokens.mjs runs on a write, over a whole tree.
 //
 // The hook only binds a Claude Code session with this plugin loaded. Custom UI also gets
 // written by hand, in another editor, by a teammate who has never installed it -- and the
@@ -9,12 +9,16 @@
 //   node scripts/lint-ui-tokens.mjs <dir> [--json]
 //
 // Exits 1 when anything is flagged, 0 when the tree is clean.
+//
+// Token names are checked against the snapshot of the `@aspen-crm/sdk` installed nearest
+// each file, as `x-cli build` does; a file with no installed SDK, or one without a
+// snapshot, gets the hardcode and component checks only.
 
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, extname } from 'node:path'
 
 import {
-  loadTokenNames,
+  tokenNamesFor,
   findHardcodedValues,
   findUnknownTokens,
   findComponentMismatches
@@ -40,11 +44,13 @@ const args = process.argv.slice(2)
 const asJson = args.includes('--json')
 const root = args.find((arg) => !arg.startsWith('--')) ?? '.'
 
-const known = loadTokenNames()
 const results = []
+let unchecked = 0
 
 for (const path of walk(root)) {
   const source = readFileSync(path, 'utf8')
+  const known = tokenNamesFor(path)
+  if (!known) unchecked++
   const unknown = findUnknownTokens(source, known)
   const hardcoded = findHardcodedValues(source)
   const mismatched = findComponentMismatches(source)
@@ -53,15 +59,17 @@ for (const path of walk(root)) {
 }
 
 if (asJson) {
-  console.log(JSON.stringify({ tokensKnown: known.size, results }, null, 2))
+  console.log(JSON.stringify({ filesWithoutSdkSnapshot: unchecked, results }, null, 2))
 } else if (!results.length) {
   console.log('ui-tokens: clean.')
 } else {
   for (const { file, unknown, hardcoded, mismatched } of results) {
     console.log(`\n${file}`)
-    for (const { line, name, nearest } of unknown) {
-      console.log(`  ${line}: unknown token \`${name}\`` + (nearest ? ` — did you mean \`${nearest}\`?` : '') +
-        ' (resolves to nothing; no error anywhere)')
+    for (const { line, name, reserved, nearest } of unknown) {
+      console.log(reserved
+        ? `  ${line}: \`${name}\` uses the \`--ap-\` prefix reserved for Aspen`
+        : `  ${line}: \`${name}\` is not a Public token in the installed SDK` +
+          (nearest ? ` — did you mean \`${nearest}\`?` : ''))
     }
     for (const { line, property, value, family } of hardcoded) {
       console.log(`  ${line}: \`${property}: ${value}\` → use \`${family}\``)
@@ -76,12 +84,17 @@ if (asJson) {
   const counted = results.reduce(
     (sum, r) => sum + r.unknown.length + r.hardcoded.length + r.mismatched.length, 0)
   console.log(
-    `\n${counted} finding(s) in ${results.length} file(s). Token names are in the ` +
-    'aspen-code skill\'s ui-design-tokens.md / ui-component-tokens.md. A `var(--token, ' +
-    'fallback)` fallback is fine. For a value the system has no token for, add ' +
+    `\n${counted} finding(s) in ${results.length} file(s). Token names come from the ` +
+    'installed SDK (`node_modules/@aspen-crm/sdk/dist/tokens/`). For a value the system ' +
+    'has no token for, add ' +
     '`aspen-token-exempt: <reason>` in a comment on that line or the line above, or ' +
     '`aspen-component-exempt: <reason>` anywhere in the file for a component finding.'
   )
+}
+
+if (unchecked && !asJson) {
+  console.log(`\nui-tokens: ${unchecked} file(s) had no installed @aspen-crm/sdk with a token ` +
+    'snapshot; token names were not checked in them.')
 }
 
 process.exit(results.length ? 1 : 0)

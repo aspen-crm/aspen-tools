@@ -74,7 +74,7 @@ metacode/
      covers picklist technical values versus UI labels and currency formatting.
 
 2. **Author** into `metacode/metadata/<ctype>/<name>.json`:
-   - *Declarative* (object, field, picklist, layout, list view, tab, tab collection): copy the
+   - _Declarative_ (object, field, picklist, layout, list view, tab, tab collection): copy the
      compiled shape, change `name`/`label` to your `_c` name, and swap in your members.
      - **Never author a `namespace` field — not on the component, not on a nested member.** The
        compiled tier shows `namespace` because it is resolved output; the importer refuses it on
@@ -123,17 +123,17 @@ metacode/
          be added to the "Aspen" nav**. Author a new custom `tab_collection_p` (`marketing_c`)
          that lists the platform tabs you want beside your own; referencing a platform tab is
          fine, only overriding the collection is not.
-       A platform *field* override is untested and risks the whole batch — to relabel a field in
-       one view, set `label` on that `list_view_p` column instead. **Deploy anything that touches
-       a platform component as its own package**, apart from your custom work, so one rejection
-       cannot take the rest down with it.
+         A platform _field_ override is untested and risks the whole batch — to relabel a field in
+         one view, set `label` on that `list_view_p` column instead. **Deploy anything that touches
+         a platform component as its own package**, apart from your custom work, so one rejection
+         cannot take the rest down with it.
      - A new field on an object that has record types must also be declared in each of its
        `object_type_p` files, or typed records reject it. A layout needs an `object` attribute
        and names fields by their raw name (`amount_p`), never an object-type alias (`amount_c`).
      - Some shapes have **no compiled example to copy** — a dot-walked list view column, a
        `custom_page` tab, a `query-filter` on the current user. `metadata-shapes.md` beside this
        file has them, reverse-engineered and checked in; read it when step 1 turns up nothing.
-   - *Rust trigger*: a crate at **`server/server_main_c/`, that exact directory name** — the
+   - _Rust trigger_: a crate at **`server/server_main_c/`, that exact directory name** — the
      platform only ever loads a server codefile named `server_main_c` (or `server_main_a`); any
      other crate directory compiles and checks in clean and then silently never fires, on any
      object or event. The trigger declared in its `aspen.server.json` (its `"name"` field, separate
@@ -155,7 +155,7 @@ metacode/
        they share. Copy the helpers and the one closest to yours. `rust-trigger-notes.md` has the
        rules behind them (variant per field type, the changed-fields-only batch, the debugging
        order), read when a pattern doesn't cover your case.
-   - *TypeScript page*: a module under `ui/ui_main_c/src/pages/` with the route declared in
+   - _TypeScript page_: a module under `ui/ui_main_c/src/pages/` with the route declared in
      `aspen.client.json`. A custom (`_c`) codefile serves at
      `/ui/c/<base-url-path-part>/<route path>` — `/ui/a/` is app scope, not yours. The page runs
      in a **sandboxed guest iframe**: build URLs and navigate through `window.top`, and intercept
@@ -169,43 +169,21 @@ metacode/
        the field's picklist for options, cells, badges and read-only text; never derive a label
        by stripping a suffix or changing case. See [Picklist values and UI labels](query-notes.md#picklist-values-and-ui-labels)
        for the currency formatter boundary.
-     - **UI contract: read the opening requirements in [ui-design-tokens.md](ui-design-tokens.md)
-       before creating or restyling any page or layout section.** Map each control to its field
-       meaning and Aspen counterpart first: record reference → lookup/typeahead, picklist →
-       select, text → textinput, number → numberinput. Reuse shared controls; do not substitute
-       an ordinary record dropdown or style every input as a select. Use the counterpart's
-       `--ap-comp-*` tokens; reserve `--ap-sem-*` composition for UI without a counterpart.
-       Grep `ui-component-tokens.md` for the selected components; do not read the whole inventory.
-     - **The tokens do reach you, and nothing else does.** Only the JavaScript runs in that hidden
-       iframe; the DOM renders in a **shadow root on the platform document**, so every `--ap-*`
-       custom property inherits from `:root` — semantic, component, the dark value and the
-       responsive steps alike. The platform's own CSS does not come with it: no utility classes,
-       and **no resets**, so the guest starts at `box-sizing: content-box`. Set
-       `box-sizing: border-box` on your own subtree yourself.
-     - **Write the light value as a fallback** — `var(--ap-sem-color-text-primary, #11171d)`. A
-       misspelled token is not an error anywhere: it resolves to nothing, the build passes, and the
-       element silently keeps whatever it inherited. The fallback is the only thing standing
-       between a typo and an invisible one.
-     - **If Aspen already ships the thing you are building, start from that component's tokens.**
-       A `<table>` in a record section sits inches from Aspen's own list views, and
-       `--ap-comp-cell-*` and the 65 `--ap-comp-table-*` names already hold the cell padding,
-       hover and border that the semantic layer only gets you close to. Compose from `--ap-sem-*`
-       for what has no Aspen counterpart — which is most of a page, but not your table. Mixing the
-       two is normal.
-     - A hardcode, an unknown token name, or a `table`/`button`/`select`/`textarea` styled from the
-       semantic layer alone is **denied by the enabled, trusted hook**, with the token family to use instead. When a
-       value genuinely has no token — a page dimension, a grid track, a mono stack — keep it and
-       write `aspen-token-exempt: <reason>` on that line or the line above; for a component you are
-       deliberately not rebuilding, `aspen-component-exempt: <reason>` anywhere in the file. Widths,
-       heights and `calc()` offsets from a variable are not flagged at all.
+     - **Styling: read [ui-design-tokens.md](ui-design-tokens.md) before creating or restyling
+       any page or layout section.** It holds the required control choices, the token rules
+       (names, build check, hooks, exemptions, older SDKs), typography, and rendered-UI checks.
+       To choose a control's `--ap-comp-*` family, use
+       [ui-component-tokens.md](ui-component-tokens.md).
 
 3. **Validate offline — before anything touches the instance.** The instance's own validator
    runs locally in 0.2s and reports the same errors `checkin-prep` would, with the same text:
+
    ```
    ./ac validate --custom ./metacode/metadata --active-custom ./metacode/active \
                  --active-platform ./metacode/platform --format json \
      | jq -r '.valid, (.["batch-failures"][]?), (.components[].failures[] | select(.subtype != "SKIPPED_DUE_TO_BATCH_ERRORS") | .detail)'
    ```
+
    The first line is `true`/`false`; the rest is only the root causes. **One bad component fails
    the whole batch**, and every other component then reports `SKIPPED_DUE_TO_BATCH_ERRORS` — the
    `select` above hides those, because they are the cascade, not the error. Fix what's left, run
@@ -230,12 +208,14 @@ metacode/
      confirm the UI shows labels and the selected technical values survive a form round trip.
 
 5. **Deploy.** Confirm with the human first — this changes the shared instance. Then, in order:
+
    ```
    aspen move save-package ./metacode
    aspen move checkin-prep
    aspen move checkin-index
    aspen move checkin-deploy
    ```
+
    Pass `./metacode` to `save-package`; the three checkin verbs are ordered and mandatory.
 
    `save-package` validates shallowly; **`checkin-prep` is the real validator** on the instance
@@ -246,12 +226,14 @@ metacode/
    1. `aspen move clear-package` — drops this package from the dev set. Usually enough.
    2. Only if it refuses with "invoke the checkin-clear action": `aspen move checkin-clear` —
       halts the stuck checkin and clears the shared sets.
-   Both change shared state, so obtain explicit authorization for the exact recovery operation.
-   Claude Code can prompt through its hook. Codex blocks the direct command because its hook
-   runtime does not support `ask`; after authorization, use the bundled helper:
+      Both change shared state, so obtain explicit authorization for the exact recovery operation.
+      Claude Code can prompt through its hook. Codex blocks the direct command because its hook
+      runtime does not support `ask`; after authorization, use the bundled helper:
+
    ```sh
    node "<absolute using-aspen skill directory>/scripts/recover.mjs" --confirmed clear-package .aspen/bin/aspen
    ```
+
    Use `checkin-clear` in place of `clear-package` only when that wider recovery is authorized.
    `--confirmed` asserts existing user authorization; it does not obtain it. Resolve the skill
    directory from the loaded skill location, and run from the instance folder.
@@ -272,12 +254,8 @@ metacode/
    fetch the bundle yourself, re-resolve the id from `download-active-set` — before concluding the
    page did not ship.
 
-   **For UI, build/token checks are not visual verification.** Follow the acceptance checks in
-   [ui-design-tokens.md](ui-design-tokens.md#verify-the-rendered-ui): compare changed controls
-   with their native counterparts, open menus/panels, and exercise navigation and keyboard
-   behavior. A shared-style change requires checking its affected pages and record sections.
-   If the live UI is unavailable, finish the available checks and explicitly report visual or
-   interaction verification as outstanding; do not claim that the UI matches Aspen.
+   **For UI, build/token checks are not visual verification.** Follow
+   [ui-design-tokens.md](ui-design-tokens.md#verify-the-rendered-ui).
 
 ## Rules
 
