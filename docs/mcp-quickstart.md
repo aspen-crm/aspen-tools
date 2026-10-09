@@ -60,11 +60,10 @@ claude mcp add --transport http aspen https://<host>/<domain>/<instance>/mcp
 Then `/mcp` to sign in. If the connector is already on the claude.ai account you signed in to
 Claude Code with, it is there already — do not add it twice.
 
-### Codex and other MCP clients
+### Other MCP clients
 
 The server is a Streamable HTTP MCP endpoint with OAuth, so any client that supports both
-connects with the same URL. For Codex, [installing-for-codex.md](installing-for-codex.md) has
-the config and a one-prompt setup.
+connects with the same URL.
 
 ## Step 3 — Install the plugin
 
@@ -115,4 +114,3 @@ Writes are approved in your client before they run. Reads are not.
 
 - [installing-for-cowork.md](installing-for-cowork.md) — the same install, step by step, written
   for Claude to work through with you.
-- [start.md](start.md) — setting up a machine to customize the instance with the `aspen` CLI.

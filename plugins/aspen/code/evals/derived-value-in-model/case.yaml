@@ -1,4 +1,0 @@
-schema_version: "1.1"
-name: derived-value-in-model
-context:
-  scaffold_script: fixture.sh

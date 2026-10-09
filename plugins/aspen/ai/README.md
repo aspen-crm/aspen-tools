@@ -7,8 +7,8 @@ generic tools over the instance's REST API — `summarize_api`, `search_api_oper
 namespace grammar, AQL, the describe-before-write and read-back loop, layout visibility,
 bulk and delete procedures, files and contact merges.
 
-Records lane only — **no metadata authoring, no deploy**. Changing the model is the sibling
-[aspen-code](../code) plugin.
+Records lane only — **no metadata authoring, no deploy**. Changing the model is the
+[aspen-code](https://github.com/aspen-crm/aspen-code) plugin's lane.
 
 It replaces `aspen-cowork` and the runtime MCP (`.mcpb`), both retired.
 
@@ -31,9 +31,9 @@ instance's own OAuth; there is no API key to create or paste.
 | Claude Code | `claude mcp add --transport http aspen <URL>`, then `/mcp` to sign in — or nothing, if the connector is already on the claude.ai account you sign in with | `/plugin marketplace add aspen-crm/aspen-tools`, then `/plugin install aspencrm-ai@aspen` |
 | Codex | `codex mcp add aspen --url <URL>`, then `codex mcp login aspen` | `codex plugin marketplace add aspen-crm/aspen-tools`, then `codex plugin add aspencrm-ai@aspen` |
 
+[docs/mcp-quickstart.md](../../../docs/mcp-quickstart.md) is the short version;
 [docs/installing-for-cowork.md](../../../docs/installing-for-cowork.md) is the end-to-end
-guide for Claude and Cowork users; [docs/installing-for-codex.md](../../../docs/installing-for-codex.md)
-for Codex.
+guide for Claude and Cowork users.
 
 Start a new conversation after adding either piece: a conversation's tools and skills are
 fixed when it starts.
