@@ -59,8 +59,8 @@ A request is capped at **256 KB** in all, body included. That bounds a batch and
 ## Platform grammar — the server sends none of this
 
 - **Namespaces.** Every object and field name carries a suffix: `_p` platform (a record id is
-  always **`id_p`**), `_a` an installed application, `_c` this customer's own. `account_p`,
-  never `account`; `amount_c`, never `amount`. A bare name fails as an unknown field.
+  always **`id_p`**), `_c` this customer's own. `account_p`, never `account`; `amount_c`, never
+  `amount`. A bare name fails as an unknown field.
 - **Write values are JSON strings.** In a create/update body every field value is a string —
   `"1"` not `1`, `"true"` not `true`, an id as its text. A JSON number or boolean is refused
   ("invalid type: integer, expected a string"). `null` clears a field.

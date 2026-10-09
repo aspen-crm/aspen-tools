@@ -122,8 +122,7 @@ Then try a real one:
 Two more things confirm the plugin loaded:
 
 - Claude uses the namespace suffixes correctly without you explaining them — `_p` for
-  platform, `_a` for an installed application, `_c` for your own — and never asks for
-  `account` when it means `account_p`.
+  platform, `_c` for your own — and never asks for `account` when it means `account_p`.
 - Ask it to **create** a record. It shows you what it will write, and then **your app asks
   you to approve the request** before anything is sent. Every change works that way — the
   instance enforces it, and Claude cannot skip it.
