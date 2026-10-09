@@ -23,10 +23,16 @@ It works in Claude and Cowork on the desktop and on the web, and in Claude Code.
 carries the tools; the `aspencrm-ai` plugin below carries the procedures for using them well.
 Take both.
 
-**[docs/mcp-quickstart.md](docs/mcp-quickstart.md) is the page to hand a customer** — the
-connector URL, each client, the plugin, and a check that it worked.
-[docs/installing-for-cowork.md](docs/installing-for-cowork.md) is the longer walk-through
-Claude can work through with them step by step.
+**Setting someone up?** Have them paste this into a Claude or Cowork conversation:
+
+```text
+Read https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/installing-for-cowork.md in full and help me install it, one step at a time. My Aspen instance URL is <your instance URL>.
+```
+
+Claude works the steps with them, one at a time.
+**[docs/mcp-quickstart.md](docs/mcp-quickstart.md) is the page to hand a customer** who would
+rather read it themselves — the connector URL, each client, the plugin, and a check that it
+worked.
 
 **The Aspen Runtime MCP (`.mcpb`) is retired**, and so is the `aspen-cowork` plugin that
 taught it. The hosted server replaces both: no bundle to install, no API key to create, and
