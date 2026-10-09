@@ -10,6 +10,8 @@ Or just follow the steps yourself — they're written for both.
 > **If you're Claude, reading this page for someone:** this document is agent-executable.
 > Work the steps in order with them, and follow these rules.
 >
+> - **Ask for their instance URL first**, unless they already gave it: it is what Step 1
+>   builds the connector URL from, and every later step names that URL back to them.
 > - **Every click in settings is theirs.** Adding a connector, signing in and uploading a
 >   plugin happen in their app, not in your tools. Tell them exactly where to click, then
 >   wait for them to say it's done.

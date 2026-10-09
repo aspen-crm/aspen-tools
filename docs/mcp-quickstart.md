@@ -12,7 +12,7 @@ instance's URL as a connector and sign in to it as yourself.
 If you would rather be walked through it, paste this into a Claude or Cowork conversation:
 
 ```text
-Read https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/installing-for-cowork.md in full and help me install it, one step at a time. My Aspen instance URL is <your instance URL>.
+Read https://raw.githubusercontent.com/aspen-crm/aspen-tools/main/docs/installing-for-cowork.md in full and help me install it, one step at a time. Ask me for my Aspen instance URL when you need it.
 ```
 
 Claude works the steps with you and spells out your connector URL. Everything below is the
