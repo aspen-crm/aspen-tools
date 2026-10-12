@@ -115,11 +115,11 @@ In the fresh session:
    `using-aspencrm-ai` and `explore` among its skills.
 2. For customization, confirm the instance folder contains `metacode/` and the
    Aspen CLI runs. Check whether hooks are trusted; if not, report that explicitly.
-3. For records use, confirm the hosted MCP connection and its three tools
-   (`summarize_api`, `search_api_operations`, `execute_api_request`). Load the
-   `explore` skill and make one read: `GET /api/v24.3/describe/me` through
-   `execute_api_request`, which names the signed-in user, then the object
-   catalog. This proves sign-in and connectivity without changing data. If it
+3. For records use, confirm the hosted MCP connection and its four tools
+   (`summarize_api`, `search_api_operations`, `execute_read_only_api_request`,
+   `execute_api_request`). Load the `explore` skill and make one read:
+   `GET /api/v24.3/describe/me` through `execute_read_only_api_request`, which
+   names the signed-in user, then the object catalog. This proves sign-in and connectivity without changing data. If it
    fails, report the HTTP status and `body.failures`, let the customer complete
    `codex mcp login aspen`, then retry. If Codex cannot connect at all, report
    that too: the server needs MCP protocol revision 2026-07-28, which this
@@ -129,8 +129,8 @@ In the fresh session:
    because the plugin manifests or server binary exist.
 
 Do not create sample records, upload files, deploy metadata, or run shared-state
-recovery during setup — every write would also ask the customer for an approval
-they did not expect. Once setup is verified, invite the customer's first real
+recovery during setup — every write would change the customer's data before
+they asked for anything. Once setup is verified, invite the customer's first real
 Aspen task.
 
 References: [Codex plugin setup](https://developers.openai.com/plugins/build/plugins),

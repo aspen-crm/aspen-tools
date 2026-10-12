@@ -78,6 +78,11 @@ https://0000-00-0999-ip.aspen-crm.com/domain.com/instancename/mcp
 The connector is now signed in as you. Everything Claude can see or change through it is
 exactly what you can see or change in the CRM — no more.
 
+4. In the connector's tool permissions, leave **Execute API request** asking for approval
+   each time — never *always allow*. It is the one tool that changes data, and the instance
+   does not ask you itself. To make the connector read-only, switch that tool off; the other
+   three only read.
+
 **No "Add custom connector" button?** On a Team or Enterprise plan, an owner adds custom
 connectors for the organization. Send them the connector URL and this page; once they've
 added it, you click **Connect** and sign in yourself.
@@ -124,12 +129,13 @@ Two more things confirm the plugin loaded:
 - Claude uses the namespace suffixes correctly without you explaining them — `_p` for
   platform, `_a` for an installed application, `_c` for your own — and never asks for
   `account` when it means `account_p`.
-- Ask it to **create** a record. It shows you what it will write, and then **your app asks
-  you to approve the request** before anything is sent. Every change works that way — the
-  instance enforces it, and Claude cannot skip it.
+- Ask it to **create** a record. It shows you what it will write and **asks you for a yes**
+  before anything is sent; then your app asks you to approve the request. Every change works
+  that way. The instance itself does not ask, so the app's prompt (Step 2.4) is what Claude
+  cannot skip.
 
 **Deletes are permanent.** Claude can delete records here, and can change or delete many in
-one go. It always asks you in words first, and you approve each request on top of that.
+one go. It always asks you in words first, and your app asks for each request on top of that.
 There is no undo and no recycle bin, so read what it shows you before you say yes.
 
 **Files:** small files (up to roughly 180 KB) can be attached through Claude. For anything
@@ -147,8 +153,9 @@ larger, Claude will tell you which record and field it is, and you upload it in 
 | Sign-in page won't load | Wrong host, or you're off the network/VPN that reaches it | Open your instance URL in a browser — if the CRM doesn't load there, it won't load here |
 | It worked, and now every request fails to sign in | Your session with the instance expired or was revoked | **Settings → Connectors → Aspen → Connect**, and sign in again |
 | "…not permitted" / `AUTHORIZATION_FAILURE` | You're signed in, but your Aspen role can't do that | Ask your Aspen admin. Claude can only do what you can do in the CRM |
-| "…needs the user's approval, which this client cannot collect" | This app can't show approval prompts, so it can read but not write | Reads still work here. Make changes from an app that shows approval prompts, or in the CRM |
+| Claude can read but says changes are switched off | **Execute API request** is turned off in the connector's tool permissions | Turn it back on, set to ask each time — or leave it off if this connector should only read |
 | Claude sees two sets of Aspen tools | The retired **Aspen Runtime MCP** extension or **aspen-cowork** plugin is still installed | Remove them (see *Coming from the old setup?*) |
 | Tools work, but Claude guesses field names and gets them wrong | The plugin isn't installed | Redo Step 3 |
 | The plugin upload is rejected | The zip was unzipped, or re-zipped after editing | Download [`aspencrm-ai-plugin.zip`](https://github.com/aspen-crm/aspen-tools/releases/download/aspencrm-ai-latest/aspencrm-ai-plugin.zip) again and upload it untouched |
 | An approval prompt you didn't expect | Claude is about to change data | Read it. Approve only what you asked for; declining is always safe |
+| A change went through with no prompt from your app | **Execute API request** is set to always allow | Set it back to ask each time (Step 2.4) |

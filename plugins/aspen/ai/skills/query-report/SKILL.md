@@ -1,12 +1,12 @@
 ---
 name: query-report
-description: Use for a question about an Aspen object's records — a filtered or ranked list ("top 5 open opportunities by amount"), a count ("how many leads came in this week"), or a group-by count/sum/average ("pipeline by stage", "cases per owner"). Writes AQL and runs it through /data/query and /data/count with execute_api_request. Also the AQL reference the other skills point to. Read-only.
+description: Use for a question about an Aspen object's records — a filtered or ranked list ("top 5 open opportunities by amount"), a count ("how many leads came in this week"), or a group-by count/sum/average ("pipeline by stage", "cases per owner"). Writes AQL and runs it through /data/query and /data/count with execute_read_only_api_request. Also the AQL reference the other skills point to. Read-only.
 ---
 
 # Query & report (AQL)
 
 The hosted server has no natural-language planner and no report tool: **you write the AQL**.
-Both endpoints are `safe` and run without an approval prompt.
+Both endpoints are `safe`: send them through `execute_read_only_api_request`.
 
 ```
 POST /api/v24.3/data/query   {"query": "SELECT … FROM … LIMIT n"}      → rows in body.data

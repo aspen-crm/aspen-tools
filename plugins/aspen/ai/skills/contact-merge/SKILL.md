@@ -15,7 +15,8 @@ POST /api/v24.3/crm/merge/contact_p             {"data": [{"survivor_id": "<id_p
 POST /api/v24.3/crm/unmerge/contact_p           {"data": [{"merge_id": "<contact_merge_p id_p>", "unmerge_reason": "why"}]}
 ```
 
-Duplicate search is `safe`. Merge and unmerge are approved in the host.
+Duplicate search is `safe` (`execute_read_only_api_request`). Merge and unmerge go through
+`execute_api_request`, each after the user's yes.
 
 ## What a merge is — set the expectation first
 
@@ -40,16 +41,16 @@ over before merging** with an ordinary `records` update on the survivor.
    which and why.
 3. **Carry over** what the duplicate has and the survivor lacks — a normal update (`records`).
 4. **Confirm the pair in the conversation:** survivor (`id_p`, name, email) / merged (`id_p`,
-   name, email) / reason. Get an explicit **yes**, then send; the host asks once more.
+   name, email) / reason. Get an explicit **yes**, then send.
 5. **Read the row:** `body.data[0].status` `SUCCESS` with `merge_id`, `survivor_id`,
    `merged_id`. **Keep the `merge_id`** — it is the only key an unmerge takes.
 6. **Prove it.** Query the duplicate: `merged_into_p` must equal the survivor. Report both
    names, their `id_p`s and the `merge_id`.
 
 **One pair per request.** A signed-in user may send exactly one row; more is refused. For a
-list of pairs, confirm the whole list once as a table, then send one request per pair (each
-approved), and report a table of outcomes. Stop on the first auth or request-level failure;
-a per-row `FAILURE` is that pair's outcome, not a reason to stop the rest.
+list of pairs, confirm the whole list once as a table, then send one request per pair, and
+report a table of outcomes. Stop on the first auth or request-level failure; a per-row
+`FAILURE` is that pair's outcome, not a reason to stop the rest.
 
 **Never send `merge_source`.** The instance attributes a user's merge to the user; a user
 request that names a source is refused.

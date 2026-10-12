@@ -51,11 +51,12 @@ remote shell. When the session later expires, `codex mcp login aspen` again.
 There is no API key, no binary to install and no environment variable to set. The agent never
 reads, prints or handles a credential.
 
-The server exposes three tools — `summarize_api`, `search_api_operations`,
-`execute_api_request` — and asks the user to approve every operation that changes data through
-an MCP elicitation. It speaks protocol revision 2026-07-28 only. **Neither has been verified
-against Codex yet:** if Codex cannot connect, or reads work but every write fails with "…this
-client cannot collect", that is a Codex client limitation, not an install problem.
+The server exposes four tools — `summarize_api`, `search_api_operations`,
+`execute_read_only_api_request` and `execute_api_request`. The last is the only one that
+changes data; the server runs it without asking, so keep Codex's approval for it on (never
+auto-approve it). It speaks protocol revision 2026-07-28 only. **This has not been verified
+against Codex yet:** if Codex cannot connect, that is a Codex client limitation, not an
+install problem.
 
 If `aspen-cowork` and its runtime server were set up before, remove them:
 `codex plugin remove aspen-cowork@aspen`, and `codex mcp remove aspen-runtime-mcp` if it was

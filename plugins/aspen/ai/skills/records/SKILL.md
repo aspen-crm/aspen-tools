@@ -1,6 +1,6 @@
 ---
 name: records
-description: Use when reading or writing record data on an Aspen instance through the hosted MCP — list records, get one by id, search across objects, list related records or a record's activity, create or update a record and prove it, change up to 100 records of one object in one approved request, or delete records. Drives AQL queries and the data API (POST/PATCH/DELETE /data/{object}) through execute_api_request. Writes are approved in the host; deletes are permanent.
+description: Use when reading or writing record data on an Aspen instance through the hosted MCP — list records, get one by id, search across objects, list related records or a record's activity, create or update a record and prove it, change up to 100 records of one object in one confirmed request, or delete records. Drives AQL queries and the data API (POST/PATCH/DELETE /data/{object}) — reads through execute_read_only_api_request, writes through execute_api_request. Every write waits for the user's yes; deletes are permanent.
 ---
 
 # Records (read and write)
@@ -11,7 +11,8 @@ objects work exactly like the standard `_p` ones. Every record's primary key is 
 
 ## Reads — AQL through `/data/query`
 
-There is no "get record" endpoint: **every read is an AQL `SELECT`**, a `safe` operation.
+There is no "get record" endpoint: **every read is an AQL `SELECT`**, a `safe` operation
+(`execute_read_only_api_request`).
 The grammar is in `query-report`; the essentials:
 
 ```
@@ -70,7 +71,8 @@ For counts and group-by questions use `query-report`, not a loop of reads.
 | update | `PATCH /api/v24.3/data/<object>` | `{"data": [{"id_p": "<id>", "stage_c": "negotiation_c"}]}` |
 | delete | `DELETE /api/v24.3/data/<object>` | `{"data": [{"id_p": "<id>"}]}` |
 
-All three are batch operations answering per row, and all are approved in the host.
+All three are batch operations answering per row, sent through `execute_api_request` — and
+the server asks nobody, so each waits for the user's yes.
 
 1. **Describe fresh** (`explore`) immediately before writing. Confirm every field name, its
    `required` and `read-only` flags, and its `max-length`; check a picklist value against the
@@ -120,8 +122,8 @@ before creating them.
 
 ## Bulk — up to 100 records in one request
 
-One `PATCH` (or `DELETE`) carries many rows: **one yes in the conversation, one approval in
-the host.** Never loop single updates over a set you can send at once. The platform accepts
+One `PATCH` (or `DELETE`) carries many rows: **one yes in the conversation, one request.**
+Never loop single updates over a set you can send at once. The platform accepts
 up to 500 rows a request; send **at most 100**, which keeps the request well under the 256 KB
 cap and the confirmation reviewable. Past 100 rows, or for creates at scale, use `bulk-data`.
 
@@ -131,7 +133,7 @@ cap and the confirmation reviewable. Past 100 rows, or for creates at scale, use
    same for every row, so they go in the one confirmation.
 3. **Confirm in the conversation.** Every row (display value, `id_p`, the change) or — past a
    dozen — the rule, the exact count, the change and a sample. Say "this changes N records".
-   Get an explicit **yes**. Then send; the host asks once more for the request.
+   Get an explicit **yes**. Then send.
 4. **Read every row.** `body.status` is the worst outcome of any row; each `body.data[i]` has
    its own `status`. `FAILURE` beside `SUCCESS` is a **partial write** — rows are independent,
    and the accepted ones are written.
@@ -155,7 +157,7 @@ touched — read it, fix, resend.
 - **Offer the alternative when it fits** — a status or "inactive" field the user could set
   instead keeps the history. The user decides.
 - **Get an explicit yes** naming each record (display value + `id_p`), or for many the rule,
-  count and sample, and that it **cannot be undone**. Then send; the host asks once more.
+  count and sample, and that it **cannot be undone**. Then send.
 - **Prove it:** `ROWCOUNT FROM <object> WHERE id_p IN ('…')` is 0, and report any row refused.
 
 Delete children before parents, and break a reference cycle first (clear the lookup on one
@@ -171,6 +173,6 @@ side). Contacts are never "merged" by deleting one — that is `contact-merge`.
 | `TOO_MANY_RECORDS` | The batch is too big. Split it. |
 | `AUTHORIZATION_FAILURE` | The user may not do that to this object, record or field. Say so; there is nothing to retry. |
 | HTTP 401, `INVALID_SESSION_ID`, `INVALID_CREDENTIALS` | The session expired. The user reconnects the connector (`using-aspencrm-ai`). |
-| An approval was declined | The user said no. Ask what to change; don't resend. |
+| The host's prompt was declined | The user said no. Ask what to change; don't resend. |
 | HTTP 429, a 5xx, `UNEXPECTED_ERROR`, `EXCEPTION` | Wait briefly, retry once, then report it with the `request_id`. |
 | A tool error that the path is not served | Wrong path or method. Check `summarize_api`. |

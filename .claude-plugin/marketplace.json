@@ -13,7 +13,7 @@
     {
       "name": "aspencrm-ai",
       "source": "./plugins/aspen/ai",
-      "description": "Work an Aspen CRM through its hosted MCP connector: explore the model, read, search and report on records, create, update, bulk-update and delete them, attach files, and merge duplicate contacts. Every write is approved in the host."
+      "description": "Work an Aspen CRM through its hosted MCP connector: explore the model, read, search and report on records, create, update, bulk-update and delete them, attach files, and merge duplicate contacts. Every write waits for your yes."
     }
   ]
 }

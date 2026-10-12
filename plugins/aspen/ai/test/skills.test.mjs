@@ -103,3 +103,20 @@ test('the router routes to every other skill', () => {
     assert.match(router, new RegExp('`' + dir + '`'), `the router never names ${dir}`);
   }
 });
+
+test('no skill promises an approval the server no longer asks for', () => {
+  // The server collected approval through an MCP elicitation until 2026-10-07; it now runs
+  // whatever reaches execute_api_request. A skill that leans on that approval writes unasked.
+  const retired = /elicitation|cannot collect|approved in the host|approval in the host|the host asks once more/i;
+  for (const { dir, text } of [...skills, ...agents]) {
+    const hit = retired.exec(text);
+    assert.equal(hit, null, `${dir} says "${hit?.[0]}"`);
+  }
+});
+
+test('the router names all four server tools', () => {
+  const router = skills.find((s) => s.dir === 'using-aspencrm-ai').text;
+  for (const tool of ['summarize_api', 'search_api_operations', 'execute_read_only_api_request', 'execute_api_request']) {
+    assert.match(router, new RegExp('`' + tool + '`'), `the router never names ${tool}`);
+  }
+});

@@ -1,6 +1,6 @@
 ---
 name: bulk-data
-description: Use for a data job on an Aspen instance bigger than one request — more than 100 rows, creating many records, deleting many, a mass update or backfill, clearing or re-pointing a field across a set, removing test or seed data, or a load/import driven from a CSV, spreadsheet or JSON file. Plans the job, sends it through execute_api_request in approved chunks of up to 100 rows, and verifies it. Also the reference for paging and the type quirks that silently break a load.
+description: Use for a data job on an Aspen instance bigger than one request — more than 100 rows, creating many records, deleting many, a mass update or backfill, clearing or re-pointing a field across a set, removing test or seed data, or a load/import driven from a CSV, spreadsheet or JSON file. Plans the job, sends it through execute_api_request in confirmed chunks of up to 100 rows, and verifies it. Also the reference for paging and the type quirks that silently break a load.
 ---
 
 # Bulk data
@@ -12,14 +12,14 @@ driven from a file.
 Every write goes through `execute_api_request` — create `POST`, update `PATCH`, delete
 `DELETE` on `/api/v24.3/data/<object>` with `{"data": [ … ]}` — in **chunks of at most 100
 rows**. The platform accepts 500 a request, but 100 keeps each request under the 256 KB cap
-and small enough to review. **Each chunk is one approval in the host.**
+and small enough to review. Counts and reads go through `execute_read_only_api_request`.
 
 ## Say the cost up front
 
-Every row you write passes through your own tool calls, and every chunk waits for the user to
-approve it. A 300-row update is 3 requests and 3 approvals; 5,000 rows is 50. Tell the user
-the row count, the number of chunks and approvals, and roughly what it involves **before**
-starting — and for a very large load, ask whether they would rather use the app's own tools.
+Every row you write passes through your own tool calls, and the host may ask the user to
+approve each chunk. A 300-row update is 3 requests; 5,000 rows is 50. Tell the user the row
+count, the number of chunks, and roughly what it involves **before** starting — and for a
+very large load, ask whether they would rather use the app's own tools.
 
 ## The loop
 
@@ -37,11 +37,11 @@ starting — and for a very large load, ask whether they would rather use the ap
 4. **Plan, show, confirm once.** Counts, the mapping, a sample of rows, the number of chunks,
    and anything surprising the filter caught. For a delete: that it is permanent, and what goes
    with the records (children with `deletion-strategy: cascade`, refusals from `block`). Get
-   an explicit **yes** for the job.
+   an explicit **yes** for the job, and say that it covers every chunk in the plan.
 5. **Send chunk by chunk.** After each, read `body.data[i].status` for every row and keep a
    tally of successes and failures with their `detail`. A partial chunk is normal — rows are
    independent. **Stop on a request-level failure** (no `data`), an auth error, or a declined
-   approval, and report where you are: which chunks landed and which didn't.
+   host prompt, and report where you are: which chunks landed and which didn't.
 6. **Verify.** Re-query what you wrote (`WHERE id_p IN (…)` in chunks of 100, or a `ROWCOUNT`
    of the target state) and check the values landed. A `SUCCESS` status is not proof.
 7. **Report:** rows written, rows refused with reasons, and what is left. Retry only refused
@@ -80,6 +80,7 @@ side). `deletion-strategy` on the child's lookup decides: `block` refuses the pa
 - **Scope every filter to what you mean.** A bulk write is only as good as its `WHERE`. Filter
   on the owner or the exact key, and show anything the filter caught that you didn't intend.
 - **Never re-send rows that landed.** A retry is only the refused rows.
-- **A declined approval stops the job.** Report how far it got; don't route around it.
+- **A no stops the job** — in the conversation or the host's prompt. Report how far it got;
+  don't route around it.
 - **Never handle a credential.** The connector holds the session; on an auth failure the user
   reconnects it.
