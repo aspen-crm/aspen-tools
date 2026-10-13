@@ -6,33 +6,6 @@ on:
   pull_request:
 
 jobs:
-  plugin:
-    # Windows is not redundant here. Every hook decides "am I being run, or imported?"
-    # by comparing import.meta.url to argv[1], and the two line up only on an
-    # unremarkable POSIX path -- so all four hooks were silent no-ops on Windows for
-    # the whole 2.5.0/2.6.0 token-guard line, and a Linux-only matrix could not see it.
-    # A hook that no-ops exits 0 and looks exactly like "allowed", so nothing else will.
-    name: aspen-code plugin (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Run the digest test suite
-        working-directory: plugins/aspen/code
-        run: node --test "test/*.test.mjs"
-
-      # The reference repo is what a customer copies. If it ever trips the footprint guard,
-      # the thing we hand people is the thing the plugin tells them not to do.
-      - name: Check the example repo's own footprint
-        working-directory: plugins/aspen/code
-        run: node scripts/footprint.mjs ../../../example-customer-repo/metacode
-
   aspencrm-ai:
     name: aspencrm-ai plugin
     runs-on: ubuntu-latest
@@ -63,13 +36,11 @@ jobs:
       - name: Install the tested Codex CLI
         run: npm install -g @openai/codex@0.156.0
       - name: Validate Codex plugins
-        run: node scripts/validate-plugins.mjs plugins/aspen/code plugins/aspen/ai
+        run: node scripts/validate-plugins.mjs plugins/aspen/ai
       - name: Load skills and hooks through Codex (no model calls)
         run: node scripts/test-codex.mjs
       - name: Build Codex archives
-        run: |
-          ./scripts/package-plugin.sh plugins/aspen/code dist codex
-          ./scripts/package-plugin.sh plugins/aspen/ai dist codex
+        run: ./scripts/package-plugin.sh plugins/aspen/ai dist codex
       - uses: actions/upload-artifact@v4
         with:
           name: codex-plugins

@@ -36,7 +36,7 @@ function call(method, params) {
 try {
   await call('initialize', { clientInfo: { name: 'aspen-plugin-test', version: '1' }, capabilities: { experimentalApi: true } })
   child.stdin.write('{"method":"initialized"}\n')
-  for (const [dir, name, expectedSkills, expectedHooks] of [['code', 'aspen-code', 3, 2], ['ai', 'aspencrm-ai', 8, 0]]) {
+  for (const [dir, name, expectedSkills, expectedHooks] of [['ai', 'aspencrm-ai', 8, 0]]) {
     const { plugin } = await call('plugin/read', { pluginName: name, marketplacePath: join(repo, '.claude-plugin/marketplace.json') })
     const manifest = JSON.parse(readFileSync(join(repo, 'plugins/aspen', dir, '.codex-plugin/plugin.json')))
     assert.equal(plugin.summary.localVersion, manifest.version)

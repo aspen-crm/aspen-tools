@@ -10,6 +10,8 @@ Or just follow the steps yourself — they're written for both.
 > **If you're Claude, reading this page for someone:** this document is agent-executable.
 > Work the steps in order with them, and follow these rules.
 >
+> - **Ask for their instance URL first**, unless they already gave it: it is what Step 1
+>   builds the connector URL from, and every later step names that URL back to them.
 > - **Every click in settings is theirs.** Adding a connector, signing in and uploading a
 >   plugin happen in their app, not in your tools. Tell them exactly where to click, then
 >   wait for them to say it's done.
@@ -127,8 +129,7 @@ Then try a real one:
 Two more things confirm the plugin loaded:
 
 - Claude uses the namespace suffixes correctly without you explaining them — `_p` for
-  platform, `_a` for an installed application, `_c` for your own — and never asks for
-  `account` when it means `account_p`.
+  platform, `_c` for your own — and never asks for `account` when it means `account_p`.
 - Ask it to **create** a record. It shows you what it will write and **asks you for a yes**
   before anything is sent; then your app asks you to approve the request. Every change works
   that way. The instance itself does not ask, so the app's prompt (Step 2.4) is what Claude

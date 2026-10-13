@@ -1,15 +1,10 @@
 {
   "name": "aspen",
-  "description": "Tools for building on the Aspen Platform.",
+  "description": "Work an Aspen CRM from Claude and Cowork through the instance's hosted MCP.",
   "owner": {
     "name": "Aspen CRM"
   },
   "plugins": [
-    {
-      "name": "aspen-code",
-      "source": "./plugins/aspen/code",
-      "description": "Developer workflow skills for customizing an Aspen instance with the aspen CLI."
-    },
     {
       "name": "aspencrm-ai",
       "source": "./plugins/aspen/ai",
