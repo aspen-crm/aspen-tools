@@ -33,7 +33,12 @@ over before merging** with an ordinary `records` update on the survivor.
 
 1. **Find the candidates.** `duplicates/search` with what you know of the person (at least one
    field; all-blank is refused) returns ranked `data.candidates`. Or query `contact_p` on
-   `work_email_p`, or `last_name_p` + `first_name_p`. **Select `merged_into_p`** — a contact
+   `work_email_p`, or `last_name_p` + `first_name_p`. **"Find our duplicates"** with no
+   person named is one grouped query (`query-report`) — every name or email held by more
+   than one live contact:
+   `SELECT last_name_p, first_name_p, COUNT(*) AS n FROM contact_p WHERE merged_into_p IS NULL GROUP BY last_name_p, first_name_p HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 100`
+   — then `duplicates/search` each group to rank it. A shared name is a lead, not a match:
+   compare email and account before calling it a duplicate. **Select `merged_into_p`** — a contact
    with it set is already merged, and is neither a survivor nor a candidate. Read both
    contacts in full and show them side by side.
 2. **Pick the survivor with the user.** When asked to choose: the canonical work email, the
@@ -73,7 +78,8 @@ the user splits a pair a sync created.
 | What comes back | Meaning / do |
 |---|---|
 | `SUCCESS` | Applied — or already applied (the same pair twice returns the existing `merge_id`). Prove it. |
-| `FAILURE` · `INVALID_INPUT` | An id names no contact the user can see, or both ids are one contact. Re-read both; ask. |
+| `FAILURE` · `INVALID_INPUT` | An id names no contact the user can see ("No contact exists with id …"). Re-read both; ask. |
+| HTTP 400 · `INVALID_DATA`, "A contact cannot be merged into itself" | Both ids are one contact. Nothing was touched; re-read the pair. |
 | `FAILURE` · `ALREADY_MERGED` | The duplicate is already merged into someone else — `context.resolved_survivor_id` names whom. Show the user; re-aiming it needs an unmerge first. |
 | `FAILURE` · `SURVIVOR_MERGED` | Your survivor is itself a duplicate; `context.resolved_survivor_id` is its root. Offer to merge into the root. |
 | `FAILURE` · `HAS_CHILDREN` | The duplicate is itself the survivor of earlier merges. Unmerge its children first (`contact_merge_p` rows with `survivor_p` = it and `unmerged_p` false), then merge each into the new survivor. |

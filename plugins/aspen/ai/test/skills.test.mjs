@@ -15,7 +15,8 @@ const skills = readdirSync(skillsDir, { withFileTypes: true })
 const agents = readdirSync(join(root, 'agents'))
   .map((name) => ({ dir: `agents/${name}`, text: readFileSync(join(root, 'agents', name), 'utf8') }));
 
-// `summarize_api` on a live instance, 2026-10-07. Refresh it when the server's catalog moves.
+// `summarize_api` on a live instance, 2026-10-07; unchanged on 2026-10-13. Refresh it when the
+// server's catalog moves.
 const OPERATIONS = `
 POST /crm/contact/duplicates/search
 POST /crm/contact/roles/for-record

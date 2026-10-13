@@ -53,13 +53,17 @@ The two take the same arguments and return the same result.
   rejections with HTTP 200 and `body.status: "FAILURE"`. Read `body.status` (`SUCCESS`,
   `WARNING`, `FAILURE`, `EXCEPTION`) every time; a query with a misspelled field "returns" a
   200 with no rows if you only look at `status`.
+- **A body the platform can't parse is refused before it runs** — HTTP 400 or 422, with
+  `body.failures[]` and no `body.status`, and some hosts show it as a tool error. Nothing was
+  written; read `detail`, fix the request, and send it again.
 - A failure carries `body.failures[]`, each `{error_type, subtype, detail, display_detail,
   context}`. `detail` usually names the fix ("Select merge_source_p itself"); `context` names
   the clause and token for a query.
 - A batch write (create, update, delete) answers **per row** in `body.data[]` — each
   `{id, status, failures?, warnings?}`. Rows are independent; see `records`.
-- `truncated: true` means the body was cut at 64 KB. **Never treat a truncated body as the
-  whole answer** — select fewer fields, lower the `LIMIT`, or describe one object at a time.
+- `truncated: true` means the body was cut at 64 KB and arrives as a cut-off string, not JSON.
+  **Never treat a truncated body as the whole answer** — select fewer fields, lower the
+  `LIMIT`, or describe one object at a time.
 - `request_id` is the platform's trace id. Quote it when you report a platform-side error.
 
 A request is capped at **256 KB** in all, body included. That bounds a batch and an upload.
@@ -71,7 +75,7 @@ A request is capped at **256 KB** in all, body included. That bounds a batch and
   `amount`. A bare name fails as an unknown field.
 - **Write values are JSON strings.** In a create/update body every field value is a string —
   `"1"` not `1`, `"true"` not `true`, an id as its text. A JSON number or boolean is refused
-  ("invalid type: integer, expected a string"). `null` clears a field.
+  ("invalid type: number, expected a string"). `null` clears a field.
 - **AQL literals are the other way round.** In a `WHERE` clause, checkbox, number, percentage
   and currency values are **unquoted** (`is_active_c = true`, `amount_c > 500`); everything
   else is quoted. The `query-report` skill has the grammar.
@@ -136,7 +140,7 @@ user; anything written is attributed to that user, not to the host account.
 | "What objects exist? What are this object's fields, layouts, list views? A picklist's values?" | `explore` |
 | Reading records (list, get one, search, related, a record's activity) or writing one + proving it | `records` |
 | The same change across up to 100 records, or deleting a few | `records` (bulk) |
-| A question about records: a filtered list, a count, a group-by sum ("pipeline by stage") | `query-report` |
+| A question about records: a filtered list, a count, a total or average, a group-by sum ("pipeline by stage") | `query-report` |
 | Merging duplicate contacts, finding duplicates, or unmerging (contacts only) | `contact-merge` |
 | Uploading or attaching a file to a record, or reading one back | `files` |
 | More than 100 rows, creating many records, a delete across many, or a load from a file | `bulk-data` |

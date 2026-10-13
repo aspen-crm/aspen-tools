@@ -27,8 +27,13 @@ very large load, ask whether they would rather use the app's own tools.
    `max-length`, picklist item names, and the layout. A field no layout places stores fine and
    is invisible on every record page in the load: say so **once**, in the plan.
 2. **Count, then read.** `ROWCOUNT FROM <object> WHERE …` on `/data/count` sizes the job
-   before anything is fetched. Read the rows you need with `SELECT … ORDER BY id_p LIMIT 100
-   OFFSET n`, page by page; a response never holds more than 100 rows.
+   before anything is fetched (exact up to 10,000; past that it says `10000` with
+   `has_more_rows: true` — `SELECT COUNT(*) … LIMIT 1` gives the exact number). A grouped
+   count (`query-report`) profiles the set — rows per status or owner — in one call. Read
+   the rows you need with `SELECT … ORDER BY id_p LIMIT n OFFSET m`, page by page: `LIMIT`
+   stops at 1000, `OFFSET` at 10,000, and the server cuts a response at 64 KB, so select only
+   the fields the job needs and check `truncated`. Past 10,000 rows, slice the set with
+   `WHERE` (date ranges on `ct_p`) and page each slice.
 3. **Build the rows.** Updates and deletes need `id_p` on every row; deletes carry **only**
    `id_p`. For a file-driven load, read and transform the file with code where your host has
    a shell or sandbox — map its columns to API names from describe, turn picklist labels into
@@ -62,9 +67,10 @@ side). `deletion-strategy` on the child's lookup decides: `block` refuses the pa
 
 | Symptom | Cause |
 |---|---|
-| `invalid type: boolean/integer, expected a string` | **Body values are strings**: `"true"`, `"1"`. In an AQL `WHERE` it's the opposite — checkbox and number unquoted. |
+| `invalid type: number/boolean, expected a string` (HTTP 422, nothing written) | **Body values are strings**: `"true"`, `"1"`. In an AQL `WHERE` it's the opposite — checkbox and number unquoted. |
 | A query "finds nothing" that plainly exists | A bad field name is a **`FAILURE` under HTTP 200**. Read `body.status`. `user_p`, for one, has no `name_p` — it has `username_p`, `first_name_p`, `last_name_p`. |
-| Only 100 rows came back | 100 per response whatever `LIMIT` says. Page with `OFFSET` over an `ORDER BY … id_p`. |
+| A page came back cut short | `truncated: true` — the response passed 64 KB. Fewer fields or a lower `LIMIT`, then page with `OFFSET` over an `ORDER BY … id_p`. |
+| `OFFSET` refused past 10,000 | Slice the set with `WHERE` (a `ct_p` range) and page each slice. |
 | Totals are off | Numbers and checkboxes are strings (`"50000.00"`, `"true"`). Parse first. |
 | A create is refused for `otype_p` | The object uses record types. Set `otype_p` to a type's name — `/describe/identifiers/object_type_p`, or read one off an existing record. |
 | A `LIKE` filter is refused | Trailing wildcard only. |

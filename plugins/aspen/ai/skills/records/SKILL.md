@@ -17,20 +17,22 @@ The grammar is in `query-report`; the essentials:
 
 ```
 POST /api/v24.3/data/query
-{"query": "SELECT id_p, name_p, owner_p.username_p AS owner FROM account_p WHERE location_p LIKE 'Boston%' ORDER BY name_p, id_p LIMIT 25"}
+{"query": "SELECT id_p, name_p, owner_p.name_p AS owner FROM account_p WHERE location_p LIKE 'Boston%' ORDER BY name_p, id_p LIMIT 25"}
 ```
 
-- **Name the fields** from describe — there is no `SELECT *`. `LIMIT` is required, and a
-  response carries **at most 100 rows** whatever the `LIMIT` says; page with `OFFSET` and an
-  `ORDER BY` that ends in `id_p`.
+- **Name the fields** from describe — there is no `SELECT *`. `LIMIT` is required (at most
+  1000), and the server cuts a response at 64 KB (`truncated: true`), so select only what you
+  need. Page with `OFFSET` (at most 10,000) over an `ORDER BY` that ends in `id_p`.
 - **One record:** `SELECT <fields> FROM <object> WHERE id_p = '<id>' LIMIT 1`.
 - **Long text is cut** when selected bare. `LONGTEXT(description_p) AS description_p` returns
   it whole.
 - **Labels, not names, for people:** `LABEL(stage_c) AS stage_label` gives a picklist item's
-  or a lookup's display label in the same row.
-- **Through a lookup:** dot-walk up to two hops — `primary_account_p.name_p AS account_name`.
-  Alias every joined field; output names must be unique. A **polyid** needs the arrow form:
+  label in the same row. `LABEL` refuses a lookup — dot-walk to the record's display field.
+- **Through a lookup:** dot-walk — `primary_account_p.name_p AS account_name`. Alias every
+  joined field; output names must be unique. A **polyid** needs the arrow form:
   `what_p->account_p.name_p AS what_name` (or just select its display field, `whatdn_p`).
+  The same-named field can differ by object — `owner_p` is a `user_p` polyid on one object and
+  a `team_p` lookup on another — so take the target from describe.
 - `body.data` holds the rows; `body.status: FAILURE` with an `INVALID_QUERY` failure means
   the query, not the data, was wrong — its `detail` names the bad token.
 
@@ -40,9 +42,12 @@ POST /api/v24.3/data/query
 POST /api/v24.3/data/search   {"query": "Acme", "limit": 10}
 ```
 
-Each hit is `{id, object, display_field}` — follow up with a `SELECT` on that object. The
-`Data` tag also has per-object searches (`/data/search/account_p`, `contact_p`, `lead_p`,
-`opportunity_p`, `case_p`, `team_p`); `search_api_operations` gives their bodies.
+Each hit is `{id, object, display_field}` — follow up with a `SELECT` on that object. Global
+search covers only the objects the instance has configured for it (describe's
+`global-search-config`), so **no hits is not "no such record"**. Before saying a record doesn't
+exist, try the per-object searches (`/data/search/account_p`, `contact_p`, `lead_p`,
+`opportunity_p`, `case_p`, `team_p`; `search_api_operations` gives their bodies) or a
+`LIKE 'prefix%'` query on the object's display field.
 
 **Related records** — query the child, filtered on its field pointing at the parent:
 
@@ -61,7 +66,8 @@ Each hit is `{id, object, display_field}` — follow up with a `SELECT` on that 
 
 A parent cannot dot-walk down to its children. Query the child (or the join object) and walk up.
 
-For counts and group-by questions use `query-report`, not a loop of reads.
+For counts, totals, averages and group-by questions use `query-report` — one aggregate query,
+not a loop of reads.
 
 ## Writes — describe, show, write, read back
 
@@ -84,6 +90,8 @@ the server asks nobody, so each waits for the user's yes.
    clears. Send only the fields you change on an update. When `uses-object-types` is true and
    a create is refused for `otype_p`, set it to the record type's name (from
    `/describe/identifiers/object_type_p`, or read one off an existing record).
+   Fields you leave unset take their defaults — an opportunity's `owner_p` becomes the
+   signed-in user — so say who will own a new record when the user didn't.
 4. **Read the result.** `body.data[0].status` is `SUCCESS`, `WARNING` (written, with
    `warnings[]` to relay), or `FAILURE` (with `failures[]`). A create returns the new `id`.
 5. **Read it back.** `SELECT` the fields you wrote `WHERE id_p = '<id>'` and compare. Only
@@ -169,7 +177,7 @@ side). Contacts are never "merged" by deleting one — that is `contact-merge`.
 |---|---|
 | `INVALID_QUERY` (`context.code` `UNKNOWN_FIELD`) | A field or object name is wrong — usually a missing suffix. Describe; don't guess again. |
 | `INVALID_DATA` on a row | The value was refused: type, length, required, read-only, picklist, a bad id. `detail` and `context.field_name` name it. Fix that field, re-describe, retry that row. |
-| "invalid type: integer/boolean, expected a string" | A value wasn't a string. Send `"1"`, `"true"`. |
+| HTTP 422, "invalid type: number/boolean, expected a string" | A value wasn't a string; the whole request was refused, nothing written. Send `"1"`, `"true"`. |
 | `TOO_MANY_RECORDS` | The batch is too big. Split it. |
 | `AUTHORIZATION_FAILURE` | The user may not do that to this object, record or field. Say so; there is nothing to retry. |
 | HTTP 401, `INVALID_SESSION_ID`, `INVALID_CREDENTIALS` | The session expired. The user reconnects the connector (`using-aspencrm-ai`). |

@@ -48,6 +48,7 @@ The variant carries the object's `fields[]`, kebab-cased as the instance sends t
 | `name`, `label`, `description` | the API name you use, and what the user calls it |
 | `type`, `subtype` | `text`/`text`, `text`/`long` (long text), `text`/`url`, `id`/`lookup`, `id`/`file`, `picklist`/`picklist`, `checkbox`, `number`, `date`, `datetime`, `currency`, `polyid`, … |
 | `required`, `unique`, `read-only` | constraints — a write that misses a required field or touches a read-only one is refused |
+| `sortable` | whether AQL can `ORDER BY` it — only indexed or unique fields sort |
 | `max-length`, `min-length` | a text field's limits; **the** length, never inferred from a value |
 | `picklist` | a picklist field's **picklist component** — not the field name (`status_c` may draw from `renewal_status_c`) |
 | `relationship` | a lookup's target object |
@@ -96,8 +97,9 @@ object with record types has a layout per type. Each resolved layout has `sectio
   child's field pointing back), optional `query-filter`, and `fields[]` — **the child's
   columns**, never fields of this record. Reading them as placed fields turns "invisible" into
   "looks fine".
-- **`people_role`** (`rel-type`), **attachment** sections, and **custom code** sections
-  (`section-ui-code`, a custom page whose contents describe cannot see).
+- **`people_role`** (`rel-type`), **`activity`** (the activity feed), **attachment** sections,
+  and **custom code** sections (`section-ui-code`, a custom page whose contents describe
+  cannot see).
 
 "Is there a section for X?" is the related lists: one whose `related-object` is X. None means
 the app has nowhere to show X records from this page, though they exist and a query reads them.
@@ -127,8 +129,10 @@ and filter on; `label` is what you show.** Take the picklist component from the 
 ## Who am I
 
 `GET /api/v24.3/describe/me` → `user_id`, `user_name`, `security_profile`, `is_admin`. Use it
-to answer "my records" (or filter on `owner_p = CURRENT_USER()` in AQL) and to explain a
-permission refusal.
+to answer "my records" and to explain a permission refusal. In AQL, `CURRENT_USER()` matches
+only a field that references `user_p` — `cb_p`, or an owner whose describe targets `user_p`.
+Where an owner points at `team_p` instead, go through it:
+`owner_p.user_p = CURRENT_USER()`.
 
 ## Field shapes worth knowing before you write
 

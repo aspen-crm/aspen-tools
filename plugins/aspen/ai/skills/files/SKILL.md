@@ -60,10 +60,11 @@ record. Confirm the whole list first.
 without it — upload first, then create with the field set to the id. Optional: either order.
 
 **"Attach this to the opportunity" with no file field on it:** the platform's **`attachment_p`**
-carries a file *for* another record. Describe it fresh; on the instances seen it has
-`name_p` (required), **`content_p`** (the file field, required), `related_to_p` — a polyid to
-the parent, so set it **and** `related_toon_p` to one of its `allowed-objects` — and
-`version_p` (required; send the string `"1"`). **Omit `original_version_p`** even though
+carries a file *for* another record. Describe it fresh; it typically has
+`name_p` (required), **`content_p`** (the file field, required), `what_p` — a polyid to the
+parent, so set it **and** `whaton_p` to one of its `allowed-objects` — and `version_p`
+(required; send the string `"1"`). **`allowed-objects` decides which records can take an
+attachment**; a parent outside it means there is no attachment route, so say so. **Omit `original_version_p`** even though
 describe marks it required: the instance fills it. Upload first, then create the
 `attachment_p` with `content_p` set to the file id.
 
@@ -84,7 +85,7 @@ partial file, never the whole one. The file id comes from the record's file fiel
 |---|---|
 | The tool refuses the request as too large | Over the 256 KB request cap. The user uploads it in the app. |
 | `INVALID_DATA` on the upload | A missing `Aspen-Filename` or content type, or the instance's own size limit. Read `detail`. |
-| The upload succeeded but the `PATCH` failed | **The file is already up** — keep its id. Fix the update (re-describe, right field) and set it; **don't upload again**, every retry leaves an orphan file. |
+| The upload succeeded but the `PATCH` failed | **The file is already up** — keep its id. Fix the update (re-describe, right field) and set it; **don't upload again**, every retry leaves an orphan file — `file_p` is not deletable, so an upload can never be taken back. |
 | `AUTHORIZATION_FAILURE` | The user can't write that record or field. |
 | `FAILURE` on download | No such file, or not visible to this user. |
 
