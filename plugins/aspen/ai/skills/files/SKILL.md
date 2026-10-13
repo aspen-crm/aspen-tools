@@ -1,6 +1,6 @@
 ---
 name: files
-description: Use when asked to upload, attach, add or replace a file — a PDF, contract, image, CSV, any document — on an Aspen record, to set a record's file field, or to read a stored file back. Drives POST /data/files (bytes → a file id) and GET /data/files/{id} through execute_api_request; setting the field still goes through records. Small files only through the hosted MCP; a larger one is uploaded in the app. Never file contents in a text field.
+description: Use when asked to upload, attach, add or replace a file — a PDF, contract, image, CSV, any document — on an Aspen record, to set a record's file field, or to read a stored file back. Drives POST /data/files (bytes → a file id) through execute_api_request and GET /data/files/{id} through execute_read_only_api_request; setting the field still goes through records. Small files only through the hosted MCP; a larger one is uploaded in the app. Never file contents in a text field.
 ---
 
 # Files (upload, attach, read back)
@@ -17,7 +17,8 @@ PATCH /api/v24.3/data/<object>       {"data": [{"id_p": "<record id>", "<file fi
 GET   /api/v24.3/data/files/<id>     → the file's bytes (base64) or text
 ```
 
-Both writes are `safe: false`, so each is approved in the host.
+Both writes are `safe: false`: each goes through `execute_api_request` after the user's yes
+(`using-aspencrm-ai`). The read goes through `execute_read_only_api_request`.
 
 ## What fits through this route — say it before you start
 

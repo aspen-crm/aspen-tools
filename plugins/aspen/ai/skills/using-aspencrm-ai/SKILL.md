@@ -1,18 +1,19 @@
 ---
 name: using-aspencrm-ai
-description: Use when starting any task that reads or writes a customer's Aspen CRM through the instance's hosted MCP (tools summarize_api, search_api_operations, execute_api_request) — viewing, searching, reporting on, creating, updating, bulk-updating or deleting records, attaching files, merging contacts. Routes each moment to the right skill and carries the platform grammar the server does not send. No metadata authoring or deployment.
+description: Use when starting any task that reads or writes a customer's Aspen CRM through the instance's hosted MCP (tools summarize_api, search_api_operations, execute_read_only_api_request, execute_api_request) — viewing, searching, reporting on, creating, updating, bulk-updating or deleting records, attaching files, merging contacts. Routes each moment to the right skill and carries the platform grammar the server does not send. No metadata authoring or deployment.
 ---
 
 # Using Aspen CRM (hosted MCP)
 
 You are working a customer's live **Aspen** CRM through the instance's **hosted MCP server**.
-It exposes three tools; the host puts its own prefix in front of them:
+It exposes four tools; the host puts its own prefix in front of them:
 
 | Tool | What it gives you |
 |---|---|
 | `summarize_api` | Every REST operation the server will run, by tag (`CRM`, `Data`, `Describe`), each with `safe: true/false`. Start here when you need a path. |
 | `search_api_operations` | The operations matching plain words (`"update records"`), best first, plus one OpenAPI document defining exactly those — their request body schemas. `tag` narrows it. |
-| `execute_api_request` | Runs **one** operation as the signed-in user. |
+| `execute_read_only_api_request` | Runs **one** `safe` operation as the signed-in user — every describe, query, count and search. It refuses anything else. |
+| `execute_api_request` | Runs **one** operation of any kind as the signed-in user. The only tool that changes data. |
 
 Everything you can see is already permission-scoped to that user. There is **no metadata
 authoring, deploy or promote here** — changing the model is the `aspen-code` plugin's lane.
@@ -23,13 +24,20 @@ Route each moment through the right skill below **before** acting, and announce 
 [skill] to [purpose]." The **instance is the single source of truth**: every object, field and
 picklist value comes from a describe call, never from a guess.
 
-## Calling `execute_api_request`
+## Calling the execute tools
 
 ```
-execute_api_request  method="POST"  path="/api/v24.3/data/query"
-                     body={"query": "SELECT id_p, name_p FROM account_p ORDER BY name_p LIMIT 10"}
+execute_read_only_api_request  method="POST"  path="/api/v24.3/data/query"
+                               body={"query": "SELECT id_p, name_p FROM account_p ORDER BY name_p LIMIT 10"}
 ```
 
+The two take the same arguments and return the same result.
+
+- **Read with `execute_read_only_api_request`.** Every operation `summarize_api` marks
+  `safe: true` goes through it — it changes nothing, so the host can run it without asking.
+  It refuses a write ("…is not safe, so execute_read_only_api_request does not run it").
+- **Write with `execute_api_request`**, and only after the user's yes (below). Never send a
+  read through it.
 - `path` is concrete and starts at the API root. `/api/v24.3` is the root these skills use;
   if the instance refuses a path, take the root from `summarize_api` and use that.
 - `body` is a JSON value for a JSON operation, a string for `text/*`, and a base64 string for
@@ -75,24 +83,24 @@ A request is capped at **256 KB** in all, body included. That bounds a batch and
   128-character field is not a 4-character field.
 - **Polyids and currency write as a set** — `records` has the rule.
 
-## Writes are approved in the host
+## Every write needs the user's yes — in the conversation
 
-Every operation `summarize_api` marks `safe: false` — create, update, delete, upload, merge,
-unmerge — is **approved by the user in the host** before the server runs it. The approval
-prompt shows the method, the path and the first 2 KB of the body; it is bound to that exact
-request and lapses after 10 minutes. A changed request is a new request and needs its own.
+The server runs whatever reaches `execute_api_request` at once, as the signed-in user, with
+**no approval step of its own**. The host may ask before the call, but the user may have set
+the tool to always run, and a host's prompt shows raw JSON at best. **Your confirmation is
+the gate.** Every operation `summarize_api` marks `safe: false` — create, update, delete,
+upload, merge, unmerge — waits for it.
 
-- **One record** (create or update): say plainly what will change — the values, or the diff
-  against the current record, and any layout caveat (`records`) — then make the call. The
-  approval prompt is the user's yes.
-- **Several records in one request, any delete, a merge or an unmerge:** get an explicit
-  **yes in the conversation first**, then send. The prompt previews only 2 KB, so it cannot
-  show a batch, and a delete cannot be undone. Each request is still approved in the host.
-- **A declined approval is a no.** Don't resend it, and don't reshape the request to get it
-  through. Ask what they want changed.
-- **"…needs the user's approval, which this client cannot collect"** means this host cannot
-  show approval prompts. Reads still work; writes cannot happen from here. Say so plainly and
-  stop — there is no flag that skips approval.
+- **Before every `execute_api_request` call**, say plainly what will change and get an
+  explicit **yes in the conversation**. One record: the values, or the diff against the
+  current record, and any layout caveat (`records`). Several: the rule, the exact count, the
+  change and a sample. A delete: that it is permanent. A merge: the pair.
+- **Send exactly what was confirmed.** A changed request — another field, more rows, a
+  corrected value — is a new request and needs its own yes.
+- **A yes covers the request it answered**, not the next one. "Go ahead" on one record is not
+  a yes for the rest of the list; a job confirmed in chunks says so up front (`bulk-data`).
+- **A no is a no** — in the conversation or in the host's prompt. Don't resend it, and don't
+  reshape the request to get it through. Ask what they want changed.
 - **A write is not done until you read it back** with a query (`records`).
 
 ## There are no app links
@@ -110,10 +118,16 @@ reconnects the connector — in Claude or Cowork, **Settings → Connectors**, t
 connector, **Connect**; in Claude Code, `/mcp`; in Codex, `codex mcp login <server name>`.
 `AUTHORIZATION_FAILURE` is different: they are signed in but not permitted to do that.
 
-**No `execute_api_request` in your tool list** means the connector is not added or not
-enabled in this host. The setup guide is
+**None of these tools in your tool list** means the connector is not added or not enabled in
+this host. The setup guide is
 https://github.com/aspen-crm/aspen-tools/blob/main/docs/installing-for-cowork.md — and a new
 conversation is needed after adding it, because a conversation's tools are fixed at its start.
+**The read tools without `execute_api_request`** means writes are switched off for this
+connector here. Reads work; say that changes are off and stop — there is no other route.
+
+**The Aspen user is not the host's user.** The instance signs in its own user (often a
+different email from the one the host shows). `describe/me` (`explore`) names the Aspen
+user; anything written is attributed to that user, not to the host account.
 
 ## Router
 
@@ -146,8 +160,11 @@ conversation is needed after adding it, because a conversation's tools are fixed
 | "HTTP 200, so it worked" | Read `body.status`. Most rejections are HTTP 200 with `FAILURE`. |
 | "The query came back empty, so there are none" | Check `body.status` first — a bad field name is a `FAILURE`, not zero rows. |
 | "I'll send `1` / `true` in the body" | Strings: `"1"`, `"true"`. And unquoted in a `WHERE` clause. |
-| "The user declined, I'll try a smaller version" | A declined approval is a no. Ask. |
-| "40 records — I'll call update 40 times" | One `PATCH` of up to 100 rows, one yes in the conversation, one approval. `records`. |
+| "The host will ask them, so I can just send it" | The server asks nobody and the host may not either. Get the yes in the conversation first. |
+| "They said yes to the first one, so this one's fine" | A yes covers the request it answered. Ask again. |
+| "I'll read it through `execute_api_request`" | Reads go through `execute_read_only_api_request`. |
+| "The user declined, I'll try a smaller version" | A no is a no. Ask. |
+| "40 records — I'll call update 40 times" | One `PATCH` of up to 100 rows, one yes in the conversation. `records`. |
 | "I'll delete it to clean up" | Hard delete, no undo. Explicit yes first; prefer an update that neutralises it. |
 | "I'll link them to the record" | There are no links. Name the record and its `id_p`. |
 | "Paste your API key and I'll fix the connection" | Never. The user reconnects the connector. |

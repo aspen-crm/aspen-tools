@@ -47,6 +47,10 @@ Whatever the CRM appends as you click around — a tab, a record, a view — is 
 The connector is signed in as you, so everything Claude can see or change through it is
 exactly what you can see or change in the CRM.
 
+4. In the connector's tool permissions, leave **Execute API request** asking for approval
+   each time — never *always allow*. It is the one tool that changes data, and the instance
+   does not ask you itself. Switch it off for a read-only connector.
+
 **On a Team or Enterprise plan?** Custom connectors are added for the whole organization by an
 owner. Send them your connector URL and this page; once it is added, everyone picks it up from
 **Settings -> Connectors**.
@@ -89,15 +93,17 @@ objects your org has added. That proves the connector is live and signed in as y
 
 ## What you get
 
-The server exposes three tools over your instance's REST API:
+The server exposes four tools over your instance's REST API:
 
 | Tool | What it does |
 |---|---|
 | `summarize_api` | Lists every operation the server will run, by tag, each marked safe or not. |
 | `search_api_operations` | Finds the operations matching plain words, with their request schemas. |
-| `execute_api_request` | Runs one operation as the signed-in user. |
+| `execute_read_only_api_request` | Runs one safe operation — a describe, query, count or search — as the signed-in user. Changes nothing. |
+| `execute_api_request` | Runs one operation of any kind as the signed-in user. The only tool that changes data. |
 
-Writes are approved in your client before they run. Reads are not.
+The instance runs a write as soon as it arrives; it does not ask you. Your client asks before
+each `execute_api_request` call, as long as you leave that tool on asking (Step 2).
 
 ## Troubleshooting
 
@@ -108,7 +114,8 @@ Writes are approved in your client before they run. Reads are not.
 | It will not connect, or sign-in loops | The URL is missing the domain or instance name, or does not end in `/mcp` | Re-add it exactly as Step 1 spells it out |
 | No **Add custom connector** button | Team or Enterprise plan | An owner adds it for the organization |
 | It worked, and now every request fails to sign in | Your session with the instance expired or was revoked | **Settings -> Connectors -> Aspen -> Connect** and sign in again |
-| "needs the user's approval, which this client cannot collect" | The app cannot show approval prompts, so it can read but not write | Make changes from an app that shows approval prompts, or in the CRM |
+| Claude can read but says changes are switched off | **Execute API request** is off in the connector's tool permissions | Turn it back on, set to ask each time — or leave it off if this connector should only read |
+| A change went through with no prompt from your app | **Execute API request** is set to always allow | Set it back to ask each time (Step 2) |
 
 ## Next
 

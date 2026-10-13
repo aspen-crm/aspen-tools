@@ -1,13 +1,13 @@
 ---
 name: explore
-description: Use to learn what an Aspen instance holds before reading or writing — the object catalog, one object's fields, types, required flags, length limits and relationships, its record types, layouts (which fields the record page actually shows), list views and tabs, a picklist's allowed values, or who the signed-in user is. Drives the instance's Describe API through execute_api_request. Read-only orientation; the answer to "never guess a name".
+description: Use to learn what an Aspen instance holds before reading or writing — the object catalog, one object's fields, types, required flags, length limits and relationships, its record types, layouts (which fields the record page actually shows), list views and tabs, a picklist's allowed values, or who the signed-in user is. Drives the instance's Describe API through execute_read_only_api_request. Read-only orientation; the answer to "never guess a name".
 ---
 
 # Explore (describe the model)
 
 Answer "what exists" and "what's the shape of X" from the instance itself. Every name used
 downstream — object, field, picklist item — comes from here. All of these are `safe`
-operations: they run without an approval prompt.
+operations: send them through `execute_read_only_api_request`.
 
 Two families of Describe call, both `POST` with a JSON body:
 
