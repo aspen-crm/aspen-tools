@@ -45,8 +45,8 @@ over before merging** with an ordinary `records` update on the survivor.
    fuller and more recent data, more related records (activity, opportunities, roles). Say
    which and why.
 3. **Carry over** what the duplicate has and the survivor lacks — a normal update (`records`).
-4. **Confirm the pair in the conversation:** survivor (`id_p`, name, email) / merged (`id_p`,
-   name, email) / reason. Get an explicit **yes**, then send.
+4. **Required: confirm the pair in the conversation:** survivor (`id_p`, name, email) /
+   merged (`id_p`, name, email) / reason. Get an explicit **yes**, then send.
 5. **Read the row:** `body.data[0].status` `SUCCESS` with `merge_id`, `survivor_id`,
    `merged_id`. **Keep the `merge_id`** — it is the only key an unmerge takes.
 6. **Prove it.** Query the duplicate: `merged_into_p` must equal the survivor. Report both
@@ -65,7 +65,7 @@ request that names a source is refused.
 1. **Find the `merge_id`:** from your merge report, or
    `SELECT id_p, survivor_p, merged_p, unmerged_p, merge_reason_p, ct_p FROM contact_merge_p WHERE merged_p = '<duplicate id_p>' ORDER BY ct_p DESC LIMIT 10`
    and take the row with `unmerged_p` false. Its `id_p` is the `merge_id`.
-2. **Confirm** survivor / merged / when / original reason; get a **yes**.
+2. **Required: confirm** survivor / merged / when / original reason; get a **yes**.
 3. **Send** the unmerge with an `unmerge_reason`.
 4. **Prove it:** the duplicate's `merged_into_p` is now empty.
 

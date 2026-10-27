@@ -95,10 +95,12 @@ the tool to always run, and a host's prompt shows raw JSON at best. **Your confi
 the gate.** Every operation `summarize_api` marks `safe: false` — create, update, delete,
 upload, merge, unmerge — waits for it.
 
-- **Before every `execute_api_request` call**, say plainly what will change and get an
-  explicit **yes in the conversation**. One record: the values, or the diff against the
+- **Required:** before every `execute_api_request` call, say plainly what will change and get
+  an explicit **yes in the conversation**. One record: the values, or the diff against the
   current record, and any layout caveat (`records`). Several: the rule, the exact count, the
   change and a sample. A delete: that it is permanent. A merge: the pair.
+- **The request is not the yes.** "Update these to Closed" asks for a change; the yes confirms
+  what it resolved to — the records, the values and the count you showed.
 - **Send exactly what was confirmed.** A changed request — another field, more rows, a
   corrected value — is a new request and needs its own yes.
 - **A yes covers the request it answered**, not the next one. "Go ahead" on one record is not
@@ -106,6 +108,8 @@ upload, merge, unmerge — waits for it.
 - **A no is a no** — in the conversation or in the host's prompt. Don't resend it, and don't
   reshape the request to get it through. Ask what they want changed.
 - **A write is not done until you read it back** with a query (`records`).
+- **In Codex**, a `Required:` line is a hard stop: quote it when you pause, ask with
+  `request_user_input` where the host has it, and wait for the answer.
 
 ## There are no app links
 

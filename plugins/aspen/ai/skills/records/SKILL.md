@@ -85,7 +85,7 @@ the server asks nobody, so each waits for the user's yes.
    picklist's item **names**. Check the layout too — *Will they see it?* below.
 2. **Show the change.** Create: the object and every value. Update: the record (display value
    + `id_p`) and a diff against its current values, which you read first. Name any field the
-   layout doesn't place, before the call.
+   layout doesn't place, before the call. **Required:** wait for the user's yes before step 3.
 3. **Write.** Every value is a JSON **string** — `"1"`, `"true"`, an id as text; `null`
    clears. Send only the fields you change on an update. When `uses-object-types` is true and
    a create is refused for `otype_p`, set it to the record type's name (from
@@ -139,9 +139,9 @@ cap and the confirmation reviewable. Past 100 rows, or for creates at scale, use
    `id_p`s and current values. Report anything the filter caught that they didn't intend.
 2. **Describe fresh and check once.** Picklist values, lengths, and the layout finding are the
    same for every row, so they go in the one confirmation.
-3. **Confirm in the conversation.** Every row (display value, `id_p`, the change) or — past a
-   dozen — the rule, the exact count, the change and a sample. Say "this changes N records".
-   Get an explicit **yes**. Then send.
+3. **Required: confirm in the conversation.** Every row (display value, `id_p`, the change)
+   or — past a dozen — the rule, the exact count, the change and a sample. Say "this changes N
+   records". Get an explicit **yes**. Then send.
 4. **Read every row.** `body.status` is the worst outcome of any row; each `body.data[i]` has
    its own `status`. `FAILURE` beside `SUCCESS` is a **partial write** — rows are independent,
    and the accepted ones are written.
@@ -164,8 +164,8 @@ touched — read it, fix, resend.
   `ROWCOUNT` them and tell the user what goes with the record.
 - **Offer the alternative when it fits** — a status or "inactive" field the user could set
   instead keeps the history. The user decides.
-- **Get an explicit yes** naming each record (display value + `id_p`), or for many the rule,
-  count and sample, and that it **cannot be undone**. Then send.
+- **Required: get an explicit yes** naming each record (display value + `id_p`), or for many
+  the rule, count and sample, and that it **cannot be undone**. Then send.
 - **Prove it:** `ROWCOUNT FROM <object> WHERE id_p IN ('…')` is 0, and report any row refused.
 
 Delete children before parents, and break a reference cycle first (clear the lookup on one

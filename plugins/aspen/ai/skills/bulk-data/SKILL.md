@@ -41,8 +41,8 @@ very large load, ask whether they would rather use the app's own tools.
    see it.
 4. **Plan, show, confirm once.** Counts, the mapping, a sample of rows, the number of chunks,
    and anything surprising the filter caught. For a delete: that it is permanent, and what goes
-   with the records (children with `deletion-strategy: cascade`, refusals from `block`). Get
-   an explicit **yes** for the job, and say that it covers every chunk in the plan.
+   with the records (children with `deletion-strategy: cascade`, refusals from `block`).
+   **Required:** an explicit **yes** for the job, saying that it covers every chunk in the plan.
 5. **Send chunk by chunk.** After each, read `body.data[i].status` for every row and keep a
    tally of successes and failures with their `detail`. A partial chunk is normal — rows are
    independent. **Stop on a request-level failure** (no `data`), an auth error, or a declined
