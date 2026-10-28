@@ -45,7 +45,7 @@ user mentions but you cannot read is a question for the user, not a guess.
    `required` flag. If there are several (a signed copy and a draft), pick with the user.
 3. **Check the size** against the limits above, then **show the plan**: file (name, size,
    content type) → target (object, record, field), and that **setting the field replaces the
-   file it holds now**.
+   file it holds now**. **Required:** wait for the user's yes before uploading.
 4. **Upload.** `Aspen-Filename` is the original name, **percent-encoded** (`%20` for a space);
    `content_type` is the file's own MIME type (`application/pdf`, `image/png`, `text/csv`) —
    it is stored and replayed on download. Read `body.id` — the file id.
